@@ -297,3 +297,22 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
   dev.off()
 }
+
+## 8. Bland-Altman plot
+
+make_bland_altman_plot <- function(x, y, fill, fillname = "", title = ""){
+  tibble(x, y, fill) %>%
+    {ggplot(., aes(x, y, fill = fill, alpha = ..count..)) + 
+      {ungroup(.) %>%
+          summarise(SD = sd(y, na.rm = T),
+                    Median = median(y, na.rm = T)) %$%
+          geom_hline(yintercept = c(Median - 2 * SD, Median, Median + 2 * SD, 0), 
+                     linetype = c("dotted", "dashed", "dotted", "solid"), 
+                     color = c("black", "black", "black", "lightgray"))} + 
+      geom_hex(bins = 100, color = NA)+
+      simple_theme + 
+      xlab("Mean of NX and X") + 
+      ylab("NX - X") + 
+      ggtitle(title) + 
+      scale_fill_discrete(name = fillname)} 
+}

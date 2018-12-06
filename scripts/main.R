@@ -185,16 +185,12 @@ all.atlas <-
   mutate_at(.funs = funs(. / under_limit(., expression, method)), 
             .vars = grep(".expression$", colnames(.), value = T)) 
 
-# Remove genes that are imputed
-all.atlas <- 
-	all.atlas %>%
-  # Remove genes that are imputed
-  filter(!imputed)
-
 # Remove PBMCs
 all.atlas <-
  all.atlas %>%
  filter(!content_name=='total PBMC')
+
+# readr::write_delim(all.atlas, path = paste(result_folder, paste0('all.atlas.txt'),sep='/'), delim = "\t")
 
 ###################################################################
 ## Step 3. Consensus
@@ -202,11 +198,15 @@ all.atlas <-
 
 all.atlas.max <-
   all.atlas %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
   group_by(consensus_content_name, ensg_id) %>% 
   mutate(method = as.character(method)) %>%
   dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
                                    method = get_method(method, ., max(., na.rm = T))),
                       .vars = grep("expression$", colnames(.), value = T)) 
+
+# readr::write_delim(all.atlas.max, path = paste(result_folder, paste0('all.atlas.max.txt'),sep='/'), delim = "\t")
 
 ###################################################################
 ## Step 4. Category
