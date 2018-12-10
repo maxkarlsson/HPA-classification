@@ -40,6 +40,8 @@ tmm_method_normalization <- function(expression, method, tissue.method, ensg_id)
     return(tmm.expression)
 }
 
+
+
 pareto_scale_method_gene <- function(expression, method, ensg_id) {
   #SD: Method and gene standard deviation on dataset scaled values
   tibble(method, expression, ensg_id) %>%

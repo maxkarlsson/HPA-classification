@@ -180,7 +180,35 @@ all.atlas <-
     limma_gene_dstmm.expression = limma_method_correction(gene_dstmm.expression, method,
                                                           tissue.method, lims_id,
                                                           filtered.methods = "Blood"),
-    limma_gene_dstmm.expression_temp = limma_gene_dstmm.expression)  %>%
+    limma_gene_dstmm.expression_temp = limma_gene_dstmm.expression, 
+    
+    
+    # 1. log impute
+    
+    imputed.log.expression = 10 ^ impute_expression(log10(expression + 1), tissue.method, lims_id) - 1,
+    # dstmm.log.expression = tmm_method_normalization(imputed.log.expression, method, tissue.method, lims_id),
+    # gene_dstmm.log.expression = pareto_scale_method_gene(dstmm.log.expression, method, lims_id),
+    # 
+    # limma_gene_dstmm.log.expression = limma_method_correction(gene_dstmm.log.expression, method,
+    #                                                       tissue.method, lims_id,
+    #                                                       filtered.methods = "Blood"),
+    
+    # 2. zero impute
+    
+    imputed.zero.expression = ifelse(imputed, 0, expression),
+    dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id),
+    # gene_dstmm.zero.expression = pareto_scale_method_gene(dstmm.zero.expression, method, lims_id),
+    # 
+    # limma_gene_dstmm.zero.expression = limma_method_correction(gene_dstmm.zero.expression, method,
+    #                                                           tissue.method, lims_id,
+    #                                                           filtered.methods = "Blood"),
+    # 3. zero impute then impute again after tmm
+    
+    gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), method, lims_id),
+    
+    limma_gene_dstmm.zero.impute.expression = limma_method_correction(gene_dstmm.zero.impute.expression, method,
+                                                               tissue.method, lims_id,
+                                                               filtered.methods = "Blood"))  %>%
   # Scale so that under limit is 1
   mutate_at(.funs = funs(. / under_limit(., expression, method)), 
             .vars = grep(".expression$", colnames(.), value = T)) 
@@ -213,7 +241,7 @@ all.atlas.max <-
 ###################################################################
 
 all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
-                                                        max_column = "limma_gene_dstmm.expression_maxEx",
+                                                        max_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
                                                         cat_column = "consensus_content_name",
                                                         enrich.fold = 5,
                                                         under.lim = 1,
@@ -240,12 +268,12 @@ blood.atlas <-
 blood.atlas.max <- 
   blood.atlas %>%
   group_by(content_name, ensg_id) %>% 
-  filter(!is.na(limma_gene_dstmm.expression)) %>%
-  dplyr::summarise(limma_gene_dstmm.expression_maxEx = max(limma_gene_dstmm.expression)) 
+  filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
+  dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
 
 
 blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
-                                                          max_column = "limma_gene_dstmm.expression_maxEx", 
+                                                          max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                                                           cat_column = "content_name",
                                                           enrich.fold = 5, 
                                                           under.lim = 1, 
@@ -287,8 +315,8 @@ brain.atlas.filter <-
 brain.atlas.max <- 
   brain.atlas.filter %>%
   group_by(subgroup, ensg_id) %>% 
-  filter(!is.na(limma_gene_dstmm.expression)) %>%
-  dplyr::summarise(limma_gene_dstmm.expression_maxEx = max(limma_gene_dstmm.expression)) 
+  filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
+  dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
 # 
 # write.table(brain.atlas.max,
 #             file=paste(result_folder, paste0('consensus_brain_regions.txt'),sep='/'),
@@ -297,7 +325,7 @@ brain.atlas.max <-
 #             quote=F)
 
 brain.atlas.category <- get.categories.with.num.expressed(brain.atlas.max,
-                                                          max_column = "limma_gene_dstmm.expression_maxEx", 
+                                                          max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                                                           cat_column = "subgroup",
                                                           enrich.fold = 5, 
                                                           group.num = 6)
@@ -315,11 +343,13 @@ table(brain.atlas.category$category.text)
 ###################################################################
 ## Visulization
 ###################################################################
-all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', group_column='consensus_content_name', max_column="limma_gene_dstmm.expression_maxEx")
+all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
+                                    group_column='consensus_content_name', 
+                                    max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = all.atlas, 
-                              expr_column = "limma_gene_dstmm.expression",
+                              expr_column = "limma_gene_dstmm.zero.impute.expression",
                               outpath = result_folder,
                               prefix = 'all_tissues')
 

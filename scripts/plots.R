@@ -300,19 +300,43 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
 
 ## 8. Bland-Altman plot
 
-make_bland_altman_plot <- function(x, y, fill, fillname = "", title = ""){
-  tibble(x, y, fill) %>%
-    {ggplot(., aes(x, y, fill = fill, alpha = ..count..)) + 
-      {ungroup(.) %>%
-          summarise(SD = sd(y, na.rm = T),
-                    Median = median(y, na.rm = T)) %$%
-          geom_hline(yintercept = c(Median - 2 * SD, Median, Median + 2 * SD, 0), 
-                     linetype = c("dotted", "dashed", "dotted", "solid"), 
-                     color = c("black", "black", "black", "lightgray"))} + 
-      geom_hex(bins = 100, color = NA)+
-      simple_theme + 
-      xlab("Mean of NX and X") + 
-      ylab("NX - X") + 
-      ggtitle(title) + 
-      scale_fill_discrete(name = fillname)} 
+make_bland_altman_plot <- function(x, y, fill, fillname = "", title = "", Points = F, alpha = 0.1, 
+                                   xl = "Mean of NX and X", yl = "NX - X"){
+  
+      
+      
+  
+  if(Points) {
+    p <- 
+      tibble(x, y, fill) %>%
+      {ggplot(., aes(x, y, color = fill)) + 
+          geom_point(shape = 16, alpha = alpha) + 
+          {ungroup(.) %>%
+              summarise(SD = sd(y, na.rm = T),
+                        Median = median(y, na.rm = T)) %$%
+              geom_hline(yintercept = c(Median - 2 * SD, Median, Median + 2 * SD, 0), 
+                         linetype = c("dotted", "dashed", "dotted", "solid"), 
+                         color = c("black", "black", "black", "lightgray"))}} + 
+      scale_color_discrete(name = fillname)
+  } else {
+    p <- 
+      tibble(x, y, fill) %>%
+      {ggplot(., aes(x, y, fill = fill, alpha = ..count..)) + 
+          geom_hex(bins = 100, color = NA) +
+          {ungroup(.) %>%
+              summarise(SD = sd(y, na.rm = T),
+                        Median = median(y, na.rm = T)) %$%
+              geom_hline(yintercept = c(Median - 2 * SD, Median, Median + 2 * SD, 0), 
+                         linetype = c("dotted", "dashed", "dotted", "solid"), 
+                         color = c("black", "black", "black", "lightgray"))}} + 
+      scale_fill_discrete(name = fillname)
+  }
+  
+  p + 
+    simple_theme + 
+    xlab(xl) + 
+    ylab(yl) + 
+    ggtitle(title) 
+    
+    
 }
