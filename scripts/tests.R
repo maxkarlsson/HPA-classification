@@ -293,7 +293,7 @@ settings = expand.grid(enrich_fold = seq(3,7,0.5),
 mapply(1:nrow(settings), FUN = function(i) paste(settings[i,1], settings[i,2], settings[i,3]))
 
 enrich_fold_settings <- 5#seq(3,7,0.5)
-under_lim_settings <- seq(1,4,0.25)
+under_lim_settings <- seq(1,8,1)
 group_num_settings <- c(6)#seq(5,11,1)
 
 cat(paste(nrow(expand.grid(enrich_fold_settings, under_lim_settings, group_num_settings)), "settings\nIt takes ~1 min per setting.\n"))
@@ -324,4 +324,24 @@ for(enrich_fold in enrich_fold_settings) {
 
 atlas_categories %>%
   group_by(express.category.2, enrich_fold, under_lim, group_num) %>%
-  summarise(number = length(express.category.2))
+  summarise(number = length(express.category.2)) %>%
+  ggplot(aes(under_lim, number, label = number,color = express.category.2)) + 
+  geom_point()+
+  geom_line()+
+  geom_text(vjust = -0.5)+
+  scale_color_manual(values = expressed.cat.cols) + 
+  simple_theme
+
+ggsave(paste(result_folder, "settings expressed.png", sep = "/"), width = 8, height = 8)
+
+atlas_categories %>%
+  group_by(elevated.category, enrich_fold, under_lim, group_num) %>%
+  summarise(number = length(elevated.category)) %>%
+  ggplot(aes(under_lim, number, label = number,color = elevated.category)) + 
+  geom_point()+
+  geom_line()+
+  geom_text(vjust = -0.5)+
+  scale_color_manual(values = elevated.cat.cols) + 
+  simple_theme
+
+ggsave(paste(result_folder, "settings elevated.png", sep = "/"), width = 8, height = 8)
