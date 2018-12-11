@@ -286,14 +286,9 @@ ggsave(paste(result_folder, "BA NX vs X FANTOM.png", sep = "/"), width = 8, heig
 
 
 
-settings = expand.grid(enrich_fold = seq(3,7,0.5), 
-                       under_lim = seq(0.5,3,0.25), 
-                       group_num = seq(3,11,1))
-
-mapply(1:nrow(settings), FUN = function(i) paste(settings[i,1], settings[i,2], settings[i,3]))
 
 enrich_fold_settings <- 5#seq(3,7,0.5)
-under_lim_settings <- seq(1,8,1)
+under_lim_settings <- seq(1,8,0.25)
 group_num_settings <- c(6)#seq(5,11,1)
 
 cat(paste(nrow(expand.grid(enrich_fold_settings, under_lim_settings, group_num_settings)), "settings\nIt takes ~1 min per setting.\n"))
