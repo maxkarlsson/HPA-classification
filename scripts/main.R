@@ -16,6 +16,7 @@ library('magrittr', quietly = TRUE)
 
 setwd('/Users/wen.zhong/Work/BloodAtlas/Bloodatlas_work/')
 setwd('/Users/max.karlsson/Documents/Scilifelab/Projects/HPA-classification/')
+setwd('C:/Data/Fagerberg lab/Projects/HPA-classification')
 source('./scripts/function.R')
 source('./scripts/utility.R')
 source('./scripts/plots.R')
