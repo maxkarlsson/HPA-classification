@@ -284,19 +284,28 @@ ggsave(paste(result_folder, "BA NX vs X FANTOM.png", sep = "/"), width = 8, heig
 
 
 
+library(pbapply)
 
 
-
-enrich_fold_settings <- 5#seq(3,7,0.5)
+enrich_fold_settings <- seq(3,7,0.5)
 under_lim_settings <- seq(1,8,0.25)
 group_num_settings <- c(6)#seq(5,11,1)
 
-cat(paste(nrow(expand.grid(enrich_fold_settings, under_lim_settings, group_num_settings)), "settings\nIt takes ~1 min per setting.\n"))
+number_of_settings <- nrow(expand.grid(enrich_fold_settings, under_lim_settings, group_num_settings))
+
+cat(paste(number_of_settings, "settings\nIt takes ~1 min per setting.\n"))
+
 
 first <- T
+pb <- timerProgressBar(min = 1, max = number_of_settings)
+on.exit(close(pb))
+
+i = 1
 for(enrich_fold in enrich_fold_settings) {
   for(under_lim in under_lim_settings) {
     for(group_num in group_num_settings) {
+      setTimerProgressBar(pb, i)
+      i <- i + 1
       atlas_categories_temp <- 
         get.categories.with.num.expressed(all.atlas.max,
                                           max_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
@@ -316,6 +325,8 @@ for(enrich_fold in enrich_fold_settings) {
     }
   }
 }
+
+
 
 atlas_categories %>%
   group_by(express.category.2, enrich_fold, under_lim, group_num) %>%
@@ -340,3 +351,5 @@ atlas_categories %>%
   simple_theme
 
 ggsave(paste(result_folder, "settings elevated.png", sep = "/"), width = 8, height = 8)
+
+readr::write_delim(atlas_categories, paste(result_folder, "atlas_categories_test.txt", sep = "/"), delim = "\t")
