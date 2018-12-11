@@ -166,91 +166,106 @@ all.atlas.raw <-
 ###################################################################
 ## Step 2. normalization
 ###################################################################
-all.atlas <- 
-  all.atlas.raw %>%
-  mutate(
-    # Impute missing values
-    imputed.expression = impute_expression(expression, tissue.method, lims_id),
-    imputed = case_when(is.na(expression) ~ TRUE,
-                        TRUE ~ FALSE),
-    # TMM scaling of data with imputation
-    dstmm.expression = tmm_method_normalization(imputed.expression, method, tissue.method, lims_id),
-    gene_dstmm.expression = pareto_scale_method_gene(dstmm.expression, method, lims_id),
 
-    limma_gene_dstmm.expression = limma_method_correction(gene_dstmm.expression, method,
-                                                          tissue.method, lims_id,
-                                                          filtered.methods = "Blood"),
-    limma_gene_dstmm.expression_temp = limma_gene_dstmm.expression, 
-    
-    
-    # 1. log impute
-    
-    imputed.log.expression = 10 ^ impute_expression(log10(expression + 1), tissue.method, lims_id) - 1,
-    # dstmm.log.expression = tmm_method_normalization(imputed.log.expression, method, tissue.method, lims_id),
-    # gene_dstmm.log.expression = pareto_scale_method_gene(dstmm.log.expression, method, lims_id),
-    # 
-    # limma_gene_dstmm.log.expression = limma_method_correction(gene_dstmm.log.expression, method,
-    #                                                       tissue.method, lims_id,
-    #                                                       filtered.methods = "Blood"),
-    
-    # 2. zero impute
-    
-    imputed.zero.expression = ifelse(imputed, 0, expression),
-    dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id),
-    # gene_dstmm.zero.expression = pareto_scale_method_gene(dstmm.zero.expression, method, lims_id),
-    # 
-    # limma_gene_dstmm.zero.expression = limma_method_correction(gene_dstmm.zero.expression, method,
-    #                                                           tissue.method, lims_id,
-    #                                                           filtered.methods = "Blood"),
-    # 3. zero impute then impute again after tmm
-    
-    gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), method, lims_id),
-    
-    limma_gene_dstmm.zero.impute.expression = limma_method_correction(gene_dstmm.zero.impute.expression, method,
-                                                               tissue.method, lims_id,
-                                                               filtered.methods = "Blood"))  %>%
-  # Scale so that under limit is 1
-  mutate_at(.funs = funs(. / under_limit(., expression, method)), 
-            .vars = grep(".expression$", colnames(.), value = T)) 
+if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
+  all.atlas <- 
+    all.atlas.raw %>%
+    mutate(
+      # Impute missing values
+      # imputed.expression = impute_expression(expression, tissue.method, lims_id),
+      imputed = case_when(is.na(expression) ~ TRUE,
+                          TRUE ~ FALSE),
+      # TMM scaling of data with imputation
+      # dstmm.expression = tmm_method_normalization(imputed.expression, method, tissue.method, lims_id),
+      # gene_dstmm.expression = pareto_scale_method_gene(dstmm.expression, method, lims_id),
+      # 
+      # limma_gene_dstmm.expression = limma_method_correction(gene_dstmm.expression, method,
+      #                                                       tissue.method, lims_id,
+      #                                                       filtered.methods = "Blood"),
+      # limma_gene_dstmm.expression_temp = limma_gene_dstmm.expression, 
+      
+      
+      # 1. log impute
+      
+      # imputed.log.expression = 10 ^ impute_expression(log10(expression + 1), tissue.method, lims_id) - 1,
+      # dstmm.log.expression = tmm_method_normalization(imputed.log.expression, method, tissue.method, lims_id),
+      # gene_dstmm.log.expression = pareto_scale_method_gene(dstmm.log.expression, method, lims_id),
+      # 
+      # limma_gene_dstmm.log.expression = limma_method_correction(gene_dstmm.log.expression, method,
+      #                                                       tissue.method, lims_id,
+      #                                                       filtered.methods = "Blood"),
+      
+      # 2. zero impute
+      
+      imputed.zero.expression = ifelse(imputed, 0, expression),
+      dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id),
+      # gene_dstmm.zero.expression = pareto_scale_method_gene(dstmm.zero.expression, method, lims_id),
+      # 
+      # limma_gene_dstmm.zero.expression = limma_method_correction(gene_dstmm.zero.expression, method,
+      #                                                           tissue.method, lims_id,
+      #                                                           filtered.methods = "Blood"),
+      # 3. zero impute then impute again after tmm
+      
+      gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), method, lims_id),
+      
+      limma_gene_dstmm.zero.impute.expression = limma_method_correction(gene_dstmm.zero.impute.expression, method,
+                                                                        tissue.method, lims_id,
+                                                                        filtered.methods = "Blood"))  %>%
+    # Scale so that under limit is 1
+    mutate_at(.funs = funs(. / under_limit(., expression, method)), 
+              .vars = grep(".expression$", colnames(.), value = T)) 
+  
+  # Remove PBMCs
+  all.atlas <-
+    all.atlas %>%
+    filter(!content_name=='total PBMC')
+  
+  readr::write_delim(all.atlas, path = paste(result_folder, paste0('all.atlas.txt'),sep='/'), delim = "\t")
+} else {
+  all.atlas <- readr::read_delim(paste(result_folder, paste0('all.atlas.txt'),sep='/'), delim = "\t")
+  }
 
-# Remove PBMCs
-all.atlas <-
- all.atlas %>%
- filter(!content_name=='total PBMC')
 
-# readr::write_delim(all.atlas, path = paste(result_folder, paste0('all.atlas.txt'),sep='/'), delim = "\t")
+# 
 
 ###################################################################
 ## Step 3. Consensus
 ###################################################################
 
-all.atlas.max <-
-  all.atlas %>%
-  # Remove genes that are imputed
-  filter(!imputed) %>%
-  group_by(consensus_content_name, ensg_id) %>% 
-  mutate(method = as.character(method)) %>%
-  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
-                                   method = get_method(method, ., max(., na.rm = T))),
-                      .vars = grep("expression$", colnames(.), value = T)) 
+if(!file.exists(paste(result_folder, paste0('all.atlas.max.txt'),sep='/'))) {
+  all.atlas.max <-
+    all.atlas %>%
+    # Remove genes that are imputed
+    filter(!imputed) %>%
+    group_by(consensus_content_name, ensg_id) %>% 
+    mutate(method = as.character(method)) %>%
+    dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
+                                     method = get_method(method, ., max(., na.rm = T))),
+                        .vars = grep("expression$", colnames(.), value = T)) 
+  readr::write_delim(all.atlas.max, path = paste(result_folder, paste0('all.atlas.max.txt'),sep='/'), delim = "\t")
+} else {
+  all.atlas.max <- readr::read_delim(paste(result_folder, paste0('all.atlas.max.txt'),sep='/'), delim = "\t")
+}
 
-# readr::write_delim(all.atlas.max, path = paste(result_folder, paste0('all.atlas.max.txt'),sep='/'), delim = "\t")
+
+# 
 
 ###################################################################
 ## Step 4. Category
 ###################################################################
 
-all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
-                                                        max_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
-                                                        cat_column = "consensus_content_name",
-                                                        enrich.fold = 5,
-                                                        under.lim = 1,
-                                                        group.num = 6)
-write.table(all.atlas.category,
-            file=paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'),
-            row.names = F,
-            sep='\t',
-            quote=F)
+if(!file.exists(paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'))) {
+  all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
+                                                          max_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                                          cat_column = "consensus_content_name",
+                                                          enrich.fold = 5,
+                                                          under.lim = 1,
+                                                          group.num = 6)
+  readr::write_delim(all.atlas.category, path = paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'), delim = "\t")
+} else {
+  all.atlas.category <- readr::read_delim(paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'), delim = "\t")
+  } 
+
 
 # print number of different categories of genes
 table(all.atlas.category$category.text)
