@@ -355,6 +355,7 @@ ggsave(paste(result_folder, "settings elevated.png", sep = "/"), width = 8, heig
 readr::write_delim(atlas_categories, paste(result_folder, "atlas_categories_test.txt", sep = "/"), delim = "\t")
 
 
+
 atlas_categories %>%
   group_by(elevated.category, enrich_fold, under_lim, group_num) %>%
   summarise(number = length(express.category.2)) %>%
@@ -564,3 +565,228 @@ for(under_lim_setting in unique(atlas_categories$under_lim)) {
 
 
 
+=======
+
+###################################################################
+## Checking genes <1 for HPA
+###################################################################
+
+HPA_below_1 <-
+  all.atlas %>%
+  filter(expression < 1 & method == "HPA") %>%
+  select(ensg_id, content_name) %>%
+  unique() %>%
+  left_join(all.atlas, by = c("ensg_id", "content_name")) %>% 
+  left_join(all.atlas.category, by = "ensg_id") %>%
+  rename(X = 5, NX = 15) %>%
+  gather(key = "Type", value = "Value", X, NX) %>%
+  
+  mutate(Type = factor(Type, levels = c("X", "NX")),
+         #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+         label = paste(express.category.2, 
+                       elevated.category, sep = "\n"))
+genes_not_detected <- 
+  unique(HPA_below_1$ensg_id)
+
+for(i in seq(1, length(genes_not_detected), 5)) {
+  j <- i + 5
+  if(j > length(genes_not_detected)) j <- length(genes_not_detected)
+  HPA_below_1 %>%
+    filter(ensg_id %in% genes_not_detected[i:j]) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    geom_hline(yintercept = 1, color = "red", linetype = "dashed")+
+    geom_hline(yintercept = 2, color = NA)+
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    theme_bw() + 
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x = element_blank()) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  ggsave(paste(result_folder, paste0("X NZX bars genes ", i, "-", j, ".png"), sep = "/"), width = 40, height = 20, dpi = 300, units = "cm")
+  
+}
+
+all_atlas_cat <- 
+  all.atlas %>%
+  left_join(all.atlas.category, by = "ensg_id") %>%
+  rename(X = expression, TMM = dstmm.zero.expression, NGX = gene_dstmm.zero.impute.expression, NX = limma_gene_dstmm.zero.impute.expression) %>%
+  mutate(X_low = X < 1)
+
+
+
+genes_in_GTEXFANTOM <- 
+  all.atlas %>%
+  group_by(ensg_id) %>%
+  summarise(imp = any(is.na(expression))) %>%
+  filter(!imp)
+# 
+# all.atlas %>%
+#   filter(ensg_id %in% genes_not_in_GTEXFANTOM$ensg_id) %>%
+#   filter(expression < 1 & method == "HPA") %>%
+#   select(ensg_id, content_name) %>%
+#   unique() %>%
+#   left_join(all.atlas, by = c("ensg_id", "content_name")) %>% 
+#   left_join(all.atlas.category, by = "ensg_id") %>%
+#   rename(X = 5, NX = 15) %>%
+#   
+#   ggplot(aes(X + 1, NX + 1, color = method, group = method))+
+#   geom_hline(yintercept = 2, color = "red", linetype = "dashed")+
+#   geom_vline(xintercept = 2, color = "red", linetype = "dashed")+
+#   geom_point(alpha = 0.1)+
+#   
+#   simple_theme+
+#   theme(panel.grid.major = element_blank(), 
+#         panel.grid.minor = element_blank(), 
+#         axis.text.x = element_blank()) +
+#   scale_x_log10() + 
+#   scale_y_log10() + 
+#   scale_color_manual(values = dataset.colors)
+
+all_atlas_cat %>%
+  filter(ensg_id %in% genes_not_in_GTEXFANTOM) %>%
+  filter(X < 1 & method == "HPA") %>%
+  ggplot(aes(X, NX, color = method, group = method))+
+  geom_hline(yintercept = c(1, 2, 3), color = "red", linetype = "dashed")+
+  geom_vline(xintercept = 1, color = "red", linetype = "dashed")+
+  geom_point(alpha = 0.1)+
+  simple_theme+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.text.x = element_blank()) +
+  scale_x_log10() + 
+  scale_y_log10() + 
+  scale_color_manual(values = dataset.colors)
+
+genes_not_in_GTEXFANTOM <- 
+  all.atlas %>%
+  filter(method %in% c("FANTOM", "GTEx")) %>%
+  filter(is.na(expression)) %>%
+  group_by(ensg_id) %>%
+  summarise(n = length(unique(method))) %>%
+  filter(n == 2) %$% 
+  unique(ensg_id)
+
+top_values <- 
+  all_atlas_cat %>%
+  filter(ensg_id %in% genes_not_in_GTEXFANTOM) %>% 
+  filter(X < 1 & method == "HPA") %>% filter(NX>3) %$% 
+  ensg_id[order(NX, decreasing = T)]  %>% unique() #%>%
+  head(20)
+
+for( i in seq(1, length(top_values), 5)) {
+  j = i + 4
+  if(j > length(top_values)) j = length(top_values)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, TMM, NGX, NX)%>%
+    filter(ensg_id %in% top_values[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0(i, "-", j, " top TMM.png"), sep = "/"), width = 20, height = 10)
+  
+}
+
+randomgenes <- sample(unique(all.atlas$ensg_id), 100)
+  for( i in seq(1, length(randomgenes), 5)) {
+    j = i + 4
+    if(j > length(randomgenes)) j = length(randomgenes)
+    
+    all_atlas_cat  %>%
+      #filter(X < 1 & method == "HPA") %>% 
+      gather(key = "Type", value = "Value", X, TMM, NGX, NX)%>%
+      filter(ensg_id %in% randomgenes[i:j]) %>%
+      #filter(ensg_id == "ENSG00000276017") %>% View
+      mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+             #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+             label = paste(express.category.2, 
+                           elevated.category, sep = "\n")) %>%
+      ggplot(aes(content_name, Value, fill = method, group = method))+
+      geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+      geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+      geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+      #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+      
+      simple_theme+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      scale_fill_manual(values = dataset.colors)+
+      facet_grid(ensg_id ~ Type, scales = "free") 
+    
+    ggsave(paste(result_folder, paste0(i, "-", j, " random TMM.png"), sep = "/"), width = 20, height = 10)
+    
+  }
+
+
+AsaGener <- 
+  c("ENSG00000006016", "ENSG00000000419","ENSG00000006744","ENSG00000006757",
+  "ENSG00000007047","ENSG00000007520","ENSG00000008441","ENSG00000240747",
+  "ENSG00000124702","ENSG00000130695","ENSG00000078295","ENSG00000274897",
+  "ENSG00000233954","ENSG00000278599","ENSG00000260300","ENSG00000126266",
+  "ENSG00000160948")
+
+for( i in seq(1, length(AsaGener), 5)) {
+  j = i + 4
+  if(j > length(AsaGener)) j = length(AsaGener)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, TMM, NGX, NX)%>%
+    filter(ensg_id %in% AsaGener[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0(i, "-", j, " Åsa TMM.png"), sep = "/"), width = 20, height = 10)
+  
+}
+
+readr::write_delim(tibble(top_values), paste(result_folder, "Topgener.txt", sep = "/"), delim  = "\t")
+
+
+all.atlas %>%
+  filter(expression < 1 & method == "HPA") %>%
+  select(ensg_id, content_name) %>%
+  unique() %>%
+  left_join(all.atlas, by = c("ensg_id", "content_name")) %>% 
+  left_join(all.atlas.category, by = "ensg_id") %>%
+  rename(X = 5, NX = 15) %>%
+  
+  ggplot(aes(X + 1, NX + 1, fill = method, alpha = ..count..))+
+  geom_hline(yintercept = 2, color = "red", linetype = "dashed")+
+  geom_vline(xintercept = 2, color = "red", linetype = "dashed")+
+  geom_hex(bins = 100)+
+  
+  simple_theme+
+  scale_x_log10() + 
+  scale_y_log10() + 
+  scale_color_manual(values = dataset.colors)
