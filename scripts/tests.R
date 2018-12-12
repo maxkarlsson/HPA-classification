@@ -567,7 +567,7 @@ for(under_lim_setting in unique(atlas_categories$under_lim)) {
 
 =======
 
-###################################################################
+  ###################################################################
 ## Checking genes <1 for HPA
 ###################################################################
 
@@ -675,7 +675,7 @@ top_values <-
   filter(ensg_id %in% genes_not_in_GTEXFANTOM) %>% 
   filter(X < 1 & method == "HPA") %>% filter(NX>3) %$% 
   ensg_id[order(NX, decreasing = T)]  %>% unique() #%>%
-  head(20)
+head(20)
 
 for( i in seq(1, length(top_values), 5)) {
   j = i + 4
@@ -706,50 +706,14 @@ for( i in seq(1, length(top_values), 5)) {
 }
 
 randomgenes <- sample(unique(all.atlas$ensg_id), 100)
-  for( i in seq(1, length(randomgenes), 5)) {
-    j = i + 4
-    if(j > length(randomgenes)) j = length(randomgenes)
-    
-    all_atlas_cat  %>%
-      #filter(X < 1 & method == "HPA") %>% 
-      gather(key = "Type", value = "Value", X, TMM, NGX, NX)%>%
-      filter(ensg_id %in% randomgenes[i:j]) %>%
-      #filter(ensg_id == "ENSG00000276017") %>% View
-      mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
-             #tissue = factor(tissue, levels = unique(tissue[order(group)])),
-             label = paste(express.category.2, 
-                           elevated.category, sep = "\n")) %>%
-      ggplot(aes(content_name, Value, fill = method, group = method))+
-      geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
-      geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
-      geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
-      #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
-      
-      simple_theme+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-      scale_fill_manual(values = dataset.colors)+
-      facet_grid(ensg_id ~ Type, scales = "free") 
-    
-    ggsave(paste(result_folder, paste0(i, "-", j, " random TMM.png"), sep = "/"), width = 20, height = 10)
-    
-  }
-
-
-AsaGener <- 
-  c("ENSG00000006016", "ENSG00000000419","ENSG00000006744","ENSG00000006757",
-  "ENSG00000007047","ENSG00000007520","ENSG00000008441","ENSG00000240747",
-  "ENSG00000124702","ENSG00000130695","ENSG00000078295","ENSG00000274897",
-  "ENSG00000233954","ENSG00000278599","ENSG00000260300","ENSG00000126266",
-  "ENSG00000160948")
-
-for( i in seq(1, length(AsaGener), 5)) {
+for( i in seq(1, length(randomgenes), 5)) {
   j = i + 4
-  if(j > length(AsaGener)) j = length(AsaGener)
+  if(j > length(randomgenes)) j = length(randomgenes)
   
   all_atlas_cat  %>%
     #filter(X < 1 & method == "HPA") %>% 
     gather(key = "Type", value = "Value", X, TMM, NGX, NX)%>%
-    filter(ensg_id %in% AsaGener[i:j]) %>%
+    filter(ensg_id %in% randomgenes[i:j]) %>%
     #filter(ensg_id == "ENSG00000276017") %>% View
     mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
            #tissue = factor(tissue, levels = unique(tissue[order(group)])),
@@ -766,9 +730,98 @@ for( i in seq(1, length(AsaGener), 5)) {
     scale_fill_manual(values = dataset.colors)+
     facet_grid(ensg_id ~ Type, scales = "free") 
   
-  ggsave(paste(result_folder, paste0(i, "-", j, " Ã…sa TMM.png"), sep = "/"), width = 20, height = 10)
+  ggsave(paste(result_folder, paste0(i, "-", j, " random TMM.png"), sep = "/"), width = 20, height = 10)
   
 }
+
+
+AsaGener <- 
+  c("ENSG00000185686","ENSG00000006016", "ENSG00000000419","ENSG00000006744","ENSG00000006757",
+    "ENSG00000007047","ENSG00000007520","ENSG00000008441","ENSG00000240747",
+    "ENSG00000124702","ENSG00000130695","ENSG00000078295","ENSG00000274897",
+    "ENSG00000233954","ENSG00000278599","ENSG00000260300","ENSG00000126266",
+    "ENSG00000160948")
+
+for( i in seq(1, length(AsaGener), 5)) {
+  j = i + 4
+  if(j > length(AsaGener)) j = length(AsaGener)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, NX)%>%
+    filter(ensg_id %in% AsaGener[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0(i, "-", j, " Åsa TMM.png"), sep = "/"), width = 20, height = 10)
+  
+}
+
+essential_genes <- readr::read_delim("./doc/essential genes.txt", delim = "\t") %$% ENSG
+
+for( i in seq(1, length(essential_genes), 4)) {
+  j = i + 3
+  if(j > length(essential_genes)) j = length(essential_genes)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, NX)%>%
+    filter(ensg_id %in% essential_genes[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    
+    #geom_vline(xintercept = c(5), size = 5, alpha = 0.3, color = "pink")+
+    geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+    
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    annotate(geom = "rect", xmin=c(56, 71)-0.5,xmax=c(56, 71)+0.5,ymin=-Inf,ymax=Inf, alpha=0.1,fill="green")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0("essential genes", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
+  
+}
+
+for(meth in c("HPA", "GTEx", "FANTOM", "Blood")) {
+  all_atlas_cat %>%
+    filter(ensg_id %in% essential_genes) %>%
+    filter(method == meth) %>%
+    gather(key = "Type", value = "Value", X, NX)%>%
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX"))) %>%
+    ggplot(aes(content_name, Value + 1, fill = method, color = method))+
+    geom_violin(draw_quantiles = 0.5, alpha = 0.5)+
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    scale_color_manual(values = dataset.colors)+
+    facet_wrap( ~ Type, scales = "free", ncol = 1) +
+    scale_y_log10()
+  
+  ggsave(paste(result_folder, paste0("essential genes boxplot ", meth, ".png"), sep = "/"), width = 20, height = 10)
+}
+
 
 readr::write_delim(tibble(top_values), paste(result_folder, "Topgener.txt", sep = "/"), delim  = "\t")
 
