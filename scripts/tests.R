@@ -843,3 +843,62 @@ all.atlas %>%
   scale_x_log10() + 
   scale_y_log10() + 
   scale_color_manual(values = dataset.colors)
+
+
+
+
+#### Generate pdf with ALL genes
+
+genes <- unique(all_atlas_cat$ensg_id)
+
+pdf(paste(result_folder, "All genes bar.pdf", sep = "/"), width = 16, height = 8)
+
+pb <- timerProgressBar(min = 1, max = length(genes))
+on.exit(close(pb))
+
+
+p <- 
+  all_atlas_cat  %>%
+  gather(key = "Type", value = "Value", X, NX) %>%
+  mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+         #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+         label = paste(express.category.2, 
+                       elevated.category, sep = "\n")) %>%
+  {lapply(seq(1, length(genes), 3), length(genes),
+          FUN = function(i, jmax) {
+            setTimerProgressBar(pb, i)
+            j <- i + 2
+            if(j>jmax) j <- jmax
+            filter(., ensg_id %in% genes[i:j]) %>%
+              ggplot(aes(content_name, Value, fill = method, group = method))+
+              geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+              
+              geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+              annotate(geom = "rect", xmin=c(56, 71)-0.5,xmax=c(56, 71)+0.5,ymin=-Inf,ymax=Inf, alpha=0.1,fill="green")+
+              geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+              
+              simple_theme+
+              theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+              scale_fill_manual(values = dataset.colors)+
+              facet_grid(ensg_id ~ Type, scales = "free") 
+            }) 
+  } 
+
+print(p)
+
+
+dev.off()
+  
+for( i in seq(1, length(essential_genes), 4)) {
+  j = i + 3
+  if(j > length(essential_genes)) j = length(essential_genes)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, NX)%>%
+    
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    
+    
+  
+}
