@@ -1046,6 +1046,23 @@ for(meth in c("HPA", "GTEx", "FANTOM", "Blood")) {
   ggsave(paste(result_folder, paste0("essential genes boxplot ", meth, ".png"), sep = "/"), width = 20, height = 10)
 }
 
+for(meth in c("HPA", "GTEx", "FANTOM", "Blood")) {
+  all_atlas_cat %>%
+    filter(method == meth) %>%
+    gather(key = "Type", value = "Value", X, NX, TMM)%>%
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX"))) %>%
+    ggplot(aes(content_name, Value + 1, fill = method, color = method))+
+    geom_violin(draw_quantiles = 0.5, alpha = 0.5)+
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    scale_color_manual(values = dataset.colors)+
+    facet_wrap( ~ Type, scales = "free", ncol = 1) +
+    scale_y_log10()
+  
+  ggsave(paste(result_folder, paste0("all genes boxplot ", meth, ".png"), sep = "/"), width = 20, height = 10)
+}
+
 
 readr::write_delim(tibble(top_values), paste(result_folder, "Topgener.txt", sep = "/"), delim  = "\t")
 
@@ -1159,8 +1176,9 @@ plot.col <- with(tissue_colors, setNames(c(color, color, elevated.cat.cols), c(t
 plot.data %>%
   ungroup() %>%
   rename(from = tissue, to = tissue.HPA, sizes = n) %>%
+  filter(from != to) %>%
   chordDiagram(annotationTrack = "grid", 
-               preAllocateTracks = 1, 
+               preAllocateTracks = 1, directional = T,
                grid.col = c(plot.col[match(gsub(" 1", "", unique(c(.$from, .$to))), 
                                            names(plot.col))], "blood" = "dark red"))
 
