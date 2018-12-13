@@ -354,6 +354,8 @@ ggsave(paste(result_folder, "settings elevated.png", sep = "/"), width = 8, heig
 
 readr::write_delim(atlas_categories, paste(result_folder, "atlas_categories_test.txt", sep = "/"), delim = "\t")
 
+# If file exists: 
+atlas_categories <- readr::read_delim("./results/atlas_categories_test.txt", delim = "\t")
 
 
 atlas_categories %>%
@@ -565,9 +567,231 @@ for(under_lim_setting in unique(atlas_categories$under_lim)) {
 
 
 
-=======
+#-------- Demonstrate the differences with different settings ------
 
-  ###################################################################
+atlas_categories <- readr::read_delim("./results/atlas_categories_test.txt", delim = "\t")
+
+all.atlas.category.4 <- 
+  atlas_categories %>%
+  filter(., under_lim == 3 & enrich_fold == 4)
+
+all.atlas.category.5 <- 
+  atlas_categories %>%
+  filter(., under_lim == 3 & enrich_fold == 5)
+
+
+make_swarm_expression_plot(atlas.max = all.atlas.max, 
+                           atlas.cat = all.atlas.category.4, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name",
+                           outpath = result_folder,
+                           prefix = 'all_tissues fold 4')
+
+make_swarm_expression_plot(atlas.max = all.atlas.max, 
+                           atlas.cat = all.atlas.category.5, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name",
+                           outpath = result_folder,
+                           prefix = 'all_tissues fold 5')
+
+
+make_swarm_expression_plot(atlas.max = filter(all.atlas.max, 
+                                              ensg_id %in% filter(all.atlas.category.4, 
+                                                                  elevated.category == "tissue enriched")$ensg_id), 
+                           atlas.cat = all.atlas.category.4, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name",
+                           outpath = result_folder,
+                           prefix = 'all_tissues fold 4 only tissue enriched')
+
+make_swarm_expression_plot(atlas.max = filter(all.atlas.max, 
+                                              ensg_id %in% filter(all.atlas.category.5, 
+                                                                  elevated.category == "tissue enriched")$ensg_id), 
+                           atlas.cat = all.atlas.category.5, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name",
+                           outpath = result_folder,
+                           prefix = 'all_tissues fold 5 only tissue enriched')
+
+make_swarm_expression_plot_difference <- function(atlas.max, atlas.cat1, atlas.cat2, maxEx_column, tissue_column, outpath, prefix, label.all = F) {
+  genes <- 
+    left_join(atlas.cat1, atlas.cat2, by = "ensg_id", suffix = c(".4", ".5")) %>%
+    filter(elevated.category.4 == "tissue enriched" & elevated.category.5 != "tissue enriched") %$% ensg_id
+  
+  plot.data <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(expression = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = tissue_column))) %>%
+    dplyr::select(Grouping, ensg_id, expression) %>%
+    #Plot 1 % highest
+    filter(ensg_id %in% genes) %>%
+    group_by(Grouping) %>%
+    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+    mutate(highest = expression >= quantile(expression, probs = 0.99)) %>%
+    ungroup() %>%
+    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+           highest = ifelse(rep(label.all, length(highest)), T, highest)) %>%
+    left_join(dplyr::select(atlas.cat1, ensg_id, `enriched tissues`, express.category.2, elevated.category), by = "ensg_id") %>%
+    filter(`enriched tissues` == Grouping) %>%
+    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  pdf(file = paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10, useDingbats = F)
+  print(
+    plot.data %>%
+    {ggplot(., aes(Grouping, expression, label = gene_name, color = elevated.category)) +
+        geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+        geom_text_repel(data = .[.$highest,], size = 1.5)+
+        simple_theme+
+        scale_color_manual(values = elevated.cat.cols)+
+        scale_y_log10()+
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
+  dev.off()
+  
+  pdf(file = paste(outpath, paste0(prefix, '_high_abundance_jitter_2.pdf'),sep='/'), width=15, height=10, useDingbats = F)
+  print(
+    plot.data %>%
+    {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+        geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+        geom_text_repel(data = .[.$highest,], size = 1.5)+
+        simple_theme+
+        scale_color_manual(values = protein.class.palette)+
+        scale_y_log10()+
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
+  dev.off()
+}
+
+make_swarm_expression_plot_difference(atlas.max = all.atlas.max,
+                                      atlas.cat1 = all.atlas.category.4, 
+                                      atlas.cat2 = all.atlas.category.5,
+                                      maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                      tissue_column = "consensus_content_name",
+                                      outpath = result_folder,
+                                      prefix = 'all_tissues fold 4 to 5 only tissue enriched all', label.all = T)
+
+left_join(all.atlas.category.4, all.atlas.category.5, by = "ensg_id", suffix = c(".4", ".5")) %>%
+  filter(elevated.category.4 == "tissue enriched" & elevated.category.5 != "tissue enriched", 
+         elevated.category.4 == "tissue enriched" & elevated.category.5 != "tissue enriched", 
+         elevated.category.4 == "tissue enriched" & elevated.category.5 != "tissue enriched")
+
+
+plot_classification_chord <- function(cat1, cat2, savename = "") {
+  png(paste(result_folder, paste0("chord not norm vs norm.png ", savename, ".png"), sep = "/"), width = 12, height = 12, units = "in", res = 300)
+  unique_categories <- unique(c(cat1$category.text, cat2$category.text))
+  plot.colors <- cat.cols[which(names(cat.cols) %in% unique_categories)]
+  
+  left_join(cat1, cat2, by = "ensg_id") %>%
+    group_by(category.x, category.text.x, category.y, category.text.y) %>%
+    summarise(number = length(category.x)) %>%
+    ungroup() %>%
+    mutate(category.text.x = paste("from", category.text.x),
+           category.text.y = paste("to", category.text.y)) %$%
+    chord_classification(from = category.text.x, 
+                         to = category.text.y, 
+                         sizes = number,
+                         grid.col = c(setNames(plot.colors, paste("from", names(plot.colors))), setNames(plot.colors, paste("to", names(plot.colors)))),
+                         groups = c(rep(1, length(plot.colors)),
+                                    rep(2, length(plot.colors))), 
+                         plot.order = c(paste("from", names(plot.colors)),
+                                        rev(paste("to", names(plot.colors)))))
+  
+  dev.off()
+}
+
+plot_express_elevated_classification_chord <- function(cat1, cat2, savename = "") {
+  png(paste(result_folder, paste0("chord vs expressed ", savename, ".png"), sep = "/"), width = 12, height = 12, units = "in", res = 300)
+  plot.data <- 
+    left_join(cat1, cat2, by = "ensg_id") %>%
+    group_by(express.category.2.x, express.category.2.y) %>%
+    summarise(number = length(express.category.2.x)) %>%
+    ungroup() %>%
+    mutate(express.category.2.text.x = paste("from", express.category.2.x),
+           express.category.2.text.y = paste("to", express.category.2.y)) 
+  
+  plot.colors <- c(setNames(expressed.cat.cols, paste("from", names(expressed.cat.cols))),
+                   setNames(expressed.cat.cols, paste("to", names(expressed.cat.cols))))
+  
+  plot.groups <- c(rep(1, length(expressed.cat.cols)),
+                   rep(2, length(expressed.cat.cols)))
+  
+  plot.order <- c(paste("from", names(expressed.cat.cols)),
+                  rev(paste("to", names(expressed.cat.cols))))
+  
+  plot.data %$%
+    chord_classification(from = express.category.2.text.x, 
+                         to = express.category.2.text.y, 
+                         sizes = number,
+                         grid.col = plot.colors,
+                         groups = plot.groups, 
+                         plot.order = plot.order)
+  
+  dev.off()
+  
+  png(paste(result_folder, paste0("chord vs elevated ", savename, ".png"), sep = "/"), width = 12, height = 12, units = "in", res = 300)
+  plot.data <- 
+    left_join(cat1, cat2, by = "ensg_id") %>%
+    group_by(elevated.category.x, elevated.category.y) %>%
+    summarise(number = length(elevated.category.x)) %>%
+    ungroup() %>%
+    mutate(elevated.category.text.x = paste("from", elevated.category.x),
+           elevated.category.text.y = paste("to", elevated.category.y)) 
+  
+  
+  cats <- c('tissue enriched', 'group enriched', 'tissue enhanced', 'low tissue specificity', 'not detected')
+  cats.cols <- elevated.cat.cols[match(cats, names(elevated.cat.cols))]
+  plot.colors <- c(setNames(cats.cols, paste("from", cats)),
+                   setNames(cats.cols, paste("to", cats)))
+  
+  
+  
+  plot.groups <- c(rep(1, length(cats)),
+                   rep(2, length(cats)))
+  
+  plot.order <- c(paste("from", cats),
+                  rev(paste("to", cats)))
+  
+  plot.data %$%
+    chord_classification(from = elevated.category.text.x, 
+                         to = elevated.category.text.y, 
+                         sizes = number,
+                         grid.col = plot.colors,
+                         groups = plot.groups, 
+                         plot.order = plot.order)
+  
+  dev.off()
+}
+
+plot_classification_chord(all.atlas.category.5, all.atlas.category.4, savename = "fold 4 vs fold 4")
+
+plot_express_elevated_classification_chord(all.atlas.category.5, all.atlas.category.4, savename = "fold 4 vs fold 4")
+
+
+all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
+                                    group_column='consensus_content_name', 
+                                    max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+
+all.atlas.max.wide %>%
+  calc_elevated.table(atlas.categories = all.atlas.category.4) %>%
+  apply(2, FUN = function(x) table(factor(x, levels = c(1,1.5,2,3,4,5,6)))) %>%
+  t() %>%
+  set_colnames(setNames(c("Not detected in this tissue","Not detected in any tissues","Tissue enriched",
+                          "Group enriched","Tissue enhanced","Mixed in this tissue","Expressed in all tissues"), 
+                        c(1, 1.5, 2, 3, 4, 5, 6))) %>%
+  make_elevated_bar_plot(outpath = result_folder,
+                         prefix = 'all_tissues fold 4')
+
+all.atlas.max.wide %>%
+  calc_elevated.table(atlas.categories = all.atlas.category.5) %>%
+  apply(2, FUN = function(x) table(factor(x, levels = c(1,1.5,2,3,4,5,6)))) %>%
+  t() %>%
+  set_colnames(setNames(c("Not detected in this tissue","Not detected in any tissues","Tissue enriched",
+                          "Group enriched","Tissue enhanced","Mixed in this tissue","Expressed in all tissues"), 
+                        c(1, 1.5, 2, 3, 4, 5, 6))) %>%
+  make_elevated_bar_plot(outpath = result_folder,
+                         prefix = 'all_tissues fold 5')
+###################################################################
 ## Checking genes <1 for HPA
 ###################################################################
 
@@ -808,7 +1032,7 @@ for(meth in c("HPA", "GTEx", "FANTOM", "Blood")) {
   all_atlas_cat %>%
     filter(ensg_id %in% essential_genes) %>%
     filter(method == meth) %>%
-    gather(key = "Type", value = "Value", X, NX)%>%
+    gather(key = "Type", value = "Value", X, NX, TMM)%>%
     mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX"))) %>%
     ggplot(aes(content_name, Value + 1, fill = method, color = method))+
     geom_violin(draw_quantiles = 0.5, alpha = 0.5)+
@@ -888,17 +1112,62 @@ print(p)
 
 
 dev.off()
-  
-for( i in seq(1, length(essential_genes), 4)) {
-  j = i + 3
-  if(j > length(essential_genes)) j = length(essential_genes)
-  
-  all_atlas_cat  %>%
-    #filter(X < 1 & method == "HPA") %>% 
-    gather(key = "Type", value = "Value", X, NX)%>%
-    
-    #filter(ensg_id == "ENSG00000276017") %>% View
-    
-    
-  
-}
+
+################################################################
+# Plots for checking transfer of categories
+################################################################
+
+
+
+
+# Create classification based on only HPA
+tissue_colors <- readr::read_delim("ref/colors_92.tsv", delim = "\t")
+
+all.atlas.max.HPA <-
+  all.atlas %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
+  # Keep only HPA
+  filter(method == "HPA") %>%
+  group_by(consensus_content_name, ensg_id) %>% 
+  mutate(method = as.character(method)) %>%
+  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
+                                   method = get_method(method, ., max(., na.rm = T))),
+                      .vars = grep("expression$", colnames(.), value = T)) 
+# 
+
+## Step 4. Category
+all.atlas.category.HPA <- 
+  get.categories.with.num.expressed(all.atlas.max.HPA,
+                                    max_column = "expression_maxEx",
+                                    cat_column = "consensus_content_name",
+                                    enrich.fold = 5,
+                                    under.lim = 1,
+                                    group.num = 6)
+
+
+plot.data <- 
+  all.atlas.category %>%
+  left_join(all.atlas.category.HPA, by = "ensg_id", suffix = c("", ".HPA")) %>%
+  filter(elevated.category == "tissue enriched" | elevated.category.HPA == "tissue enriched") %>%
+  mutate(tissue = ifelse(elevated.category == "tissue enriched", `enriched tissues`, elevated.category),
+         tissue.HPA = ifelse(elevated.category.HPA == "tissue enriched", `enriched tissues.HPA`, elevated.category.HPA)) %>%
+  group_by(tissue, tissue.HPA) %>%
+  summarise(n = length(tissue)) 
+
+plot.col <- with(tissue_colors, setNames(c(color, color, elevated.cat.cols), c(tissue_name, organ_name, names(elevated.cat.cols))))
+plot.data %>%
+  ungroup() %>%
+  rename(from = tissue, to = tissue.HPA, sizes = n) %>%
+  chordDiagram(annotationTrack = "grid", 
+               preAllocateTracks = 1, 
+               grid.col = c(plot.col[match(gsub(" 1", "", unique(c(.$from, .$to))), 
+                                           names(plot.col))], "blood" = "dark red"))
+
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, cex=0.6,adj = c(0, 0.3))
+  #  circos.axis(h = "top", labels.cex = 0.5, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)

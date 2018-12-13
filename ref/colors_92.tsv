@@ -1,0 +1,171 @@
+tissue_name	organ_name	color	type
+memory B-cell	B-cells	#66287F	bloodcells
+naive B-cell	B-cells	#66287F	bloodcells
+myeloid DC	dendritic cells	#199985	bloodcells
+plasmacytoid DC	dendritic cells	#199985	bloodcells
+basophil	granulocytes	#F39B7F	bloodcells
+eosinophil	granulocytes	#F39B7F	bloodcells
+neutrophil	granulocytes	#F39B7F	bloodcells
+classical monocyte	monocytes	#E64B35	bloodcells
+intermediate monocyte	monocytes	#E64B35	bloodcells
+non-classical monocyte	monocytes	#E64B35	bloodcells
+NK-cell	NK-cells	#AD1D78	bloodcells
+gdTCR	T-cells	#7D8DAF	bloodcells
+MAIT T-cell	T-cells	#7D8DAF	bloodcells
+memory CD4 T-cell	T-cells	#7D8DAF	bloodcells
+memory CD8 T-cell	T-cells	#7D8DAF	bloodcells
+naive CD4 T-cell	T-cells	#7D8DAF	bloodcells
+naive CD8 T-cell	T-cells	#7D8DAF	bloodcells
+T-reg	T-cells	#7D8DAF	bloodcells
+total PBMC	total PBMC	#7E6148	bloodcells
+amygdala	amygdala	#82B579	brain
+caudate	basal ganglia	#53C2EA	brain
+caudate putamen	basal ganglia	#53C2EA	brain
+putamen	basal ganglia	#53C2EA	brain
+septum	basal ganglia	#53C2EA	brain
+ventral forebrain	basal ganglia	#53C2EA	brain
+ventral pallidum	basal ganglia	#53C2EA	brain
+cerebellum	cerebellum	#FDCA43	brain
+cingulate cortex	cerebral cortex	#53977F	brain
+insular cortex	cerebral cortex	#53977F	brain
+motor cortex	cerebral cortex	#53977F	brain
+occipital cortex	cerebral cortex	#53977F	brain
+prefrontal cortex	cerebral cortex	#53977F	brain
+retrosplenial cortex	cerebral cortex	#53977F	brain
+somatosensory cortex	cerebral cortex	#53977F	brain
+temporal cortex	cerebral cortex	#53977F	brain
+visual cortex	cerebral cortex	#53977F	brain
+choroid plexus	choroid plexus	#A8DFF4	brain
+corpus callosum	corpus callosum	#878786	brain
+dura mater	dura mater	#DD6A7E	brain
+cornea	Eye	#FFEF78	brain
+lens	Eye	#FFEF78	brain
+dorsal hippocampus 	hippocampal formation	#B4CE52	brain
+entorhinal cortex	hippocampal formation	#B4CE52	brain
+entrorhinal cortex	hippocampal formation	#B4CE52	brain
+hippocampal formation	hippocampal formation	#B4CE52	brain
+subiculum	hippocampal formation	#B4CE52	brain
+ventral hippocampus 	hippocampal formation	#B4CE52	brain
+hypothalamus	hypothalamus	#E6351D	brain
+midbrain	midbrain	#B67AB3	brain
+periaqueductal gray	midbrain	#B67AB3	brain
+substantia nigra	midbrain	#B67AB3	brain
+olfactory bulb	olfactory region	#99D0C1	brain
+pineal gland	pineal gland	#A96A59	brain
+pituitary gland	pitutiary	#6B548B	brain
+Medulla	pons and medulla	#EA5699	brain
+pons	pons and medulla	#EA5699	brain
+pons and medulla	pons and medulla	#EA5699	brain
+retina	retina	#F9F19A	brain
+dorsal spinal cord	spinal cord	#008BCC	brain
+spinal cord	spinal cord	#008BCC	brain
+ventral spinal cord	spinal cord	#008BCC	brain
+thalamus	thalamus	#EA9586	brain
+adipose tissue	Adipose & soft tissue	#A7DACD	tissue
+cartilage	Adipose & soft tissue	#A7DACD	tissue
+soft tissue	Adipose & soft tissue	#A7DACD	tissue
+appendix	Bone marrow & immune system	#A1A8AA	tissue
+bone marrow	Bone marrow & immune system	#A1A8AA	tissue
+lymph node	Bone marrow & immune system	#A1A8AA	tissue
+lymphoid system	Bone marrow & immune system	#A1A8AA	tissue
+spleen	Bone marrow & immune system	#A1A8AA	tissue
+thymus	Bone marrow & immune system	#A1A8AA	tissue
+tonsil	Bone marrow & immune system	#A1A8AA	tissue
+amygdala	Brain	#6BA792	tissue
+anterior cingulate cortex	Brain	#6BA792	tissue
+brain	Brain	#6BA792	tissue
+caudate	Brain	#6BA792	tissue
+caudate putamen	Brain	#6BA792	tissue
+cerebellum	Brain	#6BA792	tissue
+cerebral cortex	Brain	#6BA792	tissue
+choroid plexus	Brain	#6BA792	tissue
+corpus callosum	Brain	#6BA792	tissue
+dorsal raphe	Brain	#6BA792	tissue
+dura mater	Brain	#6BA792	tissue
+entorhinal cortex	Brain	#6BA792	tissue
+frontal lobe	Brain	#6BA792	tissue
+globus pallidus	Brain	#6BA792	tissue
+hippocampal formation	Brain	#6BA792	tissue
+hippocampus	Brain	#6BA792	tissue
+hypothalamus	Brain	#6BA792	tissue
+insular cortex	Brain	#6BA792	tissue
+locus coeruleus	Brain	#6BA792	tissue
+medial frontal gyrus	Brain	#6BA792	tissue
+medial temporal gyrus	Brain	#6BA792	tissue
+medulla oblongata	Brain	#6BA792	tissue
+midbrain	Brain	#6BA792	tissue
+nucleus accumbens	Brain	#6BA792	tissue
+occipital cortex	Brain	#6BA792	tissue
+occipital lobe	Brain	#6BA792	tissue
+occipital pole	Brain	#6BA792	tissue
+olfactory bulb	Brain	#6BA792	tissue
+olfactory region	Brain	#6BA792	tissue
+paracentral gyrus	Brain	#6BA792	tissue
+parietal lobe	Brain	#6BA792	tissue
+pineal gland	Brain	#6BA792	tissue
+pituitary gland	Brain	#6BA792	tissue
+pons	Brain	#6BA792	tissue
+pons and medulla	Brain	#6BA792	tissue
+postcentral gyrus	Brain	#6BA792	tissue
+prefrontal cortex	Brain	#6BA792	tissue
+putamen	Brain	#6BA792	tissue
+retrosplenial cortex	Brain	#6BA792	tissue
+septum	Brain	#6BA792	tissue
+somatosensory cortex	Brain	#6BA792	tissue
+spinal cord	Brain	#6BA792	tissue
+substantia nigra	Brain	#6BA792	tissue
+temporal cortex	Brain	#6BA792	tissue
+thalamus	Brain	#6BA792	tissue
+ventral forebrain	Brain	#6BA792	tissue
+visual cortex	Brain	#6BA792	tissue
+breast	Breast and female reproductive system	#F8BDD7	tissue
+cervix, uterine	Breast and female reproductive system	#F8BDD7	tissue
+endometrium	Breast and female reproductive system	#F8BDD7	tissue
+fallopian tube	Breast and female reproductive system	#F8BDD7	tissue
+lactating breast	Breast and female reproductive system	#F8BDD7	tissue
+ovary	Breast and female reproductive system	#F8BDD7	tissue
+placenta	Breast and female reproductive system	#F8BDD7	tissue
+vagina	Breast and female reproductive system	#F8BDD7	tissue
+adrenal gland	Endocrine tissues	#7F6A9C	tissue
+parathyroid gland	Endocrine tissues	#7F6A9C	tissue
+thyroid gland	Endocrine tissues	#7F6A9C	tissue
+eye	Eye	#FFEF78	tissue
+retina	Eye	#FFEF78	tissue
+colon	Gastrointestinal tract	#1280C4	tissue
+duodenum	Gastrointestinal tract	#1280C4	tissue
+intestine	Gastrointestinal tract	#1280C4	tissue
+rectum	Gastrointestinal tract	#1280C4	tissue
+small intestine	Gastrointestinal tract	#1280C4	tissue
+stomach	Gastrointestinal tract	#1280C4	tissue
+colon	intestine	#1280C4	tissue
+duodenum	intestine	#1280C4	tissue
+rectum	intestine	#1280C4	tissue
+small intestine	intestine	#1280C4	tissue
+kidney	Kidney & urinary bladder	#F9A266	tissue
+urinary bladder	Kidney & urinary bladder	#F9A266	tissue
+gallbladder	Liver & gallbladder	#D1CBE5	tissue
+liver	Liver & gallbladder	#D1CBE5	tissue
+appendix	lymphoid system	#A1A8AA	tissue
+lymph node	lymphoid system	#A1A8AA	tissue
+spleen	lymphoid system	#A1A8AA	tissue
+thymus	lymphoid system	#A1A8AA	tissue
+tonsil	lymphoid system	#A1A8AA	tissue
+ductus deferens	Male reproductive system	#95D4F5	tissue
+epididymis	Male reproductive system	#95D4F5	tissue
+prostate	Male reproductive system	#95D4F5	tissue
+seminal vesicle	Male reproductive system	#95D4F5	tissue
+testis	Male reproductive system	#95D4F5	tissue
+esophagus	mouth	#FBDAD9	tissue
+oral mucosa	mouth	#FBDAD9	tissue
+salivary gland	mouth	#FBDAD9	tissue
+tongue	mouth	#FBDAD9	tissue
+heart muscle	Muscle tissues	#DE6C7D	tissue
+skeletal muscle	Muscle tissues	#DE6C7D	tissue
+smooth muscle	Muscle tissues	#DE6C7D	tissue
+pancreas	Pancreas	#96C08E	tissue
+bronchus	Respiratory system	#FFD480	tissue
+lung	Respiratory system	#FFD480	tissue
+nasopharynx	Respiratory system	#FFD480	tissue
+hair	Skin	#FCCAB3	tissue
+skin	Skin	#FCCAB3	tissue
+sole of foot	Skin	#FCCAB3	tissue
