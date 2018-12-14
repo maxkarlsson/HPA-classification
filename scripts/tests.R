@@ -676,6 +676,11 @@ left_join(all.atlas.category.4, all.atlas.category.5, by = "ensg_id", suffix = c
          elevated.category.4 == "tissue enriched" & elevated.category.5 != "tissue enriched", 
          elevated.category.4 == "tissue enriched" & elevated.category.5 != "tissue enriched")
 
+left_join(all.atlas.category.4, all.atlas.category.5, by = "ensg_id", suffix = c(".4", ".5")) %>%
+  filter(elevated.category.4 != elevated.category.5) %>%
+  select(-(2:6), -(8:13), -(16:24), -(26:31), -(34:36)) %>%
+  readr::write_delim(paste(result_folder, "Genes with different class in fold 4 vs 5.txt", sep = "/"), delim = "\t")
+
 
 plot_classification_chord <- function(cat1, cat2, savename = "") {
   png(paste(result_folder, paste0("chord not norm vs norm.png ", savename, ".png"), sep = "/"), width = 12, height = 12, units = "in", res = 300)
