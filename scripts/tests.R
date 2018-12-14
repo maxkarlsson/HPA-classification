@@ -1046,23 +1046,6 @@ for(meth in c("HPA", "GTEx", "FANTOM", "Blood")) {
   ggsave(paste(result_folder, paste0("essential genes boxplot ", meth, ".png"), sep = "/"), width = 20, height = 10)
 }
 
-for(meth in c("HPA", "GTEx", "FANTOM", "Blood")) {
-  all_atlas_cat %>%
-    filter(method == meth) %>%
-    gather(key = "Type", value = "Value", X, NX, TMM)%>%
-    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX"))) %>%
-    ggplot(aes(content_name, Value + 1, fill = method, color = method))+
-    geom_violin(draw_quantiles = 0.5, alpha = 0.5)+
-    simple_theme+
-    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
-    scale_fill_manual(values = dataset.colors)+
-    scale_color_manual(values = dataset.colors)+
-    facet_wrap( ~ Type, scales = "free", ncol = 1) +
-    scale_y_log10()
-  
-  ggsave(paste(result_folder, paste0("all genes boxplot ", meth, ".png"), sep = "/"), width = 20, height = 10)
-}
-
 
 readr::write_delim(tibble(top_values), paste(result_folder, "Topgener.txt", sep = "/"), delim  = "\t")
 
@@ -1086,8 +1069,12 @@ all.atlas %>%
   scale_color_manual(values = dataset.colors)
 
 
-
-
+AsaGener <- 
+  c("ENSG00000185686","ENSG00000006016", "ENSG00000000419","ENSG00000006744","ENSG00000006757",
+    "ENSG00000007047","ENSG00000007520","ENSG00000008441","ENSG00000240747",
+    "ENSG00000124702","ENSG00000130695","ENSG00000078295","ENSG00000274897",
+    "ENSG00000233954","ENSG00000278599","ENSG00000260300","ENSG00000126266",
+    "ENSG00000160948")
 #### Generate pdf with ALL genes
 
 genes <- unique(all_atlas_cat$ensg_id)
@@ -1130,15 +1117,145 @@ print(p)
 
 dev.off()
 
+
+#### Generate pdf with ÅSA genes
+
+pdf(paste(result_folder, "Åsa genes bar.pdf", sep = "/"), width = 32, height = 8)
+
+pb <- timerProgressBar(min = 1, max = length(AsaGener))
+on.exit(close(pb))
+
+
+p <- 
+  all_atlas_cat  %>%
+  gather(key = "Type", value = "Value", X, NX, TMM) %>%
+  mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX")),
+         #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+         label = paste(express.category.2, 
+                       elevated.category, sep = "\n")) %>%
+                       {lapply(seq(1, length(AsaGener), 3), length(AsaGener),
+                               FUN = function(i, jmax) {
+                                 setTimerProgressBar(pb, i)
+                                 j <- i + 2
+                                 if(j>jmax) j <- jmax
+                                 filter(., ensg_id %in% AsaGener[i:j]) %>%
+                                   ggplot(aes(content_name, Value, fill = method, group = method))+
+                                   geom_hline(yintercept = 1:4, color = "red", linetype = "dashed")+
+                                   
+                                   geom_bar(stat = "identity", show.legend = F, size = 1, color = "black", position = "dodge")+
+                                   annotate(geom = "rect", xmin=c(56, 71)-0.5,xmax=c(56, 71)+0.5,ymin=-Inf,ymax=Inf, alpha=0.1,fill="green")+
+                                   geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+                                   
+                                   simple_theme+
+                                   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+                                   scale_fill_manual(values = dataset.colors)+
+                                   facet_grid(ensg_id ~ Type, scales = "free") 
+                               }) 
+                       } 
+
+print(p)
+
+
+dev.off()
+
+
+
+##----- generate ÅSA layout pdf
+tissue_colors <- readr::read_delim("ref/colors_92.tsv", delim = "\t")
+
+
+print_gene_bar_pdf <- function(genes, savename) {
+  
+  pdf(paste(result_folder, savename, sep = "/"), width = 32, height = 8)
+  plot.col <- with(tissue_colors, setNames(c(color, color, elevated.cat.cols), c(tissue_name, organ_name, names(elevated.cat.cols))))
+  
+  pb <- timerProgressBar(min = 1, max = length(genes))
+  on.exit(close(pb))
+  
+  plot.data <- 
+    all_atlas_cat  %>%
+    filter(!imputed) %>%
+    filter(method != "Blood") %>%
+    
+    gather(key = "Type", value = "Value", X, NX, TMM) %>%
+    select(consensus_content_name, content_name, ensg_id, method, Type, Value, express.category.2, elevated.category) %>%
+    
+    rbind(left_join(all_atlas_cat  %>%
+                      filter(!imputed) %>%
+                      filter(method != "Blood") %>%
+                      select(consensus_content_name, content_name, ensg_id, express.category.2, elevated.category),
+                    all.atlas.max %>% 
+                      select(consensus_content_name, ensg_id, 
+                             expression_maxEx, 
+                             dstmm.zero.expression_maxEx,
+                             limma_gene_dstmm.zero.impute.expression_maxEx) %>% 
+                      
+                      rename(X = expression_maxEx,
+                             TMM = dstmm.zero.expression_maxEx,
+                             NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+                      
+                      mutate(method = "consensus"), 
+                    by = c("ensg_id", "consensus_content_name")) %>%
+            
+            gather(key = "Type", value = "Value", X, NX, TMM)) %>%
+    
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX", "consensus")),
+           content_name = factor(content_name, 
+                                 levels = select(., content_name, consensus_content_name) %>% 
+                                   unique() %$% content_name[order(consensus_content_name)]),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n"),
+           label = ifelse(Type == "X" & method == "HPA", label, NA)#,consensus_Value = ifelse(Type == "NX", consensus_Value, NA)
+    ) 
+  
+  p <- 
+    plot.data %>%
+    {lapply(1:length(genes),
+            FUN = function(i) {
+              setTimerProgressBar(pb, i)
+              filter(., ensg_id %in% genes[i]) %>%
+                ggplot(aes(content_name, Value, fill = consensus_content_name))+
+                geom_hline(yintercept = 1:3, color = "red", linetype = "dashed")+
+                
+                geom_bar(stat = "identity", show.legend = F, size = 0.5, color = "black", position = "dodge")+
+                
+                geom_text(aes(5, 1, label = label), vjust = -1, hjust = 0, size = 5)+
+                ggtitle(genes[i])+
+                simple_theme+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8),
+                      strip.text.x = element_text(size = 15),
+                      strip.text.y = element_text(size = 15)) +
+                scale_fill_manual(values = plot.col)+#dataset.colors)+
+                facet_grid(method ~ Type)  
+            })} 
+  
+  pb <- timerProgressBar(min = 1, max = length(genes))
+  on.exit(close(pb))
+  
+  for(i in 1:length(genes)){
+    setTimerProgressBar(pb, i)
+    print(p[[i]])
+  }
+  
+  
+  
+  dev.off()
+}
+
+
+
+print_gene_bar_pdf(AsaGener, "Åsas gener.pdf")
+genes <- unique(all_atlas_cat$ensg_id)
+print_gene_bar_pdf(genes, "Alla gener.pdf")
+
+
 ################################################################
 # Plots for checking transfer of categories
 ################################################################
 
 
 
-
 # Create classification based on only HPA
-tissue_colors <- readr::read_delim("ref/colors_92.tsv", delim = "\t")
 
 all.atlas.max.HPA <-
   all.atlas %>%
@@ -1176,9 +1293,8 @@ plot.col <- with(tissue_colors, setNames(c(color, color, elevated.cat.cols), c(t
 plot.data %>%
   ungroup() %>%
   rename(from = tissue, to = tissue.HPA, sizes = n) %>%
-  filter(from != to) %>%
   chordDiagram(annotationTrack = "grid", 
-               preAllocateTracks = 1, directional = T,
+               preAllocateTracks = 1, 
                grid.col = c(plot.col[match(gsub(" 1", "", unique(c(.$from, .$to))), 
                                            names(plot.col))], "blood" = "dark red"))
 
