@@ -213,7 +213,7 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
                                                                         tissue.method, lims_id,
                                                                         filtered.methods = "Blood"))  %>%
     # Scale so that under limit is 1
-    mutate_at(.funs = funs(. / under_limit(., expression, method)), 
+    mutate_at(.funs = funs(. / (under_limit(., expression, method) * 3)), 
               .vars = grep(".expression$", colnames(.), value = T)) 
   
   # Remove PBMCs

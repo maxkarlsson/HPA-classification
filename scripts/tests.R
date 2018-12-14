@@ -791,6 +791,156 @@ all.atlas.max.wide %>%
                         c(1, 1.5, 2, 3, 4, 5, 6))) %>%
   make_elevated_bar_plot(outpath = result_folder,
                          prefix = 'all_tissues fold 5')
+
+
+#-------- Analyze squeeze level between normalized and not normalized for cutoff = 3 ------
+
+print_gene_bar_pdf <- function(genes, savename) {
+  
+  pdf(paste(result_folder, savename, sep = "/"), width = 32, height = 8)
+  plot.col <- with(tissue_colors, setNames(c(color, color, elevated.cat.cols), c(tissue_name, organ_name, names(elevated.cat.cols))))
+  
+  pb <- timerProgressBar(min = 1, max = length(genes))
+  on.exit(close(pb))
+  
+  plot.data <- 
+    all_atlas_cat  %>%
+    filter(ensg_id %in% genes) %>%
+    filter(!imputed) %>%
+    filter(method != "Blood") %>%
+    
+    gather(key = "Type", value = "Value", X, NX, TMM) %>%
+    select(consensus_content_name, content_name, ensg_id, method, Type, Value, express.category.2, elevated.category) %>%
+    
+    rbind(left_join(all_atlas_cat  %>%
+                      filter(ensg_id %in% genes) %>%
+                      filter(!imputed) %>%
+                      filter(method != "Blood") %>%
+                      select(consensus_content_name, content_name, ensg_id, express.category.2, elevated.category),
+                    all.atlas.max %>% 
+                      select(consensus_content_name, ensg_id, 
+                             expression_maxEx, 
+                             dstmm.zero.expression_maxEx,
+                             limma_gene_dstmm.zero.impute.expression_maxEx) %>% 
+                      
+                      rename(X = expression_maxEx,
+                             TMM = dstmm.zero.expression_maxEx,
+                             NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+                      
+                      mutate(method = "consensus"), 
+                    by = c("ensg_id", "consensus_content_name")) %>%
+            
+            gather(key = "Type", value = "Value", X, NX, TMM)) %>%
+    
+    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX", "consensus")),
+           content_name = factor(content_name, 
+                                 levels = select(., content_name, consensus_content_name) %>% 
+                                   unique() %$% content_name[order(consensus_content_name)]),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n"),
+           label = ifelse(Type == "X" & method == "HPA", label, NA)#,consensus_Value = ifelse(Type == "NX", consensus_Value, NA)
+    ) 
+  
+  p <- 
+    plot.data %>%
+    {lapply(1:length(genes),
+            FUN = function(i) {
+              setTimerProgressBar(pb, i)
+              filter(., ensg_id %in% genes[i]) %>%
+                ggplot(aes(content_name, Value, fill = consensus_content_name))+
+                geom_hline(yintercept = 1:3, color = "red", linetype = "dashed")+
+                
+                geom_bar(stat = "identity", show.legend = F, size = 0.5, color = "black", position = "dodge")+
+                
+                geom_text(aes(5, 1, label = label), vjust = -1, hjust = 0, size = 5)+
+                ggtitle(genes[i])+
+                simple_theme+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8),
+                      strip.text.x = element_text(size = 15),
+                      strip.text.y = element_text(size = 15)) +
+                scale_fill_manual(values = plot.col)+#dataset.colors)+
+                facet_grid(method ~ Type)  
+            })} 
+  
+  pb <- timerProgressBar(min = 1, max = length(genes))
+  on.exit(close(pb))
+  
+  for(i in 1:length(genes)){
+    setTimerProgressBar(pb, i)
+    print(p[[i]])
+  }
+  
+  
+  
+  dev.off()
+}
+
+all.atlas.category_TMM <- get.categories.with.num.expressed(all.atlas.max,
+                                                            max_column = "dstmm.zero.expression_maxEx",
+                                                            cat_column = "consensus_content_name",
+                                                            enrich.fold = 5,
+                                                            under.lim = 1,
+                                                            group.num = 6)
+
+
+score_TMM_ <-
+  left_join(all.atlas.category, all.atlas.category_TMM, by = "ensg_id", suffix = c("", ".TMM")) %>%
+  filter(elevated.category == "tissue enriched" & elevated.category.TMM == "tissue enriched") %>%
+  filter(`enriched tissues` == `enriched tissues.TMM`) %>%
+  mutate(score_NX = as.numeric(`tissue/group specific score`),
+         score_TMM = as.numeric(`tissue/group specific score.TMM`),
+         score_NX_log = log10(score_NX + 1),
+         score_TMM_log = log10(score_TMM + 1))
+
+
+
+lm_score_TMM <- lm(score_NX_log ~ score_TMM_log, data = score_TMM_)
+A <- summary(lm_score_TMM)
+
+A$coefficients
+with(A, c(min(residuals), max(residuals)))
+A$r.squared
+A$r.squared * 5
+
+
+
+score_TMM_ %>%
+ggplot(aes(score_TMM_log, score_NX_log)) + 
+  geom_point() + 
+  geom_smooth(method = "loess")+
+  stat_function(fun = function(x) A$coefficients[1] + A$coefficients[2] * x, color = "red", size = 2) + 
+  simple_theme
+
+
+R2_plot_data <- 
+  all.atlas.max %>% 
+  #filter(!imputed) %>%
+  left_join(all.atlas.category, by = "ensg_id") %>%
+  #filter(ensg_id %in% score_TMM_$ensg_id) %>% 
+  group_by(ensg_id, elevated.category) %>%
+  summarise(R_square = lm(log10(limma_gene_dstmm.zero.impute.expression_maxEx + 1) ~ log10(dstmm.zero.expression_maxEx + 1)) %>%
+              summary() %$% r.squared) 
+
+R2_plot_data %>%
+  {ggplot(., aes(R_square, fill = elevated.category)) + 
+      geom_density(alpha = 0.5) + 
+      geom_vline(data = ungroup(.) %>%
+                   group_by(elevated.category) %>%
+                   summarise(med_R2 = median(R_square)),
+                 aes(xintercept = med_R2, color = elevated.category))+
+      ggrepel::geom_label_repel(data = ungroup(.) %>% 
+                  group_by(elevated.category) %>%
+                  summarise(med_R2 = median(R_square)),
+                aes(label = round(med_R2, 3), x = med_R2, y = 5, color = elevated.category), inherit.aes = F, hjust = 2)+
+      scale_fill_manual(values = elevated.cat.cols) + 
+      scale_color_manual(values = elevated.cat.cols) + 
+      simple_theme}
+
+
+  
+bottom1000 <- R2_plot_data[order(R2_plot_data$R_square),][1:1000,]$ensg_id
+
+print_gene_bar_pdf(bottom1000, "bottom1000.pdf")
 ###################################################################
 ## Checking genes <1 for HPA
 ###################################################################
@@ -1164,83 +1314,6 @@ dev.off()
 tissue_colors <- readr::read_delim("ref/colors_92.tsv", delim = "\t")
 
 
-print_gene_bar_pdf <- function(genes, savename) {
-  
-  pdf(paste(result_folder, savename, sep = "/"), width = 32, height = 8)
-  plot.col <- with(tissue_colors, setNames(c(color, color, elevated.cat.cols), c(tissue_name, organ_name, names(elevated.cat.cols))))
-  
-  pb <- timerProgressBar(min = 1, max = length(genes))
-  on.exit(close(pb))
-  
-  plot.data <- 
-    all_atlas_cat  %>%
-    filter(!imputed) %>%
-    filter(method != "Blood") %>%
-    
-    gather(key = "Type", value = "Value", X, NX, TMM) %>%
-    select(consensus_content_name, content_name, ensg_id, method, Type, Value, express.category.2, elevated.category) %>%
-    
-    rbind(left_join(all_atlas_cat  %>%
-                      filter(!imputed) %>%
-                      filter(method != "Blood") %>%
-                      select(consensus_content_name, content_name, ensg_id, express.category.2, elevated.category),
-                    all.atlas.max %>% 
-                      select(consensus_content_name, ensg_id, 
-                             expression_maxEx, 
-                             dstmm.zero.expression_maxEx,
-                             limma_gene_dstmm.zero.impute.expression_maxEx) %>% 
-                      
-                      rename(X = expression_maxEx,
-                             TMM = dstmm.zero.expression_maxEx,
-                             NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
-                      
-                      mutate(method = "consensus"), 
-                    by = c("ensg_id", "consensus_content_name")) %>%
-            
-            gather(key = "Type", value = "Value", X, NX, TMM)) %>%
-    
-    mutate(Type = factor(Type, levels = c("X", "TMM", "NGX", "NX", "consensus")),
-           content_name = factor(content_name, 
-                                 levels = select(., content_name, consensus_content_name) %>% 
-                                   unique() %$% content_name[order(consensus_content_name)]),
-           label = paste(express.category.2, 
-                         elevated.category, sep = "\n"),
-           label = ifelse(Type == "X" & method == "HPA", label, NA)#,consensus_Value = ifelse(Type == "NX", consensus_Value, NA)
-    ) 
-  
-  p <- 
-    plot.data %>%
-    {lapply(1:length(genes),
-            FUN = function(i) {
-              setTimerProgressBar(pb, i)
-              filter(., ensg_id %in% genes[i]) %>%
-                ggplot(aes(content_name, Value, fill = consensus_content_name))+
-                geom_hline(yintercept = 1:3, color = "red", linetype = "dashed")+
-                
-                geom_bar(stat = "identity", show.legend = F, size = 0.5, color = "black", position = "dodge")+
-                
-                geom_text(aes(5, 1, label = label), vjust = -1, hjust = 0, size = 5)+
-                ggtitle(genes[i])+
-                simple_theme+
-                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8),
-                      strip.text.x = element_text(size = 15),
-                      strip.text.y = element_text(size = 15)) +
-                scale_fill_manual(values = plot.col)+#dataset.colors)+
-                facet_grid(method ~ Type)  
-            })} 
-  
-  pb <- timerProgressBar(min = 1, max = length(genes))
-  on.exit(close(pb))
-  
-  for(i in 1:length(genes)){
-    setTimerProgressBar(pb, i)
-    print(p[[i]])
-  }
-  
-  
-  
-  dev.off()
-}
 
 
 
