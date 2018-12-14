@@ -26,15 +26,16 @@ pca.cal <- function(tb.wide){
 
 make_PCA_plots <- function(scores, loadings, groups, groups.color, ellipse = T, outpath, prefix) {
   pdf(file = paste(outpath, paste0(prefix, '_PCA_loadings.pdf'),sep='/'), width=10, height=10, useDingbats = F)
-  print(loadings %>% 
-  {ggplot(., aes(PC1, PC2, label = labels))+
+  loadings %>% 
+    {ggplot(., aes(PC1, PC2, label = labels))+
       geom_text(show.legend = F)+
       simple_theme+
-      ggtitle("Loadings")})
+      ggtitle("Loadings")} %>%
+    print()
   dev.off()
   
   pdf(file = paste(outpath, paste0(prefix, '_PCA_scores.pdf'),sep='/'), width=10, height=10, useDingbats = F)
-  print(
+  
   scores %>%
   {names <- rownames(.); as.tibble(.) %>% mutate(sample = names,
                                                  groups = groups[match(names, names(groups))])} %>%
@@ -49,8 +50,9 @@ make_PCA_plots <- function(scores, loadings, groups, groups.color, ellipse = T, 
                                                      geom_point(show.legend = F)+
                                                      geom_segment(aes(xend = mean.PC1, yend = mean.PC2), show.legend = F)+
                                                      simple_theme+
-                                                     #scale_color_manual(values = groups.color)+
-                                                     ggtitle("Scores")}})
+                                                     scale_color_manual(values = groups.color)+
+                                                     ggtitle("Scores")}} %>%
+    print()
   dev.off()
     # scores %>%
     # {names <- rownames(.); as.tibble(.) %>% mutate(sample = names,
@@ -246,10 +248,10 @@ make_classification_chord_plot <- function(atlas.cat, outpath, prefix) {
     chord_classification(from = elevated.category, 
                          to = express.category.2, 
                          sizes = num.genes, 
-                         grid.col = c(cat.cols, "not expressed" = "gray", "low tissue specificity" = "#4daf4a", "expressed in all" = "#377eb8", "expressed in some" = "#377eb8", "expressed in single" = "#377eb8", "expressed in many" = "#377eb8"),
+                         grid.col = c(elevated.cat.cols, expressed.cat.cols),#c(cat.cols, "not expressed" = "gray", "low tissue specificity" = "#4daf4a", "expressed in all" = "#377eb8", "expressed in some" = "#377eb8", "expressed in single" = "#377eb8", "expressed in many" = "#377eb8"),
                          groups = c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
-                         plot.order = c("not detected", "low tissue specificity","tissue enhanced", "group enriched", "tissue enriched", 
-                                        "not expressed","expressed in single", "expressed in some","expressed in many", "expressed in all"))
+                         plot.order = c(c("not detected", "low tissue specificity","tissue enhanced", "group enriched", "tissue enriched"), 
+                                        c("not expressed","expressed in single", "expressed in some","expressed in many", "expressed in all")))
   dev.off()
 }
 

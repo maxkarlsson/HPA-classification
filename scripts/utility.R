@@ -1,8 +1,8 @@
 ## utilize
-under_limit <- function(new.expression, expression, method) {
+under_limit <- function(new.expression, expression, method, scale_by = 1) {
   tibble(new.expression, expression, method) %>%
     filter(method == "GTEx") %$%
-    sort(new.expression)[{a <- sort(c(expression, 1)); which(a == 1)[1]}]
+    sort(new.expression)[{a <- sort(c(expression, 1)); which(a == 1)[1]}] * scale_by
 }
 
 

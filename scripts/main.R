@@ -36,6 +36,7 @@ contenttable_path <- './data/anno/content_table.txt' ## lims tissueid to tissue 
 consensustissue_path <- './data/anno/consensus_tissue.tsv' ## lims tissue to organ
 brainregions_path <- './data/anno/brain_regions.txt' ## brain_regions_anno
 proteinclass_path <- './data/anno/gene.classes.txt' ## protein classification
+tissuehierarchy_path <- './ref/colors_92.tsv' # tissue colors and hierarchy
 
 ## datasets
 hpa_path <- './data/lims/rna_hpa.tsv'
@@ -81,6 +82,10 @@ consensustissue.table <-
 
 brainregions.table <-
   brainregions_path %>%
+  readr::read_delim(delim = "\t")
+
+contenthierarchy.table <- 
+  tissuehierarchy_path %>%
   readr::read_delim(delim = "\t")
 
 ## input datasets
@@ -173,53 +178,25 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
     all.atlas.raw %>%
     mutate(
       # Impute missing values
-      # imputed.expression = impute_expression(expression, tissue.method, lims_id),
       imputed = case_when(is.na(expression) ~ TRUE,
                           TRUE ~ FALSE),
-      # TMM scaling of data with imputation
-      # dstmm.expression = tmm_method_normalization(imputed.expression, method, tissue.method, lims_id),
-      # gene_dstmm.expression = pareto_scale_method_gene(dstmm.expression, method, lims_id),
-      # 
-      # limma_gene_dstmm.expression = limma_method_correction(gene_dstmm.expression, method,
-      #                                                       tissue.method, lims_id,
-      #                                                       filtered.methods = "Blood"),
-      # limma_gene_dstmm.expression_temp = limma_gene_dstmm.expression, 
-      
-      
-      # 1. log impute
-      
-      # imputed.log.expression = 10 ^ impute_expression(log10(expression + 1), tissue.method, lims_id) - 1,
-      # dstmm.log.expression = tmm_method_normalization(imputed.log.expression, method, tissue.method, lims_id),
-      # gene_dstmm.log.expression = pareto_scale_method_gene(dstmm.log.expression, method, lims_id),
-      # 
-      # limma_gene_dstmm.log.expression = limma_method_correction(gene_dstmm.log.expression, method,
-      #                                                       tissue.method, lims_id,
-      #                                                       filtered.methods = "Blood"),
-      
-      # 2. zero impute
+      # TMM scaling of data with imputation (set to 0)
       
       imputed.zero.expression = ifelse(imputed, 0, expression),
       dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id),
-      # gene_dstmm.zero.expression = pareto_scale_method_gene(dstmm.zero.expression, method, lims_id),
-      # 
-      # limma_gene_dstmm.zero.expression = limma_method_correction(gene_dstmm.zero.expression, method,
-      #                                                           tissue.method, lims_id,
-      #                                                           filtered.methods = "Blood"),
-      # 3. zero impute then impute again after tmm
       
-      gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), method, lims_id),
+      # Gene pareto. "Imputed" values are set to NA to not count.
+      gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), 
+                                                                   method, lims_id),
       
+      # Limma
       limma_gene_dstmm.zero.impute.expression = limma_method_correction(gene_dstmm.zero.impute.expression, method,
                                                                         tissue.method, lims_id,
                                                                         filtered.methods = "Blood"))  %>%
-    # Scale so that under limit is 1
-    mutate_at(.funs = funs(. / (under_limit(., expression, method) * 3)), 
+    # Scale so that under limit is 1, scale by 3
+    mutate_at(.funs = funs(. / (under_limit(., expression, method, scale_by = 3))), 
               .vars = grep(".expression$", colnames(.), value = T)) 
   
-  # Remove PBMCs
-  all.atlas <-
-    all.atlas %>%
-    filter(!content_name=='total PBMC')
   
   readr::write_delim(all.atlas, path = paste(result_folder, paste0('all.atlas.txt'),sep='/'), delim = "\t")
 } else {
@@ -227,7 +204,7 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
   }
 
 
-# 
+
 
 ###################################################################
 ## Step 3. Consensus
@@ -249,7 +226,7 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.max.txt'),sep='/'))) {
 }
 
 
-# 
+ 
 
 ###################################################################
 ## Step 4. Category
@@ -259,7 +236,7 @@ if(!file.exists(paste(result_folder, paste0('gene_categories_all_tissues.txt'),s
   all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
                                                           max_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
                                                           cat_column = "consensus_content_name",
-                                                          enrich.fold = 5,
+                                                          enrich.fold = 4,
                                                           under.lim = 1,
                                                           group.num = 6)
   readr::write_delim(all.atlas.category, path = paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'), delim = "\t")
@@ -291,7 +268,7 @@ blood.atlas.max <-
 blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
                                                           max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                                                           cat_column = "content_name",
-                                                          enrich.fold = 5, 
+                                                          enrich.fold = 4, 
                                                           under.lim = 1, 
                                                           group.num = 11)
 write.table(blood.atlas.category,
@@ -343,7 +320,7 @@ brain.atlas.max <-
 brain.atlas.category <- get.categories.with.num.expressed(brain.atlas.max,
                                                           max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                                                           cat_column = "subgroup",
-                                                          enrich.fold = 5, 
+                                                          enrich.fold = 4, 
                                                           group.num = 6)
 
 # write.table(brain.atlas.category,
@@ -372,13 +349,16 @@ make_tissue_distribution_plot(tb.atlas = all.atlas,
 ## PCA and clustering plots
 all.atlas.max.pca.values <- pca.cal(all.atlas.max.wide)
 scores <- all.atlas.max.pca.values[[1]]
-loadings <- as.data.frame(all.atlas.max.pca.values[[2]])
-loadings$labels <- ensemblanno.table$Gene[match(rownames(loadings), ensemblanno.table$ENSG)]
-tissue.colors <- with(all.tissue.table, setNames(Grouping.color, Grouping))
+loadings <- 
+  all.atlas.max.pca.values[[2]] %>%
+  as.tibble(rownames = "ensg_id") %>%
+  mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+tissue.colors <- with(contenthierarchy.table, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
 
 make_PCA_plots(scores = scores,
                loadings = loadings,
                groups = setNames(rownames(all.atlas.max.pca.values[[1]]), rownames(all.atlas.max.pca.values[[1]])),
+               groups.color = tissue.colors,
                outpath = result_folder,
                prefix = 'all_tissues')
 
@@ -406,34 +386,39 @@ make_classification_chord_plot(atlas.cat = all.atlas.category,
                                outpath = result_folder,
                                prefix = 'all_tissues')
 
+
 ## swarm plot
 make_swarm_expression_plot(atlas.max = all.atlas.max, 
                            atlas.cat = all.atlas.category, 
-                           maxEx_column = "limma_gene_dstmm.expression_maxEx", 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                            tissue_column = "consensus_content_name",
                            outpath = result_folder,
                            prefix = 'all_tissues')
 
 
 ###### plots for brain
-brain.atlas.max.wide <- generate_wide(brain.atlas.max, ensg_column='ensg_id', group_column='subgroup', max_column="limma_gene_dstmm.expression_maxEx")
+brain.atlas.max.wide <- generate_wide(brain.atlas.max, ensg_column='ensg_id', group_column='subgroup', 
+                                      max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = brain.atlas, 
-                              expr_column = "limma_gene_dstmm.expression",
+                              expr_column = "limma_gene_dstmm.zero.impute.expression",
                               outpath = result_folder,
                               prefix = 'brain_regions')
 
 ## PCA and clustering plots
 brain.atlas.max.pca.values <- pca.cal(brain.atlas.max.wide)
 scores <- brain.atlas.max.pca.values[[1]]
-loadings <- as.data.frame(brain.atlas.max.pca.values[[2]])
-loadings$labels <- ensemblanno.table$gene_name[match(rownames(loadings), ensemblanno.table$ensg_id)]
+loadings <- 
+  brain.atlas.max.pca.values[[2]] %>%
+  as.tibble(rownames = "ensg_id") %>%
+  mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
 tissue.colors <- with(brainregions.table, setNames(subgroup.color, tissue.type))
 
 make_PCA_plots(scores = scores,
                loadings = loadings,
                groups = setNames(rownames(brain.atlas.max.pca.values[[1]]), rownames(brain.atlas.max.pca.values[[1]])),
+               groups.color = tissue.colors,
                outpath = result_folder,
                prefix = 'brain_regions')
 
@@ -464,7 +449,8 @@ make_classification_chord_plot(atlas.cat = brain.atlas.category,
 ## swarm plot
 make_swarm_expression_plot(atlas.max = brain.atlas.max, 
                            atlas.cat = brain.atlas.category, 
-                           maxEx_column = "limma_gene_dstmm.expression_maxEx", 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                            tissue_column = "subgroup",
                            outpath = result_folder,
                            prefix = 'brain_regions')
+
