@@ -1,0 +1,31 @@
+content	color
+basophil	#F7BCA9
+classical monocyte	#EE8778
+eosinophil	#F39B7F
+gdTCR	#C3CADA
+intermediate monocyte	#E64B35
+MAIT T-cell	#A4B0C8
+memory B-cell	#4D1E73
+memory CD4 T-cell	#697BA3
+memory CD8 T-cell	#4A6191
+myeloid DC	#32B39F
+naive B-cell	#7F348B
+naive CD4 T-cell	#2E4068
+naive CD8 T-cell	#243353
+neutrophil	#A26754
+NK-cell	#ad1d78
+non-classical monocyte	#993223
+plasmacytoid DC	#007F6B
+Total PBMC	#7E6148FF
+T-reg	#121929
+blood	#b70000
+myeloid cells	#F39B7FFF
+lymphoid cells	#E64B35FF
+total PBMC	#7E6148FF
+granulocytes	#F39B7FFF
+monocytes	#E64B35FF
+lymphocytes	#3C5488FF
+dendritic cells	#199985
+T-cells	#7D8DAF
+B-cells	#66287F
+NK-cells	#ad1d78

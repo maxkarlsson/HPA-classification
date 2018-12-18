@@ -1,12 +1,12 @@
 #---
-#title: "Blood Atlas Pilot"
-#author: "Max Karlsson"
+#title: "HPA classification"
+#author: "Max Karlsson and Wen Zhong"
 #created date: "2018 August 28"
-#modified by:	"Per Oksvold"
-#modified date: "2018 Nov 13"
-#modified by: "Wen Zhong"
-#modified date: "2018 Nov 28"
 #---
+
+#
+# ----------- set up ----------- 
+#
 
 library('impute', quietly = TRUE)
 library('tidyverse', quietly = TRUE)
@@ -44,10 +44,9 @@ gtex_path <- './data/lims/rna_gtex.tsv'
 fantom_path <- './data/lims/rna_fantom.tsv'
 blood_path <- './data/lims/rna_blood.tsv'
 
-###################################################################
-## Step 1. data wrangling
-###################################################################
-
+#
+# ----------- Step 1. data wrangling ----------- 
+#
 ## annotation
 ensg.info <- 
   geneinfo_path %>%
@@ -169,9 +168,9 @@ all.atlas.raw <-
   left_join(content.table, by = c("tissue" = "content_id")) %>%
   left_join(consensustissue.table, by = c("tissue" = "content_id", "content_name" = "content_name"))
 
-###################################################################
-## Step 2. normalization
-###################################################################
+#
+# ----------- Step 2. normalization ----------- 
+#
 
 if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
   all.atlas <- 
@@ -206,9 +205,9 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
 
 
 
-###################################################################
-## Step 3. Consensus
-###################################################################
+#
+# ----------- Step 3. Consensus ----------- 
+#
 
 if(!file.exists(paste(result_folder, paste0('all.atlas.max.txt'),sep='/'))) {
   all.atlas.max <-
@@ -228,9 +227,9 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.max.txt'),sep='/'))) {
 
  
 
-###################################################################
-## Step 4. Category
-###################################################################
+#
+# ----------- Step 4. Category ----------- 
+#
 
 if(!file.exists(paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'))) {
   all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
@@ -249,40 +248,51 @@ if(!file.exists(paste(result_folder, paste0('gene_categories_all_tissues.txt'),s
 table(all.atlas.category$category.text)
 
 
-###################################################################
-## Blood atlas classification
-###################################################################
+#
+# ----------- Blood atlas classification ----------- 
+#
+
 blood.atlas <- 
   all.atlas %>%
-  filter(method == "Blood")# %>% 
+  filter(method == "Blood") %>% 
   # Remove Total for classification
-  #filter(consensus_content_name != "total PBMC") 
+  filter(content_name != "total PBMC") 
 
-blood.atlas.max <- 
-  blood.atlas %>%
-  group_by(content_name, ensg_id) %>% 
-  filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
-  dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
+if(!file.exists(paste(result_folder, paste0('blood.atlas.max.txt'),sep='/'))) {
+  blood.atlas.max <- 
+    blood.atlas %>%
+    group_by(content_name, ensg_id) %>% 
+    filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
+    dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
+  
+  readr::write_delim(blood.atlas.max, path = paste(result_folder, paste0('blood.atlas.max.txt'),sep='/'), delim = "\t")
+} else {
+  blood.atlas.max <- readr::read_delim(paste(result_folder, paste0('blood.atlas.max.txt'),sep='/'), delim = "\t")
+} 
 
 
-blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
-                                                          max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
-                                                          cat_column = "content_name",
-                                                          enrich.fold = 4, 
-                                                          under.lim = 1, 
-                                                          group.num = 11)
-write.table(blood.atlas.category,
-            file=paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'),
-            row.names = F,
-            sep='\t',
-            quote=F)
+if(!file.exists(paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'))) {
+  blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
+                                                            max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                                            cat_column = "content_name",
+                                                            enrich.fold = 4, 
+                                                            under.lim = 1, 
+                                                            group.num = 11)
+  
+  readr::write_delim(blood.atlas.category, path = paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'), delim = "\t")
+} else {
+  blood.atlas.category <- readr::read_delim(paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'), delim = "\t")
+} 
+
+
 
 # print number of different categories of genes
 table(blood.atlas.category$category.text)
 
-###################################################################
-## Brain atlas classification
-###################################################################
+#
+# ----------- Brain atlas classification ----------- 
+#
+
 brain.atlas <- 
   all.atlas %>%
   filter(!method=='HPA') %>%
@@ -333,9 +343,12 @@ brain.atlas.category <- get.categories.with.num.expressed(brain.atlas.max,
 table(brain.atlas.category$category.text)
 
 
-###################################################################
-## Visulization
-###################################################################
+#
+# ----------- Visulization ----------- 
+#
+
+# =========== *All altas =========== 
+
 all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
                                     group_column='consensus_content_name', 
                                     max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
@@ -395,8 +408,20 @@ make_swarm_expression_plot(atlas.max = all.atlas.max,
                            outpath = result_folder,
                            prefix = 'all_tissues')
 
+# group enriched chord diagram
+all_atlas_hierarchy <- 
+  contenthierarchy.table %>%
+  select(1:2) %>%
+  rename(content = 1, content_l1 = 2)
+make_chord_group_enriched(all.atlas.elevated.table, 
+                          grid.col = tissue.colors, 
+                          tissue_hierarcy = all_atlas_hierarchy,
+                          palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                          outpath = result_folder, 
+                          prefix = "all_atlas")
 
-###### plots for brain
+# =========== *Brain altas* =========== 
+
 brain.atlas.max.wide <- generate_wide(brain.atlas.max, ensg_column='ensg_id', group_column='subgroup', 
                                       max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
@@ -454,3 +479,74 @@ make_swarm_expression_plot(atlas.max = brain.atlas.max,
                            outpath = result_folder,
                            prefix = 'brain_regions')
 
+
+# =========== *Blood altas* =========== 
+
+blood.atlas.max.wide <- generate_wide(blood.atlas.max, ensg_column='ensg_id', group_column='content_name', 
+                                      max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+
+## tissue distribution of normalized values
+make_tissue_distribution_plot(tb.atlas = blood.atlas, 
+                              expr_column = "limma_gene_dstmm.zero.impute.expression",
+                              outpath = result_folder,
+                              prefix = 'blood_cells')
+
+## PCA and clustering plots
+blood.atlas.max.pca.values <- pca.cal(blood.atlas.max.wide)
+scores <- blood.atlas.max.pca.values[[1]]
+loadings <- 
+  blood.atlas.max.pca.values[[2]] %>%
+  as.tibble(rownames = "ensg_id") %>%
+  mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+tissue.colors <- with(contenthierarchy.table, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
+
+make_PCA_plots(scores = scores,
+               loadings = loadings,
+               groups = setNames(rownames(blood.atlas.max.pca.values[[1]]), rownames(blood.atlas.max.pca.values[[1]])),
+               groups.color = tissue.colors,
+               outpath = result_folder,
+               prefix = 'blood_celltypes')
+
+make_clustering_plot(tb.wide = blood.atlas.max.wide, 
+                     colors = tissue.colors, 
+                     outpath = result_folder,
+                     prefix = 'blood_celltypes')
+
+## tissue elevated plot
+blood.atlas.elevated.table <- calc_elevated.table(tb.wide = blood.atlas.max.wide, 
+                                                  atlas.categories = blood.atlas.category)
+blood.atlas.elevated.summary.table <- calc_elevated.summary.table(blood.atlas.elevated.table)
+make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
+                       outpath = result_folder,
+                       prefix = 'blood_celltypes')
+
+## specificity distribution
+make_specificity_distribution_plot(atlas.cat = blood.atlas.category, 
+                                   type = "Tissue",
+                                   outpath = result_folder,
+                                   prefix = 'blood_celltypes')
+
+## chord plot
+make_classification_chord_plot(atlas.cat = blood.atlas.category,
+                               outpath = result_folder,
+                               prefix = 'blood_tissues')
+
+## swarm plot
+make_swarm_expression_plot(atlas.max = blood.atlas.max, 
+                           atlas.cat = blood.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "content_name",
+                           outpath = result_folder,
+                           prefix = 'blood_celltypes')
+
+# group enriched chord diagram
+blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
+blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
+
+make_chord_group_enriched(blood.atlas.elevated.table, 
+                          grid.col = with(blood_atlas_colors, setNames(color, content)), 
+                          tissue_hierarcy = blood_atlas_hierarchy,
+                          palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                          outpath = result_folder, 
+                          prefix = "blood_atlas")
+  

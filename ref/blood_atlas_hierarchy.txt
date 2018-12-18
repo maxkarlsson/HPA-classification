@@ -1,0 +1,21 @@
+content	content_l1	content_l2	content_l3
+basophil	myeloid cells	granulocytes	granulocytes
+classical monocyte	myeloid cells	monocytes	monocytes
+eosinophil	myeloid cells	granulocytes	granulocytes
+gdTCR	lymphocytes	lymphocytes	T-cells
+intermediate monocyte	myeloid cells	monocytes	monocytes
+MAIT T-cell	lymphocytes	lymphocytes	T-cells
+memory B-cell	lymphocytes	lymphocytes	B-cells
+memory CD4 T-cell	lymphocytes	lymphocytes	T-cells
+memory CD8 T-cell	lymphocytes	lymphocytes	T-cells
+myeloid DC	myeloid cells	dendritic cells	dendritic cells
+naive B-cell	lymphocytes	lymphocytes	B-cells
+naive CD4 T-cell	lymphocytes	lymphocytes	T-cells
+naive CD8 T-cell	lymphocytes	lymphocytes	T-cells
+neutrophil	myeloid cells	granulocytes	granulocytes
+NK-cell	lymphocytes	lymphocytes	NK-cells
+non-classical monocyte	myeloid cells	monocytes	monocytes
+plasmacytoid DC	myeloid cells	dendritic cells	dendritic cells
+Total PBMCs	total PBMC	total PBMC	total PBMC
+T-reg	lymphocytes	lymphocytes	T-cells
+blood	blood	blood	blood

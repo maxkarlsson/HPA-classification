@@ -342,3 +342,93 @@ make_bland_altman_plot <- function(x, y, fill, fillname = "", title = "", Points
     
     
 }
+
+
+make_chord_group_enriched <- function(elevated.table, grid.col, tissue_hierarcy, palet = colorRamps::blue2red, 
+                                                reverse = F, outpath, prefix){
+  circos.par(RESET = T)
+  pdf(file = paste(outpath, paste0(prefix, '_group_enriched_hierarchy_chord.pdf'),sep='/'), width=15, height=10, useDingbats = F)
+  
+  content_gene_class <- 
+    elevated.table %>%
+    as_tibble(., rownames = "ensg_id") %>%
+    gather(key = "content", "classification", -ensg_id) %>%
+    # Only include group enriched
+    filter(classification %in% c(3))
+  
+  mat <- 
+    content_gene_class %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+                                                                                filter(., content == cell2)$ensg_id))))} 
+  df <- 
+    mat%>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "number of genes", -from) %>%
+    filter(to != from) %>%
+    mutate(transfer = mapply(.$from, .$to, FUN = function(a,b) paste(sort(c(a,b)), collapse = " to "))) %>%
+    # Take only first occurence of transfer
+    {.[match(unique(.$transfer), .$transfer), ]}
+  
+  require(circlize)
+  
+  total.number.of.genes <- sapply(unique(c(df$from,df$to)), FUN = function(x) sum(df$`number of genes`[grep(x, df$transfer)]))
+  
+  classes <- unique(c(df$from, df$to))
+  tissues <- tissue_hierarcy$content[match(classes, tissue_hierarcy$content)]
+  track.levels <- names(tissue_hierarcy)
+  tissue_hierarcy <- 
+    tissue_hierarcy %>%
+    filter(content %in% classes)
+  
+  chord <- 
+    df %>% 
+    mutate(from.sum = total.number.of.genes[match(from, names(total.number.of.genes))],
+           to.sum = total.number.of.genes[match(to, names(total.number.of.genes))],
+           frac.mean = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) mean(c(n/a, n/b))),
+           frac.min = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) min(c(n/a, n/b))),
+           frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) %>%
+    chordDiagram(grid.col = grid.col,
+                 col = palet(100)[cut(.$frac.max, breaks = 100)],
+                 directional = 0,link.largest.ontop = T,
+                 annotationTrack="grid",
+                 annotationTrackHeight = 0.02,
+                 preAllocateTracks = eval(parse(text = paste0("list(", 
+                                                              paste0(rep("list(track.height = 0.05, 
+                                                                         track.margin = c(0.0035, 0.01))", 
+                                                                         length(track.levels)), collapse = ", "), ")"))),
+                 order = classes[with(tissue_hierarcy[match(tissues, tissue_hierarcy[, 1][[1]]),],
+                                      eval(parse(text = paste0("order(", paste(track.levels[-1], collapse = ", "), ")"))))])
+  
+  
+  
+  sectors <-
+    tissue_hierarcy %>%
+    mutate(main.track.handle = content) %>%
+    gather(key = "level", value = "handle", -main.track.handle) %>%
+    mutate(color = grid.col[match(handle, names(grid.col))],
+           track = ifelse(rep(reverse, nrow(.)), match(level, rev(track.levels)), match(level, track.levels))) %>%
+    group_by(handle, color) %>%
+    summarise(track = list(unique(track)),
+              main.track.handles = list(unique(main.track.handle))) 
+  
+  for(tissue in tissue_hierarcy$content) {
+    highlight.sector(tissue, 
+                     track.index = 1:(length(track.levels)), 
+                     col = NA, lwd = 2,
+                     border = grid.col[match(tissue, names(grid.col))])
+  }
+  
+  for(i in 1:nrow(sectors)) {
+    highlight.sector(sectors$main.track.handles[i][[1]], 
+                     track.index = sectors$track[i][[1]], 
+                     col = sectors$color[i], 
+                     text = sectors$handle[i], text.col = "white", facing = "bending", cex = 0.8)
+  }
+  
+  dev.off()
+  circos.clear()
+  
+  
+}
