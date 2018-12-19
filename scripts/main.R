@@ -549,4 +549,9 @@ make_chord_group_enriched(blood.atlas.elevated.table,
                           palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
                           outpath = result_folder, 
                           prefix = "blood_atlas")
+
+# Categories between blood and all atlas
+make_class_comparison_chord(blood.atlas.category, all.atlas.category,
+                            outpath = result_folder, prefix = "blood")
+
   

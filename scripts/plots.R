@@ -432,3 +432,155 @@ make_chord_group_enriched <- function(elevated.table, grid.col, tissue_hierarcy,
   
   
 }
+
+
+# ------ classification comparison plot
+
+chord_classification_clockwise <- function(from, to, sizes, grid.col, plot.group, plot.order, line_expansion = 10000){
+  
+  require(circlize) 
+  
+  factors.from <- unique(from)
+  factors.to <- unique(to)
+  factors <- c(factors.from, factors.to)
+  
+  
+  tb <- 
+    tibble(from, to, sizes)
+  
+  #groups <- groups[plot.order]
+  gap.after.par <- c()
+  for(i in 1:(length(plot.group)-1)) {
+    if(plot.group[i] == plot.group[i+1]) {
+      gap.after.par <- c(gap.after.par, 2)
+    } else {
+      gap.after.par <- c(gap.after.par, 15)
+    }
+  }
+  
+  if(plot.group[length(plot.group)] == plot.group[1]) {
+    gap.after.par <- c(gap.after.par, 2)
+  } else {
+    gap.after.par <- c(gap.after.par, 15)
+  }
+  
+  circos.par(gap.after = gap.after.par)
+  
+  chord <-
+    tb %>% 
+    chordDiagram(grid.col = chord_col,
+                 directional = 0,
+                 annotationTrack="grid",
+                 annotationTrackHeight = 0.05, 
+                 preAllocateTracks = 1, order = plot.order)
+  
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim <- get.cell.meta.data("xlim")
+    ylim <- get.cell.meta.data("ylim")
+    sector.name <- get.cell.meta.data("sector.index")
+    sector.index <- get.cell.meta.data("sector.numeric.index")
+    
+    adjustment <- (sector.index %% 5) * 0.2 - 0.4
+    
+    width <- strwidth(sector.name)*line_expansion
+    
+    circos.segments(x0 = mean(xlim), x1 = mean(xlim), 
+                    y0 = min(ylim), y1 = mean(ylim)-0.12 + adjustment, 
+                    sector.name)
+    
+    circos.segments(x0 = mean(xlim) - width/2, x1 = mean(xlim) + width/2, 
+                    y0 = mean(ylim) - 0.12 + adjustment, y1 = mean(ylim) - 0.12 + adjustment, 
+                    sector.name) 
+    
+    circos.text(mean(xlim), mean(ylim) + adjustment, sector.name, niceFacing = TRUE, facing = "bending", cex = 0.6)
+    #circos.text(mean(xlim), ylim[1], sector.name, niceFacing = TRUE, facing = "clockwise",  adj = c(0, 0.5), cex = 0.6)
+  }, bg.border = NA)
+  
+  circos.clear()
+  
+}
+
+make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
+                                        excat_suffix = c(" celltypes", " tissues"),
+                                        elcat_suffix = c(" celltypes", " tissues"),
+                                        excat_prefix = c("", ""),
+                                        elcat_prefix = c("", ""),
+                                        excat_gsub_pattern = c(" tissue", ""),
+                                        excat_gsub_replace = c(" celltype", ""),
+                                        elcat_gsub_pattern = c(" tissue", ""),
+                                        elcat_gsub_replace = c(" celltype", ""),
+                                        excat_cats = c("expressed in all", "expressed in many", "expressed in some", "expressed in single", "not expressed"),
+                                        elcat_cats = c("tissue enriched", "group enriched", "tissue enhanced", "low tissue specificity", "not detected")) {
+  
+  plot.order <- c(paste0(excat_prefix[1], gsub(excat_gsub_pattern[1], excat_gsub_replace[1], excat_cats), excat_suffix[1]),
+                  paste0(elcat_prefix[1], gsub(elcat_gsub_pattern[1], elcat_gsub_replace[1], elcat_cats), elcat_suffix[1]),
+                  rev(paste0(elcat_prefix[2], gsub(elcat_gsub_pattern[2], elcat_gsub_replace[2], elcat_cats), elcat_suffix[2])),
+                  rev(paste0(excat_prefix[2], gsub(excat_gsub_pattern[2], excat_gsub_replace[2], excat_cats), excat_suffix[2])))
+  chord_col <- setNames(c(expressed.cat.cols[match(excat_cats, names(expressed.cat.cols))], 
+                          elevated.cat.cols[match(elcat_cats, names(elevated.cat.cols))],
+                          rev(elevated.cat.cols[match(elcat_cats, names(elevated.cat.cols))]),
+                          rev(expressed.cat.cols[match(excat_cats, names(expressed.cat.cols))])), 
+                        plot.order)
+  
+  
+  
+  df <- 
+    left_join(cat1, cat2, by = "ensg_id") %>% 
+    rename(excat1 = express.category.2.x, excat2 = express.category.2.y, 
+           elcat1 = elevated.category.x, elcat2 = elevated.category.y) %>%
+    select(excat1, excat2, elcat1, elcat2) %>%
+    mutate(excat1 = paste0(excat_prefix[1], gsub(excat_gsub_pattern[1], excat_gsub_replace[1], excat1), excat_suffix[1], "excat1"),
+           excat2 = paste0(excat_prefix[2], gsub(excat_gsub_pattern[2], excat_gsub_replace[2], excat2), excat_suffix[2], "excat2"),
+           elcat1 = paste0(elcat_prefix[1], gsub(elcat_gsub_pattern[1], elcat_gsub_replace[1], elcat1), elcat_suffix[1], "elcat1"),
+           elcat2 = paste0(elcat_prefix[2], gsub(elcat_gsub_pattern[2], elcat_gsub_replace[2], elcat2), elcat_suffix[2], "elcat2")) %>% 
+           {first = T
+           for(col1 in names(.)){
+             for(col2 in names(.)){
+               tb.temp <- 
+                 group_by(., eval(parse(text = col1)), eval(parse(text = col2))) %>%
+                 dplyr::summarise(sizes = n()) %>%
+                 rename("from" = 1,
+                        "to" = 2)
+               
+               if(first) {
+                 tb <- tb.temp
+                 first = F
+               } else{
+                 tb <- 
+                   rbind(tb, tb.temp)
+               }
+               
+             }
+           }
+           tb
+           } %>%
+    filter(from != to) %>%
+    mutate(transfer = mapply(from, to, 
+                             FUN = function(a, b) {
+                               paste(case_when(grepl("excat1", a) & grepl("excat2", b) ~ "excat",
+                                               grepl("excat2", a) & grepl("excat1", b) ~ "excat rev",
+                                               grepl("elcat1", a) & grepl("elcat2", b) ~ "elcat",
+                                               grepl("elcat2", a) & grepl("elcat1", b) ~ "elcat rev",
+                                               grepl("excat1", a) & grepl("elcat1", b) ~ "exel within 1",
+                                               grepl("elcat1", a) & grepl("excat1", b) ~ "exel within 1 rev",
+                                               grepl("excat2", a) & grepl("elcat2", b) ~ "exel within 2",
+                                               grepl("elcat2", a) & grepl("excat2", b) ~ "exel within 2 rev",
+                                               grepl("excat1", a) & grepl("elcat2", b) ~ "exel without",
+                                               grepl("elcat2", a) & grepl("excat1", b) ~ "exel without rev",
+                                               grepl("elcat1", a) & grepl("excat2", b) ~ "exel without",
+                                               grepl("excat2", a) & grepl("elcat1", b) ~ "exel without rev"))})) %>%
+    ungroup() %>%
+    mutate(from = gsub("e(x|l)cat(1|2)$", "", from),
+           to = gsub("e(x|l)cat(1|2)$", "", to)) %>%
+    filter(!grepl("rev$", transfer))
+  
+  for(filt in c("excat elcat", "exel within 1 exel within 2", "exel without")) {
+    pdf(paste(result_folder, paste0("Classification comparison ", filt, ".pdf"), sep = "/"), width = 10, height = 10)
+    df %>%
+      filter(sapply(transfer, FUN = function(x) grepl(x, filt))) %$%
+      chord_classification_clockwise(from, to, sizes, chord_col, plot.group, plot.order, line_expansion = 10000)
+    dev.off()
+  }
+  
+}
+
