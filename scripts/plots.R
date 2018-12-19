@@ -179,7 +179,7 @@ make_specificity_distribution_plot <- function(atlas.cat, type = "Tissue", outpa
 }
 
 ## 6. chord plot
-chord_classification <- function(from, to, sizes, grid.col, groups = rep(1, length(from)), plot.order = c(unique(from), unique(to)), line_expansion = 10000){
+chord_classification <- function(from, to, sizes, grid.col, groups = rep(1, length(from)), plot.order = c(unique(from), unique(to)), line_expansion = 10000, size_labels = F){
   require(circlize) 
   
   factors.from <- unique(from)
@@ -211,10 +211,25 @@ chord_classification <- function(from, to, sizes, grid.col, groups = rep(1, leng
   chord <-
     tb %>% 
     chordDiagram(grid.col = grid.col,
-                 directional = 1,
+                 directional = 0,
                  annotationTrack="grid",
                  annotationTrackHeight = 0.05, 
-                 preAllocateTracks = 1, order = plot.order)
+                 preAllocateTracks = 1, 
+                 order = plot.order)
+  
+  if(size_labels) {
+    for(i in 1:nrow(chord)) {
+      value <- chord$value[i]
+      x1 <- chord$x1[i] - value / 2
+      x2 <- chord$x2[i] - value / 2
+      to_ <- chord$cn[i]
+      from_ <- chord$rn[i]
+      circos.text(x = x1, y = -1, track.index = 2, labels = value, cex = 0.7, sector.index = from_, niceFacing = T)
+      circos.text(x = x2, y = -1, track.index = 2, labels = value, cex = 0.7, sector.index = to_, niceFacing = T)
+    }
+  }
+  
+  
   
   circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
     xlim <- get.cell.meta.data("xlim")
@@ -251,7 +266,8 @@ make_classification_chord_plot <- function(atlas.cat, outpath, prefix) {
                          grid.col = c(elevated.cat.cols, expressed.cat.cols),#c(cat.cols, "not expressed" = "gray", "low tissue specificity" = "#4daf4a", "expressed in all" = "#377eb8", "expressed in some" = "#377eb8", "expressed in single" = "#377eb8", "expressed in many" = "#377eb8"),
                          groups = c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
                          plot.order = c(c("not detected", "low tissue specificity","tissue enhanced", "group enriched", "tissue enriched"), 
-                                        c("not expressed","expressed in single", "expressed in some","expressed in many", "expressed in all")))
+                                        c("not expressed","expressed in single", "expressed in some","expressed in many", "expressed in all")),
+                         size_labels = T)
   dev.off()
 }
 
@@ -424,7 +440,7 @@ make_chord_group_enriched <- function(elevated.table, grid.col, tissue_hierarcy,
     highlight.sector(sectors$main.track.handles[i][[1]], 
                      track.index = sectors$track[i][[1]], 
                      col = sectors$color[i], 
-                     text = sectors$handle[i], text.col = "white", facing = "bending", cex = 0.8)
+                     text = sectors$handle[i], text.col = "white", facing = "bending", niceFacing = T, cex = 0.8)
   }
   
   dev.off()

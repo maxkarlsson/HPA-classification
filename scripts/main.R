@@ -320,6 +320,12 @@ brain.atlas.max <-
   group_by(subgroup, ensg_id) %>% 
   filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
   dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
+
+brain.atlas.max_all_regions <- 
+  brain.atlas.filter %>% 
+  group_by(content_name, ensg_id) %>% 
+  filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
+  dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
 # 
 # write.table(brain.atlas.max,
 #             file=paste(result_folder, paste0('consensus_brain_regions.txt'),sep='/'),
@@ -333,6 +339,12 @@ brain.atlas.category <- get.categories.with.num.expressed(brain.atlas.max,
                                                           enrich.fold = 4, 
                                                           group.num = 6)
 
+brain.atlas.category_all_regions <- 
+  get.categories.with.num.expressed(brain.atlas.max_all_regions,
+                                    max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                    cat_column = "content_name",
+                                    enrich.fold = 4, 
+                                    group.num = 6)
 # write.table(brain.atlas.category,
 #             file=paste(result_folder, paste0('gene_categories_brain_regions.txt'),sep='/'),
 #             row.names = F,
@@ -425,6 +437,10 @@ make_chord_group_enriched(all.atlas.elevated.table,
 brain.atlas.max.wide <- generate_wide(brain.atlas.max, ensg_column='ensg_id', group_column='subgroup', 
                                       max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
+brain.atlas.max.wide_all_regions <- generate_wide(brain.atlas.max_all_regions, ensg_column='ensg_id', 
+                                                  group_column='content_name',
+                                                  max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = brain.atlas, 
                               expr_column = "limma_gene_dstmm.zero.impute.expression",
@@ -479,6 +495,20 @@ make_swarm_expression_plot(atlas.max = brain.atlas.max,
                            outpath = result_folder,
                            prefix = 'brain_regions')
 
+# group enriched chord diagram
+brain_atlas_hierarchy <- readr::read_delim("ref/brain_atlas_hierarchy.txt", delim = "\t")
+
+
+brain.atlas.elevated.table_all_regions <- 
+  calc_elevated.table(tb.wide = brain.atlas.max.wide_all_regions, 
+                      atlas.categories = brain.atlas.category_all_regions)
+
+make_chord_group_enriched(brain.atlas.elevated.table_all_regions, 
+                          grid.col = tissue.colors, 
+                          tissue_hierarcy = brain_atlas_hierarchy,
+                          palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                          outpath = result_folder,reverse = T, 
+                          prefix = "brain_atlas")
 
 # =========== *Blood altas* =========== 
 
@@ -548,7 +578,7 @@ make_chord_group_enriched(blood.atlas.elevated.table,
                           tissue_hierarcy = blood_atlas_hierarchy,
                           palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
                           outpath = result_folder,reverse = T, 
-                          prefix = "blood_atlas3")
+                          prefix = "blood_atlas")
 
 # Categories between blood and all atlas
 make_class_comparison_chord(blood.atlas.category, all.atlas.category,
