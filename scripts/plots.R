@@ -501,6 +501,7 @@ chord_classification_clockwise <- function(from, to, sizes, grid.col, plot.group
 }
 
 make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
+                                        outpath, prefix,
                                         excat_suffix = c(" celltypes", " tissues"),
                                         elcat_suffix = c(" celltypes", " tissues"),
                                         excat_prefix = c("", ""),
@@ -575,7 +576,8 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
     filter(!grepl("rev$", transfer))
   
   for(filt in c("excat elcat", "exel within 1 exel within 2", "exel without")) {
-    pdf(paste(result_folder, paste0("Classification comparison ", filt, ".pdf"), sep = "/"), width = 10, height = 10)
+    pdf(paste(outpath, paste0(prefix, " classification comparison ", filt, ".pdf"), sep = "/"), 
+        width = 10, height = 10, useDingbats = F)
     df %>%
       filter(sapply(transfer, FUN = function(x) grepl(x, filt))) %$%
       chord_classification_clockwise(from, to, sizes, chord_col, plot.group, plot.order, line_expansion = 10000)
