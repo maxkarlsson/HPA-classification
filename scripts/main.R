@@ -14,7 +14,7 @@ library('limma', quietly = TRUE)
 library('NOISeq', quietly = TRUE)
 library('magrittr', quietly = TRUE)
 
-setwd('/Users/wen.zhong/Work/BloodAtlas/Bloodatlas_work/')
+setwd('/Users/wen.zhong/Work/localGit/HPA-classification/')
 setwd('/Users/max.karlsson/Documents/Scilifelab/Projects/HPA-classification/')
 setwd('C:/Data/Fagerberg lab/Projects/HPA-classification')
 source('./scripts/function.R')

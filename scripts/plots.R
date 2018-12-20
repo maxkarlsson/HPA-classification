@@ -220,6 +220,7 @@ chord_classification <- function(from, to, sizes, grid.col, groups = rep(1, leng
   if(size_labels) {
     for(i in 1:nrow(chord)) {
       value <- chord$value[i]
+      if(is.null(value)) value <- chord$value1[1]
       x1 <- chord$x1[i] - value / 2
       x2 <- chord$x2[i] - value / 2
       to_ <- chord$cn[i]
