@@ -43,6 +43,10 @@ hpa_path <- './data/lims/rna_hpa.tsv'
 gtex_path <- './data/lims/rna_gtex.tsv'
 fantom_path <- './data/lims/rna_fantom.tsv'
 blood_path <- './data/lims/rna_blood.tsv'
+mouse_path <- './data/lims/rna_mousebrain_mouse_92.tsv'
+pig_path <- './data/lims/rna_pigbrain_pig_92.tsv'
+mouse_one2one_path <- './data/lims/rna_mousebrain_human_one2one_92.tsv'
+pig_one2one_path <- './data/lims/rna_pigbrain_human_one2one_92.tsv'
 
 #
 # ----------- Step 1. data wrangling ----------- 
@@ -380,7 +384,9 @@ loadings <-
   all.atlas.max.pca.values[[2]] %>%
   as.tibble(rownames = "ensg_id") %>%
   mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
-tissue.colors <- with(contenthierarchy.table, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
+
+contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
+tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
 
 make_PCA_plots(scores = scores,
                loadings = loadings,
@@ -425,12 +431,14 @@ make_swarm_expression_plot(atlas.max = all.atlas.max,
 
 # group enriched chord diagram
 all_atlas_hierarchy <- 
-  contenthierarchy.table %>%
+  contenthierarchy.table.tissue %>%
+  filter(type=='tissue') %>%
   select(1:2) %>%
   rename(content = 1, content_l1 = 2)
 make_chord_group_enriched(all.atlas.elevated.table, 
                           grid.col = tissue.colors, 
-                          tissue_hierarcy = all_atlas_hierarchy,
+                          #tissue_hierarcy = all_atlas_hierarchy,
+                          tissue_hierarcy = rbind(all_atlas_hierarchy, mutate(all_atlas_hierarchy, content = paste(content, 1))),
                           palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
                           outpath = result_folder, 
                           prefix = "all_atlas")
