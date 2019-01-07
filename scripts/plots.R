@@ -654,3 +654,175 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
   }
   
 }
+
+
+
+
+# Plot group enrich chord but as a heatmap
+
+make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {
+  
+  group_enriched_number <- 
+    elevated.table %>%
+    as_tibble(., rownames = "ensg_id") %>%
+    gather(key = "content", "classification", -ensg_id) %>%
+    # Only include group enriched
+    filter(classification %in% c(3)) %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+                                                                                filter(., content == cell2)$ensg_id))))} %>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "number of genes", -from) %>%
+    left_join(ungroup(.) %>%
+                group_by(from) %>%
+                summarise(total = sum(`number of genes`),
+                          Min = min(`number of genes`),
+                          Max = max(`number of genes`)),
+              by = "from") %>%
+    left_join(ungroup(.) %>%
+                group_by(to) %>%
+                summarise(total = sum(`number of genes`),
+                          Min = min(`number of genes`),
+                          Max = max(`number of genes`)),
+              by = "to") %>%
+    mutate(Min = mapply(Min.x, Min.y, FUN = function(a, b) min(c(a, b))),
+           Max = mapply(Max.x, Max.y, FUN = function(a, b) max(c(a, b))),
+           n = (`number of genes` - Min)/ (Max - Min),
+           from.sum = filter(., to == from)$`number of genes`[match(from, filter(., to == from)$from)],
+           to.sum = filter(., to == from)$`number of genes`[match(to, filter(., to == from)$from)],
+           frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) 
+  
+  GEN_dendrogram <- 
+    group_enriched_number %>%
+    select(from, to, frac.max) %>%
+    spread(key = to, value = frac.max) %>%
+    column_to_rownames("from") %>%
+    as.matrix() %>%
+    cor(method="spearman", use="pairwise.complete.obs")  %>%
+    {1 - .} %>%
+    as.dist() %>%
+    hclust("average")  %>%
+    as.dendrogram() 
+  
+  
+  group_enriched_number %>%
+    mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
+           to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+    ggplot(aes(from, to, fill = frac.max)) +
+    geom_tile(alpha = 0.8) + 
+    simple_theme + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3), axis.title = element_blank()) + 
+    scale_fill_gradientn(colors = c("yellow", "orangered", "#800026")) 
+  
+  ggsave(paste(outpath, paste0(prefix, '_group_enriched_heatmap.pdf'),sep='/'), width=15, height=10)
+}
+
+
+# Plot group enrich chord but as a heatmap
+
+make_heatmap_group_enriched_circle <- function(elevated.table, outpath, prefix) {
+  
+  group_enriched_number <- 
+    elevated.table %>%
+    as_tibble(., rownames = "ensg_id") %>%
+    gather(key = "content", "classification", -ensg_id) %>%
+    # Only include group enriched
+    filter(classification %in% c(3)) %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+                                                                                filter(., content == cell2)$ensg_id))))} %>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "number of genes", -from) %>%
+    left_join(ungroup(.) %>%
+                group_by(from) %>%
+                summarise(total = sum(`number of genes`),
+                          Min = min(`number of genes`),
+                          Max = max(`number of genes`)),
+              by = "from") %>%
+    left_join(ungroup(.) %>%
+                group_by(to) %>%
+                summarise(total = sum(`number of genes`),
+                          Min = min(`number of genes`),
+                          Max = max(`number of genes`)),
+              by = "to") %>%
+    mutate(Min = mapply(Min.x, Min.y, FUN = function(a, b) min(c(a, b))),
+           Max = mapply(Max.x, Max.y, FUN = function(a, b) max(c(a, b))),
+           n = (`number of genes` - Min)/ (Max - Min),
+           from.sum = filter(., to == from)$`number of genes`[match(from, filter(., to == from)$from)],
+           to.sum = filter(., to == from)$`number of genes`[match(to, filter(., to == from)$from)],
+           frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) 
+  
+  GEN_dendrogram <- 
+    group_enriched_number %>%
+    select(from, to, frac.max) %>%
+    spread(key = to, value = frac.max) %>%
+    column_to_rownames("from") %>%
+    as.matrix() %>%
+    cor(method="spearman", use="pairwise.complete.obs")  %>%
+    {1 - .} %>%
+    as.dist() %>%
+    hclust("average")  %>%
+    as.dendrogram()
+  
+  dend_segments <- 
+    ggdendro::dendro_data(GEN_dendrogram)$segments
+    
+  group_enriched_number %>%
+    mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
+           to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+    {nfactors  <- length(levels(.$from));
+    n_sectors <- nfactors + 3
+    text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
+    ggplot(.) +
+        geom_tile(aes(from, to, fill = frac.max), alpha = 0.8) + 
+        geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
+        annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
+                 angle = text_angle(1:nfactors),
+                 size = 3)+
+        annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
+                 size = 3)+
+        annotate("point", x = -2.5, y = n_sectors, color = NA)+
+        #coord_fixed() +
+        coord_polar()+
+        #simple_theme + 
+        theme_minimal()+
+        theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+        scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+  
+  ggsave(paste(outpath, paste0(prefix, '_group_enriched_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+}
+
+
+# For enriched genes NX between tissues 
+
+# atlas_max <- all.atlas.max
+# cats <- all.atlas.category
+# elevated.table <- all.atlas.elevated.table
+# 
+# left_join(atlas_max, cats, by = "ensg_id") %>%
+#   select(ensg_id, elevated.category, limma_gene_dstmm.zero.impute.expression_maxEx, consensus_content_name, `enriched tissues`) %>%
+#   filter(elevated.category %in% c("group enriched", "tissue enriched")) %>%
+#   mutate(NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+#   filter(!is.na(NX)) %>%
+#   mutate(content = ifelse(is.na(content), `enriched tissues`, content)) %>%
+#   left_join({group_by(., content) %>%
+#       summarise(mean_NX = mean(NX, na.rm = T),
+#                 sd_NX = sd(NX))}, by = c("content")) %>%
+#   mutate(scaled_NX = (NX - mean_NX) / sd_NX) %>%
+#   # left_join({ungroup(.) %>%
+#   #     group_by(`enriched tissues`) %>%
+#   #     summarise(mean_NX_tiss = mean(NX),
+#   #               sd_NX_tiss = sd(NX))}, by = c("enriched tissues")) %>%
+#   # mutate(scaled_NX = (scaled_NX - mean_NX_tiss) / sd_NX_tiss) %>%
+#   ungroup() %>%
+#   group_by(., consensus_content_name, content) %>%
+#   summarise(number = length(content),
+#             mean_scaled_NX = mean(scaled_NX, na.rm = T)) %>%
+#   ggplot(aes(consensus_content_name, content, fill = number)) +
+#   geom_tile() + 
+#   simple_theme + 
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) + 
+#   scale_fill_viridis_c()
+
