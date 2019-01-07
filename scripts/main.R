@@ -45,8 +45,6 @@ fantom_path <- './data/lims/rna_fantom.tsv'
 blood_path <- './data/lims/rna_blood.tsv'
 mouse_path <- './data/lims/rna_mousebrain_mouse_92.tsv'
 pig_path <- './data/lims/rna_pigbrain_pig_92.tsv'
-mouse_one2one_path <- './data/lims/rna_mousebrain_human_one2one_92.tsv'
-pig_one2one_path <- './data/lims/rna_pigbrain_human_one2one_92.tsv'
 
 #
 # ----------- Step 1. data wrangling ----------- 
@@ -330,12 +328,12 @@ brain.atlas.max_all_regions <-
   group_by(content_name, ensg_id) %>% 
   filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
   dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
-# 
-# write.table(brain.atlas.max,
-#             file=paste(result_folder, paste0('consensus_brain_regions.txt'),sep='/'),
-#             row.names = F,
-#             sep='\t',
-#             quote=F)
+
+write.table(brain.atlas.max,
+            file=paste(result_folder, paste0('consensus_brain_regions.txt'),sep='/'),
+            row.names = F,
+            sep='\t',
+            quote=F)
 
 brain.atlas.category <- get.categories.with.num.expressed(brain.atlas.max,
                                                           max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
@@ -343,17 +341,17 @@ brain.atlas.category <- get.categories.with.num.expressed(brain.atlas.max,
                                                           enrich.fold = 4, 
                                                           group.num = 6)
 
-brain.atlas.category_all_regions <- 
+brain.atlas.category_all_regions <-
   get.categories.with.num.expressed(brain.atlas.max_all_regions,
-                                    max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                    max_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
                                     cat_column = "content_name",
-                                    enrich.fold = 4, 
+                                    enrich.fold = 4,
                                     group.num = 6)
-# write.table(brain.atlas.category,
-#             file=paste(result_folder, paste0('gene_categories_brain_regions.txt'),sep='/'),
-#             row.names = F,
-#             sep='\t',
-#             quote=F)
+write.table(brain.atlas.category,
+            file=paste(result_folder, paste0('gene_categories_brain_regions.txt'),sep='/'),
+            row.names = F,
+            sep='\t',
+            quote=F)
 
 # print number of different categories of genes
 table(brain.atlas.category$category.text)
@@ -369,6 +367,10 @@ all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id',
                                     group_column='consensus_content_name', 
                                     max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
+contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
+tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
+
+
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = all.atlas, 
                               expr_column = "limma_gene_dstmm.zero.impute.expression",
@@ -382,9 +384,6 @@ loadings <-
   all.atlas.max.pca.values[[2]] %>%
   as.tibble(rownames = "ensg_id") %>%
   mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
-
-contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
-tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
 
 make_PCA_plots(scores = scores,
                loadings = loadings,
@@ -429,7 +428,6 @@ make_swarm_expression_plot(atlas.max = all.atlas.max,
 # group enriched chord diagram
 all_atlas_hierarchy <- 
   contenthierarchy.table.tissue %>%
-  filter(type=='tissue') %>%
   select(1:2) %>%
   rename(content = 1, content_l1 = 2)
 make_chord_group_enriched(all.atlas.elevated.table, 
@@ -445,7 +443,7 @@ make_chord_group_enriched(all.atlas.elevated.table,
 brain.atlas.max.wide <- generate_wide(brain.atlas.max, ensg_column='ensg_id', group_column='subgroup', 
                                       max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
-brain.atlas.max.wide_all_regions <- generate_wide(brain.atlas.max_all_regions, ensg_column='ensg_id', 
+brain.atlas.max.wide_all_regions <- generate_wide(brain.atlas.max_all_regions, ensg_column='ensg_id',
                                                   group_column='content_name',
                                                   max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
@@ -462,7 +460,7 @@ loadings <-
   brain.atlas.max.pca.values[[2]] %>%
   as.tibble(rownames = "ensg_id") %>%
   mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
-tissue.colors <- with(brainregions.table, setNames(subgroup.color, tissue.type))
+tissue.colors <- with(brainregions.table, setNames(subgroup.color, subgroup))
 
 make_PCA_plots(scores = scores,
                loadings = loadings,
@@ -475,6 +473,12 @@ make_clustering_plot(tb.wide = brain.atlas.max.wide,
                      colors = tissue.colors, 
                      outpath = result_folder,
                      prefix = 'brain_regions')
+
+cell.colors <- with(brainregions.table, setNames(subgroup.color, tissue.type))
+make_clustering_plot(tb.wide = brain.atlas.max.wide_all_regions, 
+                     colors = cell.colors, 
+                     outpath = result_folder,
+                     prefix = 'brain_all_cells')
 
 ## tissue elevated plot
 brain.atlas.elevated.table <- calc_elevated.table(tb.wide = brain.atlas.max.wide, 
@@ -504,18 +508,27 @@ make_swarm_expression_plot(atlas.max = brain.atlas.max,
                            prefix = 'brain_regions')
 
 # group enriched chord diagram
-brain_atlas_hierarchy <- readr::read_delim("ref/brain_atlas_hierarchy.txt", delim = "\t")
+#brain_atlas_hierarchy <- readr::read_delim("ref/brain_atlas_hierarchy.txt", delim = "\t")
+contenthierarchy.table.brain <- contenthierarchy.table %>% filter(type=='brain')
+tissue.colors.brain <- with(contenthierarchy.table.brain, setNames(c(color, color, color), c(tissue_name, organ_name, paste(organ_name, 1))))
 
-
-brain.atlas.elevated.table_all_regions <- 
-  calc_elevated.table(tb.wide = brain.atlas.max.wide_all_regions, 
+brain.atlas.elevated.table_all_regions <-
+  calc_elevated.table(tb.wide = brain.atlas.max.wide_all_regions,
                       atlas.categories = brain.atlas.category_all_regions)
 
-make_chord_group_enriched(brain.atlas.elevated.table_all_regions, 
-                          grid.col = tissue.colors, 
-                          tissue_hierarcy = brain_atlas_hierarchy,
+brain.atlas.elevated.table <-
+  calc_elevated.table(tb.wide = brain.atlas.max.wide,
+                      atlas.categories = brain.atlas.category)
+
+brain_atlas_hierarchy <- 
+  contenthierarchy.table.brain %>%
+  select(content=organ_name)
+
+make_chord_group_enriched(brain.atlas.elevated.table, 
+                          grid.col = tissue.colors.brain, 
+                          tissue_hierarcy = rbind(brain_atlas_hierarchy, mutate(brain_atlas_hierarchy, content = paste(content, 1))),
                           palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
-                          outpath = result_folder,reverse = T, 
+                          outpath = result_folder, 
                           prefix = "brain_atlas")
 
 # =========== *Blood altas* =========== 
