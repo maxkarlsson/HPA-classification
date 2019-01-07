@@ -367,8 +367,10 @@ all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id',
                                     group_column='consensus_content_name', 
                                     max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
+
 contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
 tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
+
 
 
 ## tissue distribution of normalized values
@@ -417,6 +419,7 @@ make_classification_chord_plot(atlas.cat = all.atlas.category,
                                prefix = 'all_tissues')
 
 
+
 ## swarm plot
 make_swarm_expression_plot(atlas.max = all.atlas.max, 
                            atlas.cat = all.atlas.category, 
@@ -437,6 +440,10 @@ make_chord_group_enriched(all.atlas.elevated.table,
                           palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
                           outpath = result_folder, 
                           prefix = "all_atlas")
+
+make_heatmap_group_enriched(all.atlas.elevated.table, 
+                            outpath = result_folder,
+                            prefix = "all_atlas")
 
 # =========== *Brain altas* =========== 
 
@@ -531,6 +538,10 @@ make_chord_group_enriched(brain.atlas.elevated.table,
                           outpath = result_folder, 
                           prefix = "brain_atlas")
 
+make_heatmap_group_enriched(brain.atlas.elevated.table_all_regions, 
+                            outpath = result_folder,
+                            prefix = "brain_atlas_all_regions")
+   
 # =========== *Blood altas* =========== 
 
 blood.atlas.max.wide <- generate_wide(blood.atlas.max, ensg_column='ensg_id', group_column='content_name', 
@@ -600,6 +611,10 @@ make_chord_group_enriched(blood.atlas.elevated.table,
                           palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
                           outpath = result_folder,reverse = T, 
                           prefix = "blood_atlas")
+
+make_heatmap_group_enriched(elevated.table = blood.atlas.elevated.table, 
+                            outpath = result_folder,
+                            prefix = "blood_atlas")
 
 # Categories between blood and all atlas
 make_class_comparison_chord(blood.atlas.category, all.atlas.category,
