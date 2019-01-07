@@ -95,6 +95,52 @@ make_clustering_plot <- function(tb.wide, colors, outpath, prefix){
 }
 
 
+# ------ umap, PCA, tsne plots -----------
+make_umap_plot <- function(eset,outpath,prefix){
+  require(umap)
+  require(Rtsne)
+  exprs <- t(exprs(eset))
+  pdata <- pData(eset)
+  embedding <- umap(exprs)
+  umap.plot.matrix <-
+    embedding$layout %>%
+    as.tibble() %>%
+    mutate(tissue = as.factor(pdata$tissue),
+           sample = as.factor(pdata$sample))
+  
+  pdf(file = paste(outpath, paste0(prefix, '_umap.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+  print(ggplot(umap.plot.matrix, aes(V1, V2, label = sample)) + 
+    geom_point(aes(color = tissue),size=4, alpha=0.6)+
+    geom_path(aes(color = tissue), size=0.5, linetype='dotted')+
+    #  geom_line(aes(group = subj),size = 0.1)+
+    geom_text_repel(aes(label=sample, color=tissue),size=3)+ #aes(color = Age_PN)
+    #scale_color_viridis(option="D", direction = -1)+
+    #stat_ellipse(aes(x=V1, y=V2,group = tissue),type = "t", linetype = "dotted", show.legend = F) +
+    xlab('UMAP1')+
+    ylab('UMAP2')+
+    labs(title= paste0('umap: ',prefix))+
+    theme_option_2)
+  dev.off()
+
+  exprs.merge <- merge(exprs,pdata,by.x="row.names",by.y="row.names",all.x=TRUE)
+  rownames(exprs.merge) <- exprs.merge$Row.names
+  exprs.merge.matrix <- exprs.merge[,-c(1,(ncol(exprs.merge)-1):ncol(exprs.merge))]
+  tsne_out <- Rtsne(exprs.merge.matrix, perplexity=20)
+  tsne_plot <- data.frame(x = tsne_out$Y[,1], y = tsne_out$Y[,2], tissue = exprs.merge$tissue, sample = exprs.merge$sample)
+  
+  pdf(file = paste(outpath, paste0(prefix, '_tsne.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+  print(ggplot(tsne_plot,aes(x=x,y=y,label=sample)) + 
+    geom_point(aes(x=x, y=y, color=tissue),size=4, alpha=0.6)+
+    geom_path(aes(color = tissue), size=0.5, linetype='dotted')+
+    geom_text_repel(aes(label=sample, color=tissue),size=3)+
+    xlab('tSNE1')+
+    ylab('tSNE2')+
+    labs(title= paste0('tSNE: ',prefix))+
+    theme_option_2)
+  dev.off()
+}
+
+
 ### 3. elevated bar plot
 make_elevated_bar_plot <- function(elevated.summary.table, outpath, prefix){
   pdf(file = paste(outpath, paste0(prefix, '_elevated_bar.pdf'),sep='/'), width=10, height=10, useDingbats = F)
@@ -406,17 +452,23 @@ make_chord_group_enriched <- function(elevated.table, grid.col, tissue_hierarcy,
            frac.mean = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) mean(c(n/a, n/b))),
            frac.min = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) min(c(n/a, n/b))),
            frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) %>%
-    chordDiagram(grid.col = grid.col,
-                 col = palet(100)[cut(.$frac.max, breaks = 100)],
-                 directional = 0,link.largest.ontop = T,
-                 annotationTrack="grid",
-                 annotationTrackHeight = 0.02,
-                 preAllocateTracks = eval(parse(text = paste0("list(", 
-                                                              paste0(rep("list(track.height = 0.05, 
-                                                                         track.margin = c(0.0035, 0.01))", 
-                                                                         length(track.levels)), collapse = ", "), ")"))),
-                 order = classes[with(tissue_hierarcy[match(tissues, tissue_hierarcy[, 1][[1]]),],
-                                      eval(parse(text = paste0("order(", paste(track.levels[-1], collapse = ", "), ")"))))])
+    {chordDiagram(.[,1:3],
+                  grid.col = grid.col,
+                  col = palet(100)[cut(.$frac.max, breaks = 100)],
+                  directional = 0,link.largest.ontop = T,
+                  annotationTrack="grid",
+                  annotationTrackHeight = 0.02,
+                  preAllocateTracks = eval(parse(text = paste0("list(", 
+                                                               paste0(rep("list(track.height = 0.05, 
+                                                                          track.margin = c(0.0035, 0.01))", 
+                                                                          length(track.levels)), collapse = ", "), ")"))),
+                  order = {if(length(track.levels) == 1) {
+                    classes
+                    } else {
+                      classes[with(tissue_hierarcy[match(tissues, tissue_hierarcy[, 1][[1]]),],
+                                   eval(parse(text = paste0("order(", paste(track.levels[-1], collapse = ", "), ")"))))]
+                    }
+                    })}
   
   
   
@@ -605,6 +657,7 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
 
 
 
+
 # Plot group enrich chord but as a heatmap
 
 make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {
@@ -772,3 +825,4 @@ make_heatmap_group_enriched_circle <- function(elevated.table, outpath, prefix) 
 #   simple_theme + 
 #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) + 
 #   scale_fill_viridis_c()
+
