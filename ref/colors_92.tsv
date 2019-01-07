@@ -64,6 +64,7 @@ thalamus	thalamus	#EA9586	brain
 adipose tissue	Adipose & soft tissue	#A7DACD	tissue
 cartilage	Adipose & soft tissue	#A7DACD	tissue
 soft tissue	Adipose & soft tissue	#A7DACD	tissue
+blood	blood	#b30000	tissue
 appendix	Bone marrow & immune system	#A1A8AA	tissue
 bone marrow	Bone marrow & immune system	#A1A8AA	tissue
 lymph node	Bone marrow & immune system	#A1A8AA	tissue
@@ -155,10 +156,10 @@ epididymis	Male reproductive system	#95D4F5	tissue
 prostate	Male reproductive system	#95D4F5	tissue
 seminal vesicle	Male reproductive system	#95D4F5	tissue
 testis	Male reproductive system	#95D4F5	tissue
-esophagus	mouth	#FBDAD9	tissue
-oral mucosa	mouth	#FBDAD9	tissue
-salivary gland	mouth	#FBDAD9	tissue
-tongue	mouth	#FBDAD9	tissue
+esophagus	Mouth	#FBDAD9	tissue
+oral mucosa	Mouth	#FBDAD9	tissue
+salivary gland	Mouth	#FBDAD9	tissue
+tongue	Mouth	#FBDAD9	tissue
 heart muscle	Muscle tissues	#DE6C7D	tissue
 skeletal muscle	Muscle tissues	#DE6C7D	tissue
 smooth muscle	Muscle tissues	#DE6C7D	tissue
