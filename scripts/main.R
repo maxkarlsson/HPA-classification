@@ -660,43 +660,38 @@ make_heatmap_group_enriched_expression_levels_circle(elevated.table = blood.atla
                                                      outpath = result_folder,
                                                      prefix = "blood_atlas") 
 
-make_heatmap_all_elevated_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
-                                                   all.atlas.max.tb = blood.atlas.max, 
-                                                   maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
-                                                   tissue_column = "content_name",
-                                                   outpath = result_folder,
-                                                   prefix = "blood_atlas") 
+make_heatmap_median_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                      all.atlas.max.tb = blood.atlas.max, 
+                                      maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                      tissue_column = "content_name",
+                                      enrichment = c(3),
+                                      outpath = result_folder,
+                                      prefix = "blood_atlas_group_enriched")
 
-make_heatmap_group_and_enhanced_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
-                                                         all.atlas.max.tb = blood.atlas.max, 
-                                                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
-                                                         tissue_column = "content_name",
-                                                         outpath = result_folder,
-                                                         prefix = "blood_atlas") 
+make_heatmap_median_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                      all.atlas.max.tb = blood.atlas.max, 
+                                      maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                      tissue_column = "content_name",
+                                      enrichment = c(2, 3, 4),
+                                      outpath = result_folder,
+                                      prefix = "blood_atlas_all_elevated")
 
-make_heatmap_group_enriched_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
-                                                     all.atlas.max.tb = blood.atlas.max, 
-                                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
-                                                     tissue_column = "content_name",
-                                                     outpath = result_folder,
-                                                     prefix = "blood_atlas",
-                                                     y_dendrogram = F) 
+make_heatmap_expression_levels(elevated.table = blood.atlas.elevated.table,
+                               all.atlas.max.tb = blood.atlas.max, 
+                               maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                               tissue_column = "content_name",
+                               enrichment = c(3),
+                               outpath = result_folder,
+                               prefix = "blood_atlas_group_enriched")
 
-make_heatmap_group_enriched_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
-                                                     all.atlas.max.tb = blood.atlas.max, 
-                                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
-                                                     tissue_column = "content_name",
-                                                     outpath = result_folder,
-                                                     prefix = "blood_atlas_dendro",
-                                                     y_dendrogram = T) 
+make_heatmap_expression_levels(elevated.table = blood.atlas.elevated.table,
+                               all.atlas.max.tb = blood.atlas.max, 
+                               maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                               tissue_column = "content_name",
+                               enrichment = c(2,3,4),
+                               outpath = result_folder,
+                               prefix = "blood_atlas_all_elevated")
 
-make_heatmap_all_elevated_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
-                                                   all.atlas.max.tb = blood.atlas.max, 
-                                                   maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
-                                                   tissue_column = "content_name",
-                                                   outpath = result_folder,
-                                                   prefix = "blood_atlas_dendro",
-                                                   y_dendrogram = T) 
 # Categories between blood and all atlas
 make_class_comparison_chord(blood.atlas.category, all.atlas.category,
                             outpath = result_folder, prefix = "blood")
