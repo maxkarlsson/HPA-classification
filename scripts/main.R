@@ -250,7 +250,11 @@ if(!file.exists(paste(result_folder, paste0('gene_categories_all_tissues.txt'),s
 
 # print number of different categories of genes
 table(all.atlas.category$category.text)
-
+all.atlas.category %>%
+  group_by(elevated.category, express.category.2) %>% 
+  summarise(n = length(elevated.category)) %>% 
+  spread(key = express.category.2, value = n) %>%
+  readr::write_delim(paste(result_folder, paste0('gene_categories_summarized.txt'),sep='/'), delim = "\t")
 
 #
 # ----------- Blood atlas classification (18 cells) ----------- 

@@ -310,38 +310,64 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
     #Plot 1 % highest
     filter(expression >= quantile(expression, probs = 0.99)) %>%
     group_by(Grouping) %>%
-    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
-    mutate(highest = expression >= quantile(expression, probs = 0.99)) %>%
+    # Write gene name if highest 0.5 % per tissue and/or highest 1 % in total
+    mutate(highest = expression >= quantile(expression, probs = 0.995) | rank(expression) >= (length(expression) - 8)) %>%
     ungroup() %>%
     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category), by = "ensg_id") %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
 
-  pdf(file = paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10, useDingbats = F)
-  print(
+  
   plot.data %>%
   {ggplot(., aes(Grouping, expression, label = gene_name, color = elevated.category)) +
       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 1.5)+
+      geom_text_repel(data = .[.$highest,], size = 2)+
       simple_theme+
       scale_color_manual(values = elevated.cat.cols)+
       scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
-  dev.off()
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+  ggsave(paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10)
   
-  pdf(file = paste(outpath, paste0(prefix, '_high_abundance_jitter_2.pdf'),sep='/'), width=15, height=10, useDingbats = F)
-  print(
   plot.data %>%
   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 1.5)+
+      geom_text_repel(data = .[.$highest,], size = 2)+
       simple_theme+
       scale_color_manual(values = protein.class.palette)+
       scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
-  dev.off()
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+  ggsave(paste(outpath, paste0(prefix, '_high_abundance_jitter_2.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(expression = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = tissue_column))) %>%
+    dplyr::select(Grouping, ensg_id, expression) %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    # tissue enriched
+    filter(elevated.category == "tissue enriched" & Grouping == `enriched tissues`) %>%
+    group_by(Grouping) %>%
+    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+    mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10)) %>%
+    ungroup() %>%
+    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
+    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
+  
+  plot.data %>%
+  {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+      geom_text_repel(data = .[.$highest,], size = 2)+
+      simple_theme+
+      scale_color_manual(values = protein.class.palette)+
+      scale_y_log10()+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+  ggsave(paste(outpath, paste0(prefix, '_high_tissue_enriched_jitter.pdf'),sep='/'), width=15, height=10)
 }
 
 ## 8. Bland-Altman plot

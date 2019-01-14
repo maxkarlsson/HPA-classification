@@ -48,4 +48,5 @@ protein.class.palette <- c("secreted" = '#911D51',
                            "transcription_factors" = '#B8801B', 
                            "mitochondrial" = '#E371B4', 
                            "ribosomal" = '#89A0F3', 
+                           "none" = "black",
                            '#00C9BC', '#97C542', '#FFA05E')
