@@ -25,16 +25,12 @@ pca.cal <- function(tb.wide){
 } 
 
 make_PCA_plots <- function(scores, loadings, groups, groups.color, ellipse = T, outpath, prefix) {
-  pdf(file = paste(outpath, paste0(prefix, '_PCA_loadings.pdf'),sep='/'), width=10, height=10, useDingbats = F)
   loadings %>% 
-    {ggplot(., aes(PC1, PC2, label = labels))+
-      geom_text(show.legend = F)+
-      simple_theme+
-      ggtitle("Loadings")} %>%
-    print()
-  dev.off()
-  
-  pdf(file = paste(outpath, paste0(prefix, '_PCA_scores.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+    ggplot(aes(PC1, PC2, label = labels))+
+    geom_text(show.legend = F)+
+    simple_theme+
+    ggtitle("Loadings")
+  ggsave(paste(outpath, paste0(prefix, '_PCA_loadings.pdf'),sep='/'), width=10, height=10)
   
   scores %>%
   {names <- rownames(.); as.tibble(.) %>% mutate(sample = names,
@@ -51,24 +47,9 @@ make_PCA_plots <- function(scores, loadings, groups, groups.color, ellipse = T, 
                                                      geom_segment(aes(xend = mean.PC1, yend = mean.PC2), show.legend = F)+
                                                      simple_theme+
                                                      scale_color_manual(values = groups.color)+
-                                                     ggtitle("Scores")}} %>%
-    print()
-  dev.off()
-    # scores %>%
-    # {names <- rownames(.); as.tibble(.) %>% mutate(sample = names,
-    #                                                groups = groups[match(names, names(groups))])} %>%
-    #                                                {means <- group_by(., groups) %>%
-    #                                                  dplyr::summarise(mean.PC1 = mean(PC1),
-    #                                                                   mean.PC2 = mean(PC2))
-    #                                                left_join(., means, by = "groups") %>%
-    #                                                {ggplot(., aes(PC1, PC2, color = groups, label = groups))+
-    # 
-    #                                                    geom_point(show.legend = F)+
-    #                                                    geom_segment(aes(xend = mean.PC1, yend = mean.PC2), show.legend = F)+
-    #                                                    simple_theme+
-    #                                                    #scale_color_manual(values = groups.color)+
-    #                                                    ggtitle("Scores")}}
-  #grid.arrange(g1, g2, g3, ncol = 3)
+                                                     ggtitle("Scores")}} 
+  
+  ggsave(paste(outpath, paste0(prefix, '_PCA_scores.pdf'),sep='/'), width=10, height=10)
 
 }
 

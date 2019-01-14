@@ -37,6 +37,8 @@ consensustissue_path <- './data/anno/consensus_tissue.tsv' ## lims tissue to org
 brainregions_path <- './data/anno/brain_regions.txt' ## brain_regions_anno
 proteinclass_path <- './data/anno/gene.classes.txt' ## protein classification
 tissuehierarchy_path <- './ref/colors_92.tsv' # tissue colors and hierarchy
+blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
+blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
 
 ## datasets
 hpa_path <- './data/lims/rna_hpa.tsv'
@@ -251,7 +253,7 @@ table(all.atlas.category$category.text)
 
 
 #
-# ----------- Blood atlas classification ----------- 
+# ----------- Blood atlas classification (18 cells) ----------- 
 #
 
 blood.atlas <- 
@@ -290,6 +292,50 @@ if(!file.exists(paste(result_folder, paste0('gene_categories_blood_cells.txt'),s
 
 # print number of different categories of genes
 table(blood.atlas.category$category.text)
+
+
+#
+# ----------- Blood atlas classification (6 cells) ----------- 
+#
+
+blood.atlas.6 <- 
+  all.atlas %>%
+  filter(method == "Blood") %>% 
+  left_join(blood_atlas_hierarchy, by = c("content_name" = "content")) %>%
+  mutate(content_name = content_l1) %>%
+  # Remove Total for classification
+  filter(content_name != "total PBMC") 
+
+if(!file.exists(paste(result_folder, paste0('blood.atlas.max.6.txt'),sep='/'))) {
+  blood.atlas.max.6 <- 
+    blood.atlas.6 %>%
+    group_by(content_name, ensg_id) %>% 
+    filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
+    dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
+  
+  readr::write_delim(blood.atlas.max.6, path = paste(result_folder, paste0('blood.atlas.max.6.txt'),sep='/'), delim = "\t")
+} else {
+  blood.atlas.max.6 <- readr::read_delim(paste(result_folder, paste0('blood.atlas.max.6.txt'),sep='/'), delim = "\t")
+} 
+
+
+if(!file.exists(paste(result_folder, paste0('gene_categories_blood_cells.6.txt'),sep='/'))) {
+  blood.atlas.category.6 <- get.categories.with.num.expressed(blood.atlas.max.6,
+                                                              max_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                                              cat_column = "content_name",
+                                                              enrich.fold = 4, 
+                                                              under.lim = 1, 
+                                                              group.num = 5)
+  
+  readr::write_delim(blood.atlas.category.6, path = paste(result_folder, paste0('gene_categories_blood_cells.6.txt'),sep='/'), delim = "\t")
+} else {
+  blood.atlas.category.6 <- readr::read_delim(paste(result_folder, paste0('gene_categories_blood_cells.6.txt'),sep='/'), delim = "\t")
+} 
+
+
+
+# print number of different categories of genes
+table(blood.atlas.category.6$category.text)
 
 #
 # ----------- Brain atlas classification ----------- 
@@ -786,4 +832,67 @@ make_number_detected_genes_barplot(all.atlas.max.tb = blood.atlas.max,
                                    tissue_column = "content_name",
                                    outpath = result_folder,
                                    prefix = "blood_atlas")
-  
+
+
+# =========== *Blood altas (6 cells)* =========== 
+
+blood.atlas.max.wide.6 <- generate_wide(blood.atlas.max.6, ensg_column='ensg_id', group_column='content_name', 
+                                        max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+
+## PCA and clustering plots
+blood.atlas.max.pca.values.6 <- pca.cal(blood.atlas.max.wide.6)
+scores <- blood.atlas.max.pca.values.6[[1]]
+loadings <- 
+  blood.atlas.max.pca.values.6[[2]] %>%
+  as.tibble(rownames = "ensg_id") %>%
+  mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+
+make_PCA_plots(scores = scores,
+               loadings = loadings,
+               groups = setNames(rownames(blood.atlas.max.pca.values.6[[1]]), rownames(blood.atlas.max.pca.values.6[[1]])),
+               groups.color = with(blood_atlas_colors, setNames(color, content)),
+               outpath = result_folder,
+               prefix = 'blood_celltypes_6')
+
+make_clustering_plot(tb.wide = blood.atlas.max.wide.6, 
+                     colors = with(blood_atlas_colors, setNames(color, content)), 
+                     outpath = result_folder,
+                     prefix = 'blood_celltypes_6')
+
+
+## tissue elevated plot
+blood.atlas.elevated.table.6 <- calc_elevated.table(tb.wide = blood.atlas.max.wide.6, 
+                                                    atlas.categories = blood.atlas.category.6)
+blood.atlas.elevated.summary.table.6 <- calc_elevated.summary.table(blood.atlas.elevated.table.6)
+make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table.6, 
+                       outpath = result_folder,
+                       prefix = 'blood_celltypes_6')
+
+## specificity distribution
+make_specificity_distribution_plot(atlas.cat = blood.atlas.category.6, 
+                                   type = "Tissue",
+                                   outpath = result_folder,
+                                   prefix = 'blood_celltypes_6')
+
+## chord plot
+# make_classification_chord_plot(atlas.cat = blood.atlas.category.6,
+#                                outpath = result_folder,
+#                                prefix = 'blood_tissues_6')
+
+# group enriched chord diagram
+
+
+make_chord_group_enriched(blood.atlas.elevated.table.6, 
+                          grid.col = with(blood_atlas_colors, setNames(color, content)), 
+                          tissue_hierarcy = blood_atlas_hierarchy %>%
+                            select(content_l1, content_l2, content_l3) %>%
+                            rename(content = content_l1,
+                                   content_l1 = content_l2,
+                                   content_l2 = content_l3),
+                          palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                          outpath = result_folder,reverse = T, 
+                          prefix = "blood_atlas_6")
+
+make_heatmap_group_enriched(elevated.table = blood.atlas.elevated.table.6, 
+                            outpath = result_folder,
+                            prefix = "blood_atlas_6")
