@@ -599,7 +599,7 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
     rename(excat1 = express.category.2.x, excat2 = express.category.2.y, 
            elcat1 = elevated.category.x, elcat2 = elevated.category.y) %>%
     select(excat1, excat2, elcat1, elcat2) %>%
-    mutate(excat1 = paste0(excat_prefix[1], gsub(excat_gsub_pattern[1], excat_gsub_replace[1], excat1), excat_suffix[1], "excat1"),
+    mutate(excat1 = paste0(excat_prefix[1], gsub(excat_gsub_pattern[1], excat_gsub_replace[1], express.category.2), excat_suffix[1], "excat1"),
            excat2 = paste0(excat_prefix[2], gsub(excat_gsub_pattern[2], excat_gsub_replace[2], excat2), excat_suffix[2], "excat2"),
            elcat1 = paste0(elcat_prefix[1], gsub(elcat_gsub_pattern[1], elcat_gsub_replace[1], elcat1), elcat_suffix[1], "elcat1"),
            elcat2 = paste0(elcat_prefix[2], gsub(elcat_gsub_pattern[2], elcat_gsub_replace[2], elcat2), elcat_suffix[2], "elcat2")) %>% 
@@ -644,6 +644,19 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
            to = gsub("e(x|l)cat(1|2)$", "", to)) %>%
     filter(!grepl("rev$", transfer))
   
+  
+  
+  plot.color <- setNames(c(expressed.cat.cols,
+                           rev(expressed.cat.cols),               
+                           elevated.cat.cols[!grepl("celltype", names(elevated.cat.cols))],               
+                           rev(elevated.cat.cols[!grepl("tissue", names(elevated.cat.cols))])),
+                         plot.order)
+  
+  plot.group <- c(rep(1, length(expressed.cat.cols)),
+                  rep(2, length(expressed.cat.cols)),
+                  rep(3, length(elevated.cat.cols[!grepl("celltype", names(elevated.cat.cols))])),
+                  rep(4, length(elevated.cat.cols[!grepl("tissue", names(elevated.cat.cols))])))
+  
   for(filt in c("excat elcat", "exel within 1 exel within 2", "exel without")) {
     pdf(paste(outpath, paste0(prefix, " classification comparison ", filt, ".pdf"), sep = "/"), 
         width = 10, height = 10, useDingbats = F)
@@ -658,6 +671,24 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
 
 
 
+
+###
+# make_elevated_organ_total_chord <- function(cat1, cat2, line_expansion = 10000,
+#                                             outpath, prefix) {
+#   joined_cats <- 
+#     left_join(cat1, cat2, by = "ensg_id") %>%
+#     filter(category.x %in% c(2,3,4)) %>%
+#     select(`enriched tissues.x`, `enriched tissues.y`, express.category.2.x, express.category.2.y, elevated.category.x, elevated.category.y) 
+#   
+#   cat1_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.x`, collapse = ", "), split = ", ")[[1]])
+#   cat2_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.y`, collapse = ", "), split = ", ")[[1]])
+#   
+#   crossing(cat1_tissues, cat2_tissues) %$%
+#     mapply(cat1_tissues, cat1_tissues, FUN = function
+#   
+#   chord_classification(from, to, sizes, grid.col, groups = rep(1, length(from)), plot.order = c(unique(from), unique(to)), line_expansion = 10000, size_labels = F)
+# }
+###
 # Plot group enrich chord but as a heatmap
 
 make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {
@@ -1109,7 +1140,7 @@ ggdendroheat <- function(x, y, value, show.legend = T, xdendrogram = T, ydendrog
     ggplot() +
     geom_tile(aes(x, y, fill = value), show.legend = show.legend) + 
     theme_minimal() + 
-    theme(axis.text.x = element_text(angle = -90, hjust = 1, vjust = 0.2), 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8), 
           panel.grid = element_blank())
   
   xp <- 0
@@ -1209,34 +1240,23 @@ make_heatmap_median_expression_levels <-
     
     }
 
-# For enriched genes NX between tissues 
 
-# atlas_max <- all.atlas.max
-# cats <- all.atlas.category
-# elevated.table <- all.atlas.elevated.table
-# 
-# left_join(atlas_max, cats, by = "ensg_id") %>%
-#   select(ensg_id, elevated.category, limma_gene_dstmm.zero.impute.expression_maxEx, consensus_content_name, `enriched tissues`) %>%
-#   filter(elevated.category %in% c("group enriched", "tissue enriched")) %>%
-#   mutate(NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
-#   filter(!is.na(NX)) %>%
-#   mutate(content = ifelse(is.na(content), `enriched tissues`, content)) %>%
-#   left_join({group_by(., content) %>%
-#       summarise(mean_NX = mean(NX, na.rm = T),
-#                 sd_NX = sd(NX))}, by = c("content")) %>%
-#   mutate(scaled_NX = (NX - mean_NX) / sd_NX) %>%
-#   # left_join({ungroup(.) %>%
-#   #     group_by(`enriched tissues`) %>%
-#   #     summarise(mean_NX_tiss = mean(NX),
-#   #               sd_NX_tiss = sd(NX))}, by = c("enriched tissues")) %>%
-#   # mutate(scaled_NX = (scaled_NX - mean_NX_tiss) / sd_NX_tiss) %>%
-#   ungroup() %>%
-#   group_by(., consensus_content_name, content) %>%
-#   summarise(number = length(content),
-#             mean_scaled_NX = mean(scaled_NX, na.rm = T)) %>%
-#   ggplot(aes(consensus_content_name, content, fill = number)) +
-#   geom_tile() + 
-#   simple_theme + 
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) + 
-#   scale_fill_viridis_c()
+
+make_number_detected_genes_barplot <- function(all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix) {
+  all.atlas.max.tb %>%
+    filter(eval(parse(text = maxEx_column)) >= 1) %>%
+    mutate(content = eval(parse(text = tissue_column))) %>%
+    group_by(content) %>%
+    summarise(`number expressed` = length(ensg_id)) %>%  
+    mutate(content = factor(content, levels = content[order(`number expressed`, decreasing = T)])) %>%
+    ggplot(aes(content, `number expressed`)) +
+    geom_bar(stat = "identity", fill = "gray80", color = "black") +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8), 
+          axis.title.x = element_blank())+
+    ylab("Number of expressed genes")
+  
+  ggsave(paste(outpath, paste0(prefix, '__number_detected_genes_barplot.pdf'),sep='/'), width=6, height=4)
+}
 
