@@ -1260,3 +1260,32 @@ make_number_detected_genes_barplot <- function(all.atlas.max.tb, maxEx_column, t
   ggsave(paste(outpath, paste0(prefix, '__number_detected_genes_barplot.pdf'),sep='/'), width=6, height=4)
 }
 
+# Plot method spearman cluster
+
+make_spearman_method_dendrogram <- function(all.atlas.tb, Ex_column, content_column, named_color_replacement, outpath, prefix) {
+  
+  
+  dendr <- 
+    all.atlas.tb %>%
+    mutate(content_method = paste(eval(parse(text = content_column)), method),
+           ex = eval(parse(text = Ex_column)),
+           ex = log(ex + 1)) %$%
+    make_spearman_dendrogram(content_method, ensg_id, ex)
+  
+  dendr %>%
+    get_dendrogram_segments() %>%
+    {ggplot(., aes(x, y, xend = xend, yend = yend)) +
+        geom_segment() +
+        geom_text(data = filter(., yend == 0), aes(y = yend - 0.002, 
+                                                   label = labels(dendr), 
+                                                   color = trimws(str_extract(labels(dendr), paste(names(named_color_replacement), collapse = "|")))), 
+                  angle = 90, hjust = 1, vjust = 0.3, size = 3, show.legend = F) + 
+        scale_y_continuous(expand = c(0.05,0.2)) +
+        scale_color_manual(values = named_color_replacement) +
+        theme_minimal() + 
+        theme(axis.text = element_blank(), axis.title = element_blank(), 
+              panel.grid = element_blank())}
+    
+  
+   ggsave(paste(outpath, paste0(prefix, '_spearman_method_cluster.pdf'),sep='/'), width=16, height=8)
+}

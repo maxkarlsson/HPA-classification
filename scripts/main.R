@@ -372,6 +372,34 @@ contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue
 tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
 
 
+## Spearman method cluster
+make_spearman_method_dendrogram(all.atlas.tb = all.atlas, 
+                                Ex_column = "limma_gene_dstmm.zero.impute.expression", 
+                                content_column = "content_name", 
+                                named_color_replacement = dataset.colors, 
+                                outpath = result_folder, 
+                                prefix = "All_atlas_norm_method_color")
+
+make_spearman_method_dendrogram(all.atlas.tb = all.atlas, 
+                                Ex_column = "limma_gene_dstmm.zero.impute.expression", 
+                                content_column = "content_name", 
+                                named_color_replacement = tissue.colors, 
+                                outpath = result_folder, 
+                                prefix = "All_atlas_norm_tissue_color")
+
+make_spearman_method_dendrogram(all.atlas.tb = all.atlas, 
+                                Ex_column = "expression", 
+                                content_column = "content_name", 
+                                named_color_replacement = dataset.colors, 
+                                outpath = result_folder, 
+                                prefix = "All_atlas_exp_method_color")
+
+make_spearman_method_dendrogram(all.atlas.tb = all.atlas, 
+                                Ex_column = "expression", 
+                                content_column = "content_name", 
+                                named_color_replacement = tissue.colors, 
+                                outpath = result_folder, 
+                                prefix = "All_atlas_exp_tissue_color")
 
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = all.atlas, 
