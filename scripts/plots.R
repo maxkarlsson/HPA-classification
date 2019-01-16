@@ -4,6 +4,38 @@ library('gridExtra')
 library('ClassDiscovery')
 library('gplots')
 
+
+
+make_tissue_distributions_plot <- function(atlas.tb, Ex_column, content_column, und.lim, do.tissues = "all", outpath, prefix) {
+  
+  atlas.tb %>%
+    mutate(tissue = eval(parse(text = content_column)),
+           expression = eval(parse(text = Ex_column))) %>%
+    filter(ifelse(rep(do.tissues[1] == "all", nrow(.)), T, tissue %in% do.tissues) & expression > 0) %>%
+    mutate(tissue = factor(tissue, levels = with({group_by(., tissue) %>% 
+        summarise(methods = paste(unique(method), collapse = " "))},
+        tissue[order(methods)]))) %>%
+        {ggplot(., aes(tissue, expression, fill = method, color = method))+
+            stat_summary(fun.y = "median", fun.args = c("na.rm" = T), geom = "line", aes(group = method), size = 2, alpha = 0.2)+
+            stat_summary(fun.y = "min", geom = "line", aes(tissue, eval(parse(text = Ex_column)), group = 1), inherit.aes = F, size = 1, alpha = 0.1)+
+            stat_summary(fun.y = "max", geom = "line", aes(tissue, eval(parse(text = Ex_column)), group = 1), inherit.aes = F, size = 1, alpha = 0.1)+
+            stat_summary(fun.y = "min", geom = "line", aes(group = method), size = 0.5, alpha = 0.5)+
+            stat_summary(fun.y = "max", geom = "line", aes(group = method), size = 0.5, alpha = 0.5)+
+            
+            
+            geom_violin(draw_quantiles = 0.5, alpha = 0.2, position = "identity")+
+            geom_hline(yintercept = und.lim, linetype = "dashed")+
+            simple_theme+
+            scale_y_log10()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+            theme(axis.title = element_blank())+
+            scale_fill_manual(values = dataset.colors)+
+            scale_color_manual(values = dataset.colors)} 
+  
+  ggsave(filename = paste(outpath, paste0(prefix, " tissue distributions.png"), sep = "/"), width = 10, height = 5, dpi = 300)
+}
+
+
 ### 1. PCA plot
 pca.cal <- function(tb.wide){
   pca <- 
@@ -509,6 +541,61 @@ make_chord_group_enriched <- function(elevated.table, grid.col, tissue_hierarcy,
   
 }
 
+chord_vertical_text <- function(from, to, sizes, grid.col, plot.group, plot.order){
+  
+  require(circlize) 
+  
+  factors.from <- unique(from)
+  factors.to <- unique(to)
+  factors <- c(factors.from, factors.to)
+  
+  
+  tb <- 
+    tibble(from, to, sizes)
+  
+  #groups <- groups[plot.order]
+  gap.after.par <- c()
+  for(i in 1:(length(plot.group)-1)) {
+    if(plot.group[i] == plot.group[i+1]) {
+      gap.after.par <- c(gap.after.par, 2)
+    } else {
+      gap.after.par <- c(gap.after.par, 15)
+    }
+  }
+  
+  if(plot.group[length(plot.group)] == plot.group[1]) {
+    gap.after.par <- c(gap.after.par, 2)
+  } else {
+    gap.after.par <- c(gap.after.par, 15)
+  }
+  
+  circos.par(gap.after = gap.after.par, canvas.xlim = c(-1.3, 1.3), canvas.ylim = c(-1.3, 1.3))
+  
+  chord <-
+    tb %>% 
+    chordDiagram(grid.col = grid.col,
+                 directional = 0,
+                 annotationTrack="grid",
+                 annotationTrackHeight = 0.05, 
+                 preAllocateTracks = 1, order = plot.order)
+  
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim <- get.cell.meta.data("xlim")
+    ylim <- get.cell.meta.data("ylim")
+    sector.name <- get.cell.meta.data("sector.index")
+    sector.index <- get.cell.meta.data("sector.numeric.index")
+    
+    
+    
+    
+    circos.text(mean(xlim), min(ylim), sector.name, adj = 0, niceFacing = TRUE, facing = "clockwise", cex = 0.9)
+    
+  }, bg.border = NA)
+  
+  circos.clear()
+  
+}
+
 
 # ------ classification comparison plot
 
@@ -544,7 +631,7 @@ chord_classification_clockwise <- function(from, to, sizes, grid.col, plot.group
   
   chord <-
     tb %>% 
-    chordDiagram(grid.col = chord_col,
+    chordDiagram(grid.col = grid.col,
                  directional = 0,
                  annotationTrack="grid",
                  annotationTrackHeight = 0.05, 
@@ -606,7 +693,7 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
     rename(excat1 = express.category.2.x, excat2 = express.category.2.y, 
            elcat1 = elevated.category.x, elcat2 = elevated.category.y) %>%
     select(excat1, excat2, elcat1, elcat2) %>%
-    mutate(excat1 = paste0(excat_prefix[1], gsub(excat_gsub_pattern[1], excat_gsub_replace[1], express.category.2), excat_suffix[1], "excat1"),
+    mutate(excat1 = paste0(excat_prefix[1], gsub(excat_gsub_pattern[1], excat_gsub_replace[1], excat1), excat_suffix[1], "excat1"),
            excat2 = paste0(excat_prefix[2], gsub(excat_gsub_pattern[2], excat_gsub_replace[2], excat2), excat_suffix[2], "excat2"),
            elcat1 = paste0(elcat_prefix[1], gsub(elcat_gsub_pattern[1], elcat_gsub_replace[1], elcat1), elcat_suffix[1], "elcat1"),
            elcat2 = paste0(elcat_prefix[2], gsub(elcat_gsub_pattern[2], elcat_gsub_replace[2], elcat2), elcat_suffix[2], "elcat2")) %>% 
@@ -679,23 +766,65 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
 
 
 
-###
-# make_elevated_organ_total_chord <- function(cat1, cat2, line_expansion = 10000,
-#                                             outpath, prefix) {
-#   joined_cats <- 
-#     left_join(cat1, cat2, by = "ensg_id") %>%
-#     filter(category.x %in% c(2,3,4)) %>%
-#     select(`enriched tissues.x`, `enriched tissues.y`, express.category.2.x, express.category.2.y, elevated.category.x, elevated.category.y) 
-#   
-#   cat1_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.x`, collapse = ", "), split = ", ")[[1]])
-#   cat2_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.y`, collapse = ", "), split = ", ")[[1]])
-#   
-#   crossing(cat1_tissues, cat2_tissues) %$%
-#     mapply(cat1_tissues, cat1_tissues, FUN = function
-#   
-#   chord_classification(from, to, sizes, grid.col, groups = rep(1, length(from)), plot.order = c(unique(from), unique(to)), line_expansion = 10000, size_labels = F)
-# }
-###
+##
+make_elevated_organ_total_chord <- function(cat1, cat2, line_expansion = 10000, 
+                                            grid.col, elevated_cats = c(2,3,4), 
+                                            direction = 1, cat1_name, cat2_name,
+                                            outpath, prefix) {
+  joined_cats <-
+    left_join(cat1, cat2, by = "ensg_id") %>%
+    filter(case_when(direction == 1 ~ category.x %in% elevated_cats, 
+                     direction == 2 ~ category.y %in% elevated_cats)) %>%
+    select(`enriched tissues.x`, `enriched tissues.y`, express.category.2.x, express.category.2.y, elevated.category.x, elevated.category.y)
+
+  cat1_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.x`, collapse = ", "), split = ", ")[[1]])
+  cat2_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.y`, collapse = ", "), split = ", ")[[1]])
+
+  plot.data <- 
+    crossing(cat1_tissues, cat2_tissues) %>%
+    mutate(sizes = mapply(cat1_tissues, cat2_tissues, FUN = function(a, b) {
+      filter(joined_cats, `enriched tissues.x` == a & `enriched tissues.y` == b) %>%
+        nrow()
+    })) %>%
+    filter(sizes > 0) %>%
+    mutate(cat2_tissues = ifelse(cat2_tissues == "", ifelse(direction == 1, 
+                                                            paste("Not tissue elevated in", cat2_name), 
+                                                            paste("Not tissue elevated in", cat1_name)), cat2_tissues),
+           cat1_tissues = ifelse(cat1_tissues == "", ifelse(direction == 1, 
+                                                            paste("Not tissue elevated in", cat2_name), 
+                                                            paste("Not tissue elevated in", cat1_name)), cat1_tissues))
+  
+    
+  cat1_factors <- unique(plot.data$cat1_tissues)
+  cat2_factors <- unique(plot.data$cat2_tissues)
+  
+  
+  number_cat1 <- 
+    plot.data %>%
+    group_by(cat1_tissues) %>%
+    summarise(n = sum(sizes)) %>%
+    filter(n > 0)
+  
+  number_cat2 <- 
+    plot.data %>%
+    group_by(cat2_tissues) %>%
+    summarise(n = sum(sizes)) %>%
+    filter(n > 0) 
+  
+  grid.col.cat1.name <- paste("Not tissue elevated in", cat1_name)
+  grid.col.cat2.name <- paste("Not tissue elevated in", cat2_name)
+  
+  pdf(paste(outpath, paste0(prefix, " Elevated genes comparison local global.pdf"), sep = "/"), 
+      width = 10, height = 10, useDingbats = F)
+  plot.data %$%
+    chord_vertical_text(from = cat1_tissues, to = cat2_tissues, sizes = sizes, c(grid.col, 
+                                                                                 setNames(c("black", "black"), 
+                                                                                          c(grid.col.cat1.name, grid.col.cat2.name))), 
+                         plot.group = c(rep(1, length(cat1_factors)), rep(2, length(cat2_factors))), 
+                         plot.order = c(number_cat1$cat1_tissues[order(number_cat1$n)], number_cat2$cat2_tissues[order(number_cat2$n)]))
+  dev.off()
+}
+##
 # Plot group enrich chord but as a heatmap
 
 make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {

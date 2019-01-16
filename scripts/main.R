@@ -39,6 +39,10 @@ proteinclass_path <- './data/anno/gene.classes.txt' ## protein classification
 tissuehierarchy_path <- './ref/colors_92.tsv' # tissue colors and hierarchy
 blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
+contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
+tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), 
+                                                              c(tissue_name, organ_name, paste(tissue_name, 1))))
+
 
 ## datasets
 hpa_path <- './data/lims/rna_hpa.tsv'
@@ -418,9 +422,46 @@ all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id',
                                     max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
 
-contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
-tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
+# Tissue distribution
+tissues_to_plot <- c('tongue', 'thalamus', 'skeletal muscle', 'thyroid gland', 'appendix', 'esophagus', 
+                     'postcentral gyrus', 'liver', 'Myeloid DCs', 'olfactory region', 'Memory CD8 T-cells', 
+                     'pancreas', 'hypothalamus', 'Memory B-cells', 'spleen', 'duodenum', 'rectum', 'cerebellum', 
+                     'prostate', 'Naive B-cells', 'vagina', 'endometrium 1', 'heart muscle', 'adrenal gland', 
+                     'skin 1', 'salivary gland', 'thymus', 'small intestine', 'frontal lobe', 'kidney', 
+                     'gallbladder', 'putamen', 'cervix, uterine', 'Eosinophils', 'seminal vesicle', 'pons', 
+                     'placenta', 'ductus deferens', 'amygdala')
 
+make_tissue_distributions_plot(atlas.tb = all.atlas, 
+                               Ex_column = "limma_gene_dstmm.zero.impute.expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = tissues_to_plot, 
+                               outpath = result_folder, 
+                               prefix = "All atlas NX")
+
+make_tissue_distributions_plot(atlas.tb = all.atlas, 
+                               Ex_column = "expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = tissues_to_plot, 
+                               outpath = result_folder, 
+                               prefix = "X")
+
+make_tissue_distributions_plot(atlas.tb = all.atlas, 
+                               Ex_column = "dstmm.zero.expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = tissues_to_plot, 
+                               outpath = result_folder, 
+                               prefix = "All atlas TMM")
+
+make_tissue_distributions_plot(atlas.tb = all.atlas, 
+                               Ex_column = "gene_dstmm.zero.impute.expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = tissues_to_plot, 
+                               outpath = result_folder, 
+                               prefix = "All atlas TMM pareto")
 
 ## Spearman method cluster
 make_spearman_method_dendrogram(all.atlas.tb = all.atlas, 
@@ -709,6 +750,39 @@ make_heatmap_expression_levels(elevated.table = brain.atlas.elevated.table,
 blood.atlas.max.wide <- generate_wide(blood.atlas.max, ensg_column='ensg_id', group_column='content_name', 
                                       max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
+# Tissue distribution
+make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                               Ex_column = "limma_gene_dstmm.zero.impute.expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = "all", 
+                               outpath = result_folder, 
+                               prefix = "Blood atlas NX")
+
+make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                               Ex_column = "expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = "all", 
+                               outpath = result_folder, 
+                               prefix = "Blood atlas X")
+
+make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                               Ex_column = "dstmm.zero.expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = "all", 
+                               outpath = result_folder, 
+                               prefix = "Blood atlas TMM")
+
+make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                               Ex_column = "gene_dstmm.zero.impute.expression", 
+                               content_column = "content_name",
+                               und.lim = 1, 
+                               do.tissues = "all", 
+                               outpath = result_folder, 
+                               prefix = "Blood atlas TMM pareto")
+
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = blood.atlas, 
                               expr_column = "limma_gene_dstmm.zero.impute.expression",
@@ -837,7 +911,47 @@ make_number_detected_genes_barplot(all.atlas.max.tb = blood.atlas.max,
                                    outpath = result_folder,
                                    prefix = "blood_atlas")
 
+# Comparison of elevated genes to tissue atlas
+make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                cat2 = all.atlas.category, 
+                                grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                elevated_cats = c(2,3,4), 
+                                direction = 1, 
+                                cat1_name = "celltypes", 
+                                cat2_name = "tissues",
+                                outpath = result_folder, 
+                                prefix = "Blood to tissue elevated")
 
+
+make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                cat2 = all.atlas.category, 
+                                grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                elevated_cats = c(2,3,4), 
+                                direction = 2, 
+                                cat1_name = "celltypes", 
+                                cat2_name = "tissues",
+                                outpath = result_folder, 
+                                prefix = "Tissue to Blood elevated")
+
+make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                cat2 = all.atlas.category, 
+                                grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                elevated_cats = c(2), 
+                                direction = 1, 
+                                cat1_name = "celltypes", 
+                                cat2_name = "tissues",
+                                outpath = result_folder, 
+                                prefix = "Blood to tissue tissue enriched")
+
+make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                cat2 = all.atlas.category, 
+                                grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                elevated_cats = c(2), 
+                                direction = 2, 
+                                cat1_name = "celltypes", 
+                                cat2_name = "tissues",
+                                outpath = result_folder, 
+                                prefix = "Tissue to Blood tissue enriched")
 # =========== *Blood altas (6 cells)* =========== 
 
 blood.atlas.max.wide.6 <- generate_wide(blood.atlas.max.6, ensg_column='ensg_id', group_column='content_name', 
