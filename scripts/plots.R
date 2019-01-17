@@ -5,6 +5,32 @@ library('ClassDiscovery')
 library('gplots')
 
 
+make_gene_expression_barplot <- function(atlas.max.tb, maxEx_columns, content_column, content_color) {
+  
+  plot.data <- 
+    atlas.max.tb %>% 
+    select("content_column" = content_column, ensg_id, maxEx_columns) %>%
+    gather(key = "Type", value = "Expression", -(1:2)) 
+  
+  genes <- unique(plot.data$ensg_id)
+  for(i in seq(1, length(genes), 4)) {
+    j = i + 3
+    if(j > length(genes)) j = length(genes)
+    
+    
+    plot.data %>%
+      filter(ensg_id %in% genes[i:j]) %>%
+      ggplot(aes(content_column, Expression, fill = content_column)) + 
+      geom_hline(yintercept = 1, color = "red", linetype = "dashed")+
+      
+      geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+      simple_theme+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+      scale_fill_manual(values = content_color)+
+      facet_grid(ensg_id ~ Type, scales = "free") 
+    ggsave(paste(result_folder, paste0(prefix, "gene expression barplot", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
+  }
+}
 
 make_tissue_distributions_plot <- function(atlas.tb, Ex_column, content_column, und.lim, do.tissues = "all", outpath, prefix) {
   
@@ -155,14 +181,15 @@ make_umap_plot <- function(eset,outpath,prefix){
 
 
 ### 3. elevated bar plot
-make_elevated_bar_plot <- function(elevated.summary.table, outpath, prefix){
-  pdf(file = paste(outpath, paste0(prefix, '_elevated_bar.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+make_elevated_bar_plot <- function(elevated.summary.table, translate_categories = c("Tissue" = "Tissue"), outpath, prefix){
+  pdf(file = paste(outpath, paste0(prefix, '_elevated_bar.pdf'),sep='/'), width=8, height=5, useDingbats = F)
   print(elevated.summary.table %>%
   {names <- rownames(.); as.tibble(.) %>% mutate(tissue = names)} %>%
     gather(key = "Classification", value = "Number of genes", -tissue) %>%
     mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, FUN = function(x) sum(`Number of genes`[tissue == x & Classification %in% c("Tissue enriched","Celltype enriched",
                                                                                                                                                                "Group enriched","Tissue enhanced","Celltype enhanced")])))]))),
-           Classification = factor(Classification, levels = c("Not detected in any tissues","Not detected in any celltypes","Not detected in this tissue","Not detected in this celltype","Mixed in this tissue", "Mixed in this celltype","Expressed in all tissues","Expressed in all celltypes","Tissue enhanced", "Celltype enhanced","Group enriched","Tissue enriched", "Celltype enriched"))) %>%
+           Classification = factor(Classification, levels = c("Not detected in any tissues","Not detected in any celltypes","Not detected in this tissue","Not detected in this celltype","Mixed in this tissue", "Mixed in this celltype","Expressed in all tissues","Expressed in all celltypes","Tissue enhanced", "Celltype enhanced","Group enriched","Tissue enriched", "Celltype enriched")),
+           Classification = gsub(pattern = translate_categories, replacement = names(translate_categories), Classification)) %>%
     filter(Classification %in% c("Tissue enriched","Celltype enriched",
                                  "Group enriched","Tissue enhanced","Celltype enhanced")) %>%
     ggplot(aes(tissue, `Number of genes`, fill = Classification))+
@@ -171,8 +198,8 @@ make_elevated_bar_plot <- function(elevated.summary.table, outpath, prefix){
     simple_theme+
     xlab("")+
     ylab("Number of genes")+
-    theme(axis.text.x = element_text(angle = 90, hjust = 1),
-          legend.position = c(0.6, 0.8)))
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          legend.position = c(0.8, 0.8)))
   dev.off()
 }
 

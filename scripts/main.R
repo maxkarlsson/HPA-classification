@@ -271,12 +271,20 @@ blood.atlas <-
   filter(content_name != "total PBMC") 
 
 if(!file.exists(paste(result_folder, paste0('blood.atlas.max.txt'),sep='/'))) {
-  blood.atlas.max <- 
+  # blood.atlas.max <- 
+  #   blood.atlas %>%
+  #   group_by(content_name, ensg_id) %>% 
+  #   filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
+  #   dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
+  blood.atlas.max <-
     blood.atlas %>%
+    # Remove genes that are imputed
+    filter(!imputed) %>%
     group_by(content_name, ensg_id) %>% 
-    filter(!is.na(limma_gene_dstmm.zero.impute.expression)) %>%
-    dplyr::summarise(limma_gene_dstmm.zero.impute.expression_maxEx = max(limma_gene_dstmm.zero.impute.expression)) 
-  
+    mutate(method = as.character(method)) %>%
+    dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
+                                     method = get_method(method, ., max(., na.rm = T))),
+                        .vars = grep("expression$", colnames(.), value = T)) 
   readr::write_delim(blood.atlas.max, path = paste(result_folder, paste0('blood.atlas.max.txt'),sep='/'), delim = "\t")
 } else {
   blood.atlas.max <- readr::read_delim(paste(result_folder, paste0('blood.atlas.max.txt'),sep='/'), delim = "\t")
@@ -750,6 +758,18 @@ make_heatmap_expression_levels(elevated.table = brain.atlas.elevated.table,
 blood.atlas.max.wide <- generate_wide(blood.atlas.max, ensg_column='ensg_id', group_column='content_name', 
                                       max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
+blood.atlas.category %>%
+  left_join(proteinclass.table, by = c("ensg_id" = "rna.genes")) %>%
+  filter(category %in% 2:4) %$%
+  table(proteinclass.vec.single)
+
+
+blood.atlas.max %>%
+  filter(ensg_id %in% unique(ensg_id)[1:100]) %>%
+  make_gene_expression_barplot(maxEx_columns = c("Raw" = "expression_maxEx", "TMM" = "dstmm.zero.expression_maxEx", "TMM + Pareto" = "gene_dstmm.zero.impute.expression_maxEx"),
+                               content_column = "content_name", 
+                               content_color = with(blood_atlas_colors, setNames(color, content)))
+
 # Tissue distribution
 make_tissue_distributions_plot(atlas.tb = blood.atlas, 
                                Ex_column = "limma_gene_dstmm.zero.impute.expression", 
@@ -816,6 +836,7 @@ blood.atlas.elevated.table <- calc_elevated.table(tb.wide = blood.atlas.max.wide
 blood.atlas.elevated.summary.table <- calc_elevated.summary.table(blood.atlas.elevated.table)
 make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
                        outpath = result_folder,
+                       translate_categories = c("Celltype" = "Tissue"),
                        prefix = 'blood_celltypes')
 
 ## specificity distribution
