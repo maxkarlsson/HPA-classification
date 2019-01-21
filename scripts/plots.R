@@ -1023,361 +1023,374 @@ make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {
 
 # Plot group enrich chord but as a heatmap
 
-make_heatmap_group_enriched_circle <- function(elevated.table, outpath, prefix) {
-  
-  group_enriched_number <- 
-    elevated.table %>%
-    as_tibble(., rownames = "ensg_id") %>%
-    gather(key = "content", "classification", -ensg_id) %>%
-    # Only include group enriched
-    filter(classification %in% c(3)) %>%
-    {mapply(unique(.$content), 
-            FUN = function(cell1) mapply(unique(.$content), 
-                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
-                                                                                filter(., content == cell2)$ensg_id))))} %>%
-    as_tibble(., rownames = "from") %>%
-    gather(key = "to", value = "number of genes", -from) %>%
-    left_join(ungroup(.) %>%
-                group_by(from) %>%
-                summarise(total = sum(`number of genes`),
-                          Min = min(`number of genes`),
-                          Max = max(`number of genes`)),
-              by = "from") %>%
-    left_join(ungroup(.) %>%
-                group_by(to) %>%
-                summarise(total = sum(`number of genes`),
-                          Min = min(`number of genes`),
-                          Max = max(`number of genes`)),
-              by = "to") %>%
-    mutate(Min = mapply(Min.x, Min.y, FUN = function(a, b) min(c(a, b))),
-           Max = mapply(Max.x, Max.y, FUN = function(a, b) max(c(a, b))),
-           n = (`number of genes` - Min)/ (Max - Min),
-           from.sum = filter(., to == from)$`number of genes`[match(from, filter(., to == from)$from)],
-           to.sum = filter(., to == from)$`number of genes`[match(to, filter(., to == from)$from)],
-           frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) 
-  
-  GEN_dendrogram <- 
-    group_enriched_number %>%
-    select(from, to, frac.max) %>%
-    spread(key = to, value = frac.max) %>%
-    column_to_rownames("from") %>%
-    as.matrix() %>%
-    cor(method="spearman", use="pairwise.complete.obs")  %>%
-    {1 - .} %>%
-    as.dist() %>%
-    hclust("average")  %>%
-    as.dendrogram()
-  
-  dend_segments <- 
-    ggdendro::dendro_data(GEN_dendrogram)$segments
-    
-  group_enriched_number %>%
-    mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
-           to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
-    {nfactors  <- length(levels(.$from));
-    n_sectors <- nfactors + 3
-    text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
-    ggplot(.) +
-        geom_tile(aes(from, to, fill = frac.max), alpha = 0.8) + 
-        geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
-        annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
-                 angle = text_angle(1:nfactors),
-                 size = 3)+
-        annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
-                 size = 3)+
-        annotate("point", x = -2.5, y = n_sectors, color = NA)+
-        #coord_fixed() +
-        coord_polar()+
-        #simple_theme + 
-        theme_minimal()+
-        theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
-        scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
-  
-  ggsave(paste(outpath, paste0(prefix, '_group_enriched_heatmap_circle.pdf'),sep='/'), width=15, height=10)
-}
+# make_heatmap_group_enriched_circle <- function(elevated.table, outpath, prefix) {
+#   
+#   group_enriched_number <- 
+#     elevated.table %>%
+#     as_tibble(., rownames = "ensg_id") %>%
+#     gather(key = "content", "classification", -ensg_id) %>%
+#     # Only include group enriched
+#     filter(classification %in% c(3)) %>%
+#     {mapply(unique(.$content), 
+#             FUN = function(cell1) mapply(unique(.$content), 
+#                                          FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+#                                                                                 filter(., content == cell2)$ensg_id))))} %>%
+#     as_tibble(., rownames = "from") %>%
+#     gather(key = "to", value = "number of genes", -from) %>%
+#     left_join(ungroup(.) %>%
+#                 group_by(from) %>%
+#                 summarise(total = sum(`number of genes`),
+#                           Min = min(`number of genes`),
+#                           Max = max(`number of genes`)),
+#               by = "from") %>%
+#     left_join(ungroup(.) %>%
+#                 group_by(to) %>%
+#                 summarise(total = sum(`number of genes`),
+#                           Min = min(`number of genes`),
+#                           Max = max(`number of genes`)),
+#               by = "to") %>%
+#     mutate(Min = mapply(Min.x, Min.y, FUN = function(a, b) min(c(a, b))),
+#            Max = mapply(Max.x, Max.y, FUN = function(a, b) max(c(a, b))),
+#            n = (`number of genes` - Min)/ (Max - Min),
+#            from.sum = filter(., to == from)$`number of genes`[match(from, filter(., to == from)$from)],
+#            to.sum = filter(., to == from)$`number of genes`[match(to, filter(., to == from)$from)],
+#            frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) 
+#   
+#   GEN_dendrogram <- 
+#     group_enriched_number %>%
+#     select(from, to, frac.max) %>%
+#     spread(key = to, value = frac.max) %>%
+#     column_to_rownames("from") %>%
+#     as.matrix() %>%
+#     cor(method="spearman", use="pairwise.complete.obs")  %>%
+#     {1 - .} %>%
+#     as.dist() %>%
+#     hclust("average")  %>%
+#     as.dendrogram()
+#   
+#   dend_segments <- 
+#     ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#   group_enriched_number %>%
+#     mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
+#            to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#     {nfactors  <- length(levels(.$from));
+#     n_sectors <- nfactors + 3
+#     text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
+#     ggplot(.) +
+#         geom_tile(aes(from, to, fill = frac.max), alpha = 0.8) + 
+#         geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
+#         annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
+#                  angle = text_angle(1:nfactors),
+#                  size = 3)+
+#         annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
+#                  size = 3)+
+#         annotate("point", x = -2.5, y = n_sectors, color = NA)+
+#         #coord_fixed() +
+#         coord_polar()+
+#         #simple_theme + 
+#         theme_minimal()+
+#         theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#         scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#   
+#   ggsave(paste(outpath, paste0(prefix, '_group_enriched_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+# }
 
 
 
-make_heatmap_group_and_enhanced_expression_levels_circle <- 
-  function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix) {
-    
-    group_enriched_genes <- 
-      elevated.table %>%
-      as_tibble(., rownames = "ensg_id") %>%
-      gather(key = "content", "classification", -ensg_id) %>%
-      # Only include group enriched
-      filter(classification %in% c(3, 4))
-    
-    group_enriched_expression <- 
-      group_enriched_genes %>%
-      {mapply(unique(.$content), 
-              FUN = function(cell1) mapply(unique(.$content), 
-                                           FUN = function(cell2) {
-                                             genes <- 
-                                               filter(., content == cell1)$ensg_id
-                                             all.atlas.max.tb %>%
-                                               filter(eval(parse(text = tissue_column)) == cell2 & 
-                                                        ensg_id %in% genes) %$%
-                                               median(eval(parse(text = maxEx_column)), na.rm = T)
-                                           }))} %>%
-      as_tibble(., rownames = "from") %>%
-      gather(key = "to", value = "median expression", -from) 
-    
-    GEN_dendrogram <- 
-      group_enriched_expression %>%
-      select(from, to, `median expression`) %>%
-      spread(key = to, value = `median expression`) %>%
-      column_to_rownames("from") %>%
+# make_heatmap_group_and_enhanced_expression_levels_circle <- 
+#   function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix) {
+#     
+#     group_enriched_genes <- 
+#       elevated.table %>%
+#       as_tibble(., rownames = "ensg_id") %>%
+#       gather(key = "content", "classification", -ensg_id) %>%
+#       # Only include group enriched
+#       filter(classification %in% c(3, 4))
+#     
+#     group_enriched_expression <- 
+#       group_enriched_genes %>%
+#       {mapply(unique(.$content), 
+#               FUN = function(cell1) mapply(unique(.$content), 
+#                                            FUN = function(cell2) {
+#                                              genes <- 
+#                                                filter(., content == cell1)$ensg_id
+#                                              all.atlas.max.tb %>%
+#                                                filter(eval(parse(text = tissue_column)) == cell2 & 
+#                                                         ensg_id %in% genes) %$%
+#                                                median(eval(parse(text = maxEx_column)), na.rm = T)
+#                                            }))} %>%
+#       as_tibble(., rownames = "from") %>%
+#       gather(key = "to", value = "median expression", -from) 
+#     
+#     GEN_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, `median expression`) %>%
+#       spread(key = to, value = `median expression`) %>%
+#       column_to_rownames("from") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     
+#     dend_segments <- 
+#       ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#     group_enriched_expression %>%
+#       mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
+#              to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#              {nfactors  <- length(levels(.$from));
+#              n_sectors <- nfactors + 3
+#              text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
+#              ggplot(.) +
+#                geom_tile(aes(from, to, fill = `median expression`), alpha = 0.8) + 
+#                geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
+#                annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
+#                         angle = text_angle(1:nfactors),
+#                         size = 3)+
+#                annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
+#                         size = 3)+
+#                annotate("point", x = -2.5, y = n_sectors, color = NA)+
+#                #coord_fixed() +
+#                coord_polar()+
+#                #simple_theme + 
+#                theme_minimal()+
+#                theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#                scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#     
+#     ggsave(paste(outpath, paste0(prefix, '_group_and_enhanced_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+#   }
+
+# make_heatmap_group_enriched_expression_levels_circle <- 
+#   function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix, y_dendrogram = F) {
+#     
+#     group_enriched_genes <- 
+#       elevated.table %>%
+#       as_tibble(., rownames = "ensg_id") %>%
+#       gather(key = "content", "classification", -ensg_id) %>%
+#       # Only include group enriched
+#       filter(classification %in% c(3))
+#     
+#     group_enriched_expression <- 
+#       group_enriched_genes %>%
+#       right_join(filter(all.atlas.max.tb, ensg_id %in% group_enriched_genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
+#       tibble(from = ensg_id,
+#              to = content,
+#              expression = log10(eval(parse(text = maxEx_column)) + 1)) 
+#       
+#     
+#     GEN_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, expression) %>%
+#       spread(key = to, value = expression) %>%
+#       column_to_rownames("from") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     
+#     
+#     
+#     dend_segments <- 
+#       ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#     
+#     
+#     if(y_dendrogram) {
+#       Genes_dendrogram <- 
+#         group_enriched_expression %>%
+#         select(from, to, expression) %>%
+#         spread(key = from, value = expression) %>%
+#         column_to_rownames("to") %>%
+#         as.matrix() %>%
+#         cor(method="spearman", use="pairwise.complete.obs")  %>%
+#         {1 - .} %>%
+#         as.dist() %>%
+#         hclust("average")  %>%
+#         as.dendrogram()
+#       genes_dend_segments <- 
+#         ggdendro::dendro_data(Genes_dendrogram)$segments
+#     }
+#     
+#     x_margin = 2.5
+#     
+#     g <-
+#       group_enriched_expression %>%
+#       #filter(from %in% .$from[1:100]) %>%
+#       mutate(from = factor(from, levels = unique(from)[order.dendrogram(Genes_dendrogram)]),
+#              to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#              {nfactors  <- length(levels(.$to));
+#              n_sectors <- round((1 + 1/6)*nfactors)
+#              y_sectors <- length(levels(.$from))
+#              
+# 
+#              text_angle <- function(x) - (round((x + (1/6)*nfactors)) * 360/n_sectors - 360/(n_sectors*2))
+#              ggplot(.) +
+#                geom_tile(aes(to, from, fill = expression), alpha = 0.8) + 
+#                geom_segment(data = dend_segments, aes(x = x, y = -0.5*y_sectors*yend, 
+#                                                       xend = xend, yend = -0.5*y_sectors*y))+
+#                
+#                annotate(geom = "text", x = 1:nfactors, y = 1.15*y_sectors, label = levels(.$to),
+#                         angle = text_angle(1:nfactors),
+#                         size = 3)+
+#                annotate("point", x = -x_margin, y = n_sectors, color = NA)+
+#                #coord_fixed() +
+#                coord_polar()+
+#                #simple_theme + 
+#                theme_minimal()+
+#                theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#                scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#     
+#     if(y_dendrogram){
+#       genes_dend_segments_scaled <-
+#       {max_y = max(c(genes_dend_segments$y,
+#                      genes_dend_segments$yend))
+#       min_y = min(c(genes_dend_segments$y,
+#                     genes_dend_segments$yend))
+#       genes_dend_segments %>%
+#         mutate(y = ((y - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin),
+#                yend = ((yend - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin))
+#       }
+#       g <- 
+#         g + 
+#         geom_segment(data = genes_dend_segments_scaled, aes(x = y, y = x,
+#                                                             xend = yend, yend = xend))
+#       
+#     }
+#     
+#     
+#     ggsave(plot = g, paste(outpath, paste0(prefix, '_group_enriched_gene_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+#   }
+
+# make_heatmap_all_elevated_expression_levels_circle <- 
+#   function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix, y_dendrogram = F) {
+#     
+#     group_enriched_genes <- 
+#       elevated.table %>%
+#       as_tibble(., rownames = "ensg_id") %>%
+#       gather(key = "content", "classification", -ensg_id) %>%
+#       # Only include group enriched
+#       filter(classification %in% c(2, 3, 4))
+#     
+#     group_enriched_expression <- 
+#       group_enriched_genes %>%
+#       right_join(filter(all.atlas.max.tb, ensg_id %in% group_enriched_genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
+#       tibble(from = ensg_id,
+#              to = content,
+#              expression = log10(eval(parse(text = maxEx_column)) + 1)) 
+#     
+#     
+#     GEN_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, expression) %>%
+#       spread(key = to, value = expression) %>%
+#       column_to_rownames("from") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     
+#     
+#     
+#     dend_segments <- 
+#       ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#     
+#     
+#     Genes_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, expression) %>%
+#       spread(key = from, value = expression) %>%
+#       column_to_rownames("to") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     genes_dend_segments <- 
+#       ggdendro::dendro_data(Genes_dendrogram)$segments
+#     
+#     
+#     x_margin = 2.5
+#     
+#     g <-
+#       group_enriched_expression %>%
+#       #filter(from %in% .$from[1:100]) %>%
+#       mutate(from = factor(from, levels = unique(from)[order.dendrogram(Genes_dendrogram)]),
+#              to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#              {nfactors  <- length(levels(.$to));
+#              n_sectors <- round((1 + 1/6)*nfactors)
+#              y_sectors <- length(levels(.$from))
+#              
+#              
+#              text_angle <- function(x) - (round((x + (1/6)*nfactors)) * 360/n_sectors - 360/(n_sectors*2))
+#              ggplot(.) +
+#                geom_tile(aes(to, from, fill = expression), alpha = 0.8) + 
+#                geom_segment(data = dend_segments, aes(x = x, y = -0.5*y_sectors*yend, 
+#                                                       xend = xend, yend = -0.5*y_sectors*y))+
+#                
+#                annotate(geom = "text", x = 1:nfactors, y = 1.15*y_sectors, label = levels(.$to),
+#                         angle = text_angle(1:nfactors),
+#                         size = 3)+
+#                annotate("point", x = -x_margin, y = n_sectors, color = NA)+
+#                #coord_fixed() +
+#                coord_polar()+
+#                #simple_theme + 
+#                theme_minimal()+
+#                theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#                scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#     
+#     if(y_dendrogram){
+#       genes_dend_segments_scaled <-
+#       {max_y = max(c(genes_dend_segments$y,
+#                      genes_dend_segments$yend))
+#       min_y = min(c(genes_dend_segments$y,
+#                     genes_dend_segments$yend))
+#       genes_dend_segments %>%
+#         mutate(y = ((y - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin),
+#                yend = ((yend - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin))
+#       }
+#       g <- 
+#         g + 
+#         geom_segment(data = genes_dend_segments_scaled, aes(x = y, y = x,
+#                                                             xend = yend, yend = xend))
+#       
+#     }
+#     
+#     
+#     ggsave(plot = g, paste(outpath, paste0(prefix, '_all_elevated_gene_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+#   }
+
+make_dendrogram <- function(var1, var2, value, method = "spearman"){
+  if(method == "spearman") {
+    data.frame(var1, var2, value) %>%
+      spread(key = var1, value = value) %>%
+      column_to_rownames("var2") %>% 
       as.matrix() %>%
       cor(method="spearman", use="pairwise.complete.obs")  %>%
       {1 - .} %>%
       as.dist() %>%
       hclust("average")  %>%
-      as.dendrogram()
-    
-    dend_segments <- 
-      ggdendro::dendro_data(GEN_dendrogram)$segments
-    
-    group_enriched_expression %>%
-      mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
-             to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
-             {nfactors  <- length(levels(.$from));
-             n_sectors <- nfactors + 3
-             text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
-             ggplot(.) +
-               geom_tile(aes(from, to, fill = `median expression`), alpha = 0.8) + 
-               geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
-               annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
-                        angle = text_angle(1:nfactors),
-                        size = 3)+
-               annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
-                        size = 3)+
-               annotate("point", x = -2.5, y = n_sectors, color = NA)+
-               #coord_fixed() +
-               coord_polar()+
-               #simple_theme + 
-               theme_minimal()+
-               theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
-               scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
-    
-    ggsave(paste(outpath, paste0(prefix, '_group_and_enhanced_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+      as.dendrogram() 
+  } else if(method == "euclidean") {
+    data.frame(var1, var2, value) %>%
+      spread(key = var1, value = value) %>%
+      column_to_rownames("var2") %>% 
+      as.matrix() %>% 
+      t() %>% 
+      na.omit() %>%
+      dist() %>%
+      hclust("average")  %>%
+      as.dendrogram() 
   }
-
-make_heatmap_group_enriched_expression_levels_circle <- 
-  function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix, y_dendrogram = F) {
-    
-    group_enriched_genes <- 
-      elevated.table %>%
-      as_tibble(., rownames = "ensg_id") %>%
-      gather(key = "content", "classification", -ensg_id) %>%
-      # Only include group enriched
-      filter(classification %in% c(3))
-    
-    group_enriched_expression <- 
-      group_enriched_genes %>%
-      right_join(filter(all.atlas.max.tb, ensg_id %in% group_enriched_genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
-      tibble(from = ensg_id,
-             to = content,
-             expression = log10(eval(parse(text = maxEx_column)) + 1)) 
-      
-    
-    GEN_dendrogram <- 
-      group_enriched_expression %>%
-      select(from, to, expression) %>%
-      spread(key = to, value = expression) %>%
-      column_to_rownames("from") %>%
-      as.matrix() %>%
-      cor(method="spearman", use="pairwise.complete.obs")  %>%
-      {1 - .} %>%
-      as.dist() %>%
-      hclust("average")  %>%
-      as.dendrogram()
-    
-    
-    
-    dend_segments <- 
-      ggdendro::dendro_data(GEN_dendrogram)$segments
-    
-    
-    
-    if(y_dendrogram) {
-      Genes_dendrogram <- 
-        group_enriched_expression %>%
-        select(from, to, expression) %>%
-        spread(key = from, value = expression) %>%
-        column_to_rownames("to") %>%
-        as.matrix() %>%
-        cor(method="spearman", use="pairwise.complete.obs")  %>%
-        {1 - .} %>%
-        as.dist() %>%
-        hclust("average")  %>%
-        as.dendrogram()
-      genes_dend_segments <- 
-        ggdendro::dendro_data(Genes_dendrogram)$segments
-    }
-    
-    x_margin = 2.5
-    
-    g <-
-      group_enriched_expression %>%
-      #filter(from %in% .$from[1:100]) %>%
-      mutate(from = factor(from, levels = unique(from)[order.dendrogram(Genes_dendrogram)]),
-             to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
-             {nfactors  <- length(levels(.$to));
-             n_sectors <- round((1 + 1/6)*nfactors)
-             y_sectors <- length(levels(.$from))
-             
-
-             text_angle <- function(x) - (round((x + (1/6)*nfactors)) * 360/n_sectors - 360/(n_sectors*2))
-             ggplot(.) +
-               geom_tile(aes(to, from, fill = expression), alpha = 0.8) + 
-               geom_segment(data = dend_segments, aes(x = x, y = -0.5*y_sectors*yend, 
-                                                      xend = xend, yend = -0.5*y_sectors*y))+
-               
-               annotate(geom = "text", x = 1:nfactors, y = 1.15*y_sectors, label = levels(.$to),
-                        angle = text_angle(1:nfactors),
-                        size = 3)+
-               annotate("point", x = -x_margin, y = n_sectors, color = NA)+
-               #coord_fixed() +
-               coord_polar()+
-               #simple_theme + 
-               theme_minimal()+
-               theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
-               scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
-    
-    if(y_dendrogram){
-      genes_dend_segments_scaled <-
-      {max_y = max(c(genes_dend_segments$y,
-                     genes_dend_segments$yend))
-      min_y = min(c(genes_dend_segments$y,
-                    genes_dend_segments$yend))
-      genes_dend_segments %>%
-        mutate(y = ((y - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin),
-               yend = ((yend - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin))
-      }
-      g <- 
-        g + 
-        geom_segment(data = genes_dend_segments_scaled, aes(x = y, y = x,
-                                                            xend = yend, yend = xend))
-      
-    }
-    
-    
-    ggsave(plot = g, paste(outpath, paste0(prefix, '_group_enriched_gene_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
-  }
-
-make_heatmap_all_elevated_expression_levels_circle <- 
-  function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix, y_dendrogram = F) {
-    
-    group_enriched_genes <- 
-      elevated.table %>%
-      as_tibble(., rownames = "ensg_id") %>%
-      gather(key = "content", "classification", -ensg_id) %>%
-      # Only include group enriched
-      filter(classification %in% c(2, 3, 4))
-    
-    group_enriched_expression <- 
-      group_enriched_genes %>%
-      right_join(filter(all.atlas.max.tb, ensg_id %in% group_enriched_genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
-      tibble(from = ensg_id,
-             to = content,
-             expression = log10(eval(parse(text = maxEx_column)) + 1)) 
-    
-    
-    GEN_dendrogram <- 
-      group_enriched_expression %>%
-      select(from, to, expression) %>%
-      spread(key = to, value = expression) %>%
-      column_to_rownames("from") %>%
-      as.matrix() %>%
-      cor(method="spearman", use="pairwise.complete.obs")  %>%
-      {1 - .} %>%
-      as.dist() %>%
-      hclust("average")  %>%
-      as.dendrogram()
-    
-    
-    
-    dend_segments <- 
-      ggdendro::dendro_data(GEN_dendrogram)$segments
-    
-    
-    
-    Genes_dendrogram <- 
-      group_enriched_expression %>%
-      select(from, to, expression) %>%
-      spread(key = from, value = expression) %>%
-      column_to_rownames("to") %>%
-      as.matrix() %>%
-      cor(method="spearman", use="pairwise.complete.obs")  %>%
-      {1 - .} %>%
-      as.dist() %>%
-      hclust("average")  %>%
-      as.dendrogram()
-    genes_dend_segments <- 
-      ggdendro::dendro_data(Genes_dendrogram)$segments
-    
-    
-    x_margin = 2.5
-    
-    g <-
-      group_enriched_expression %>%
-      #filter(from %in% .$from[1:100]) %>%
-      mutate(from = factor(from, levels = unique(from)[order.dendrogram(Genes_dendrogram)]),
-             to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
-             {nfactors  <- length(levels(.$to));
-             n_sectors <- round((1 + 1/6)*nfactors)
-             y_sectors <- length(levels(.$from))
-             
-             
-             text_angle <- function(x) - (round((x + (1/6)*nfactors)) * 360/n_sectors - 360/(n_sectors*2))
-             ggplot(.) +
-               geom_tile(aes(to, from, fill = expression), alpha = 0.8) + 
-               geom_segment(data = dend_segments, aes(x = x, y = -0.5*y_sectors*yend, 
-                                                      xend = xend, yend = -0.5*y_sectors*y))+
-               
-               annotate(geom = "text", x = 1:nfactors, y = 1.15*y_sectors, label = levels(.$to),
-                        angle = text_angle(1:nfactors),
-                        size = 3)+
-               annotate("point", x = -x_margin, y = n_sectors, color = NA)+
-               #coord_fixed() +
-               coord_polar()+
-               #simple_theme + 
-               theme_minimal()+
-               theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
-               scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
-    
-    if(y_dendrogram){
-      genes_dend_segments_scaled <-
-      {max_y = max(c(genes_dend_segments$y,
-                     genes_dend_segments$yend))
-      min_y = min(c(genes_dend_segments$y,
-                    genes_dend_segments$yend))
-      genes_dend_segments %>%
-        mutate(y = ((y - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin),
-               yend = ((yend - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin))
-      }
-      g <- 
-        g + 
-        geom_segment(data = genes_dend_segments_scaled, aes(x = y, y = x,
-                                                            xend = yend, yend = xend))
-      
-    }
-    
-    
-    ggsave(plot = g, paste(outpath, paste0(prefix, '_all_elevated_gene_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
-  }
-
-make_spearman_dendrogram <- function(var1, var2, value){
-  data.frame(var1, var2, value) %>%
-    spread(key = var1, value = value) %>%
-    column_to_rownames("var2") %>% 
-    as.matrix() %>%
-    cor(method="spearman", use="pairwise.complete.obs")  %>%
-    {1 - .} %>%
-    as.dist() %>%
-    hclust("average")  %>%
-    as.dendrogram() 
+  
 }
 
 get_dendrogram_segments <- function(dendrogram) {
@@ -1386,33 +1399,80 @@ get_dendrogram_segments <- function(dendrogram) {
     segments
 }
 
-range_scale <- function(x, xmax, xmin, span, dodge = 0) { 
+range_scale_manual <- function(x, xmax, xmin, span, dodge = 0) { 
   ((x - xmin)/(xmax - xmin))*
     (span[2] - span[1]) + span[1] + 
     dodge
 }
-
-ggdendroheat <- function(x, y, value, show.legend = T, xdendrogram = T, ydendrogram = T,
-                         x_margin = 0.2,
-                         y_margin = 0.2){
+range_scale <- function(x, span) { 
+  xmin = min(x)
+  xmax = max(x)
+  ((x - xmin)/(xmax - xmin))*
+    (span[2] - span[1]) + span[1]
+}
+ggdendroheat <- function(x, y, value, fill_factor = NA, show.legend = T, xdendrogram = T, ydendrogram = T,
+                         x_margin = 0.2, y_margin = 0.2, xaxis_order = NULL, yaxis_order = NULL, 
+                         range_scale_x = F, range_scale_y = F, x_clustering_method = "spearman", y_clustering_method = "spearman",
+                         under_lim_tile_color = NA, under_lim = 1){
   
   x_dendrogram <- 
-    make_spearman_dendrogram(x, y, value)
+    make_dendrogram(x, y, value, method = x_clustering_method)
   x_dendrogram_segments <- get_dendrogram_segments(x_dendrogram)
   
   y_dendrogram <- 
-    make_spearman_dendrogram(y, x, value)
+    make_dendrogram(y, x, value, method = y_clustering_method)
   y_dendrogram_segments <- get_dendrogram_segments(y_dendrogram)
   
   g <- 
-    tibble(x, y, value) %>%
-    mutate(x = factor(x, levels = labels(x_dendrogram)),
-           y = factor(y, levels = labels(y_dendrogram))) %>%
-    ggplot() +
-    geom_tile(aes(x, y, fill = value), show.legend = show.legend) + 
-    theme_minimal() + 
-    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8), 
-          panel.grid = element_blank())
+    tibble(x, y, value, 
+           under_limit = value < under_lim,
+           fill_factor = fill_factor) 
+  
+  if(range_scale_x){
+    g <- g %>%
+      group_by(x) %>%
+      mutate(value = range_scale(value, c(0,1))) %>%
+      ungroup()
+  }
+  
+  if(range_scale_y){
+    g <- g %>%
+      group_by(y) %>%
+      mutate(value = range_scale(value, c(0,1))) %>%
+      ungroup()
+  }
+  
+  if(is.null(xaxis_order)){ 
+    g <- g %>%
+      mutate(x = factor(x, levels = labels(x_dendrogram))) 
+  } else {
+    if(xdendrogram) warning("displaying dendrogram and giving explicit axis order is not recommended! Axis and dendrogram will show conflicting order.")
+    g <- g %>%
+      mutate(x = factor(x, levels = xaxis_order)) 
+  }
+  
+  if(is.null(yaxis_order)){ 
+    g <- g %>%
+      mutate(y = factor(y, levels = labels(y_dendrogram))) 
+  } else {
+    if(ydendrogram) warning("displaying dendrogram and giving explicit axis order is not recommended! Axis and dendrogram will show conflicting order.")
+    g <- g %>%
+      mutate(y = factor(y, levels = yaxis_order)) 
+  }
+  
+    
+  if(is.na(fill_factor[1])) {
+    g <- g %>%
+      ggplot() +
+      geom_tile(aes(x, y, fill = value), show.legend = show.legend) + 
+      geom_tile(data = filter(g, under_limit), aes(x, y), fill = under_lim_tile_color, show.legend = F)
+  } else {
+    g <- g %>%
+      ggplot() +
+      geom_tile(aes(x, y, fill = fill_factor), show.legend = show.legend) + 
+      geom_tile(data = filter(g, under_limit), aes(x, y), fill = under_lim_tile_color, show.legend = F)
+  }
+  
   
   xp <- 0
   yp <- 0
@@ -1426,22 +1486,22 @@ ggdendroheat <- function(x, y, value, show.legend = T, xdendrogram = T, ydendrog
       geom_segment(data = x_dendrogram_segments, 
                    aes(x = x, 
                        xend = xend,
-                       y = range_scale(yend, max(y, yend), min(y, yend), 
+                       y = range_scale_manual(yend, max(y, yend), min(y, yend), 
                                        span = c(y_factors, y_factors/(1 - y_margin)), 
                                        dodge = 0.5), 
-                       yend = range_scale(y, max(y, yend), min(y, yend), 
+                       yend = range_scale_manual(y, max(y, yend), min(y, yend), 
                                           span = c(y_factors, y_factors/(1 - y_margin)), 
                                           dodge = 0.5)))
     xp <- c(x_factors + x_margin)
-  }
+  } 
   
   if(ydendrogram) {
     g <- g + 
       geom_segment(data = y_dendrogram_segments, 
-                   aes(x = range_scale(yend, max(y, yend), min(y, yend), 
+                   aes(x = range_scale_manual(yend, max(y, yend), min(y, yend), 
                                        span = c(x_factors, x_factors/(1 - x_margin)), 
                                        dodge = 0.5), 
-                       xend = range_scale(y, max(y, yend), min(y, yend), 
+                       xend = range_scale_manual(y, max(y, yend), min(y, yend), 
                                           span = c(x_factors, x_factors/(1 - x_margin)), 
                                           dodge = 0.5),
                        y = x, 
@@ -1449,67 +1509,16 @@ ggdendroheat <- function(x, y, value, show.legend = T, xdendrogram = T, ydendrog
     yp <- c(y_factors + y_margin)
   }
   
-  g + annotate("point", x = xp, y = yp, color = NA)
+  g + 
+    annotate("point", x = xp, y = yp, color = NA) + 
+    theme_minimal() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8), 
+          panel.grid = element_blank())
   
   
 }
 
-make_heatmap_expression_levels <- function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, enrichment = c(3), outpath, prefix, y_dendrogram = F) {
-  genes <- 
-    elevated.table %>%
-    as_tibble(., rownames = "ensg_id") %>%
-    gather(key = "content", "classification", -ensg_id) %>%
-    filter(classification %in% enrichment)
-  
-  genes_expression <- 
-    genes %>%
-    right_join(filter(all.atlas.max.tb, ensg_id %in% genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
-    tibble(from = ensg_id,
-           to = content,
-           expression = log10(eval(parse(text = maxEx_column)) + 1)) 
-  
-  g <- 
-    genes_expression %$%
-    ggdendroheat(from, to, expression)+
-    scale_fill_gradientn(colors = c("yellow", "orangered", "#800026")) + 
-    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
-    xlab("genes")
-  
-  ggsave(plot = g, paste(outpath, paste0(prefix, '__gene_expression_heatmap.pdf'),sep='/'), width=15, height=10)
-}
 
-make_heatmap_median_expression_levels <- 
-  function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, enrichment = c(3), outpath, prefix, y_dendrogram = F) {
-    genes <- 
-      elevated.table %>%
-      as_tibble(., rownames = "ensg_id") %>%
-      gather(key = "content", "classification", -ensg_id) %>%
-      filter(classification %in% enrichment)
-    
-    genes_expression <- 
-      genes %>%
-      {mapply(unique(.$content), 
-              FUN = function(cell1) mapply(unique(.$content), 
-                                           FUN = function(cell2) {
-                                             genes <- 
-                                               filter(., content == cell1)$ensg_id
-                                             all.atlas.max.tb %>%
-                                               filter(eval(parse(text = tissue_column)) == cell2 & 
-                                                        ensg_id %in% genes) %$%
-                                               median(eval(parse(text = maxEx_column)), na.rm = T)
-                                           }))} %>%
-      as_tibble(., rownames = "from") %>%
-      gather(key = "to", value = "median expression", -from)
-    
-    g <- 
-      genes_expression %$%
-      ggdendroheat(from, to, `median expression`)+
-      scale_fill_gradientn(colors = c("yellow", "orangered", "#800026")) + 
-      theme(axis.title = element_blank())
-    
-    ggsave(plot = g, paste(outpath, paste0(prefix, '__median_expression_heatmap.pdf'),sep='/'), width=15, height=10)
-    
-    }
 
 
 
@@ -1541,7 +1550,7 @@ make_spearman_method_dendrogram <- function(all.atlas.tb, Ex_column, content_col
     mutate(content_method = paste(eval(parse(text = content_column)), method),
            ex = eval(parse(text = Ex_column)),
            ex = log(ex + 1)) %$%
-    make_spearman_dendrogram(content_method, ensg_id, ex)
+    make_dendrogram(content_method, ensg_id, ex)
   
   dendr %>%
     get_dendrogram_segments() %>%
@@ -1560,3 +1569,251 @@ make_spearman_method_dendrogram <- function(all.atlas.tb, Ex_column, content_col
   
    ggsave(paste(outpath, paste0(prefix, '_spearman_method_cluster.pdf'),sep='/'), width=16, height=8)
 }
+
+
+
+
+make_expression_heatmaps <- function(atlas.max.tb, atlas.cat, maxEx_column, tissue_column, 
+                                     ensemblanno.table, proteinclass.table = NULL, proteinclass.table_ensg_id_column = "", 
+                                     proteinclass.table_class_column = "", outpath, prefix, range_scale_x = F) {
+  genes <- 
+    atlas.max.tb %>%
+    rename("content" = tissue_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+  
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+                                                  unique(gene_name)},
+           gene_name_2 = ifelse(nonunique_gene_name, 
+                                paste(gene_name, gene_name_occurence),
+                                gene_name),
+           
+           ###
+           
+           from = gene_name_2,
+           to = content)
+  
+    
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = proteinclass.table_ensg_id_column, 
+                       protein_class = proteinclass.table_class_column), by = "ensg_id")
+  }
+  
+  
+  genes_median_expression <- 
+    genes %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) {
+                                           genes <- 
+                                             filter(., content == cell1)$ensg_id
+                                           atlas.max.tb %>%
+                                             filter(eval(parse(text = tissue_column)) == cell2 & 
+                                                      ensg_id %in% genes) %$%
+                                             median(eval(parse(text = maxEx_column)), na.rm = T)
+                                         }))} %>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "median expression", -from)
+  #-----------------------------------------------------------------
+  # Tissue enriched genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category == "tissue enriched")
+  
+  ## 1
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__tissue_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## 2
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1),
+                 xdendrogram = F, 
+                 xaxis_order = unique(ensg_id[order(`enriched tissues`)]))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__tissue_enriched_expression_dendroheatmap2.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  ## Group enriched genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category == "group enriched")
+  ## 1
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 1), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Group enriched genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__group_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  ## All elevated genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced"))
+  ## 1
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## categories
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1), 
+                 fill_factor = elevated.category)+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  ## potential CD marker genes
+  if(!is.null(proteinclass.table)) {
+    plot.data <- 
+      genes %>%
+      filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+               protein_class == "membrane")
+    ## All elevated
+    plot.data %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 4), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Potential CD markers: All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_pot_CD_all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Group enriched
+    plot.data %>%
+      filter(elevated.category == "group enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Potential CD markers: Group enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_pot_CD_group_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Tissue enriched
+    plot.data %>%
+      filter(elevated.category == "tissue enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Potential CD markers: Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_pot_CD_tissue_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  }
+  #-----------------------------------------------------------------
+  ## Known CD marker genes
+  if(!is.null(proteinclass.table)) {
+    plot.data <- 
+      genes %>%
+      filter(protein_class == "cd_marker")
+    ## All elevated
+    plot.data %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 4), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Known CD markers: All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_known_CD_all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Group enriched
+    plot.data %>%
+      filter(elevated.category == "group enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Known CD markers: Group enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_known_CD_group_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Tissue enriched
+    plot.data %>%
+      filter(elevated.category == "tissue enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Known CD markers: Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_known_CD_tissue_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  }
+  
+  ## categories
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1), 
+                 fill_factor = elevated.category)+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 4), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Known CD markers: Categories (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '_known_CD_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  
+  
+}
+

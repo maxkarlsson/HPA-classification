@@ -190,7 +190,7 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
       # TMM scaling of data with imputation (set to 0)
       
       imputed.zero.expression = ifelse(imputed, 0, expression),
-      dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id),
+      dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id, median_column = F),
       
       # Gene pareto. "Imputed" values are set to NA to not count.
       gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), 
@@ -579,6 +579,31 @@ make_heatmap_group_enriched_expression_levels_circle(elevated.table = all.atlas.
                                                      outpath = result_folder,
                                                      prefix = "all_atlas") 
 
+make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                         atlas.cat = all.atlas.category, 
+                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                         tissue_column = "consensus_content_name", 
+                         ensemblanno.table = ensemblanno.table,
+                         proteinclass.table = proteinclass.table, 
+                         proteinclass.table_ensg_id_column = "rna.genes", 
+                         proteinclass.table_class_column = "proteinclass.vec.single", 
+                         outpath = result_folder, 
+                         prefix = "all atlas")
+
+make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                         atlas.cat = all.atlas.category, 
+                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                         tissue_column = "consensus_content_name", 
+                         ensemblanno.table = ensemblanno.table,
+                         proteinclass.table = proteinclass.table, 
+                         proteinclass.table_ensg_id_column = "rna.genes", 
+                         proteinclass.table_class_column = "proteinclass.vec.single", 
+                         outpath = result_folder, 
+                         range_scale_x = T,
+                         prefix = "all atlas range scaled")
+
+
+
 # make_heatmap_all_elevated_expression_levels_circle(elevated.table = all.atlas.elevated.table,
 #                                                    all.atlas.max.tb = all.atlas.max, 
 #                                                    maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
@@ -833,7 +858,7 @@ make_clustering_plot(tb.wide = blood.atlas.max.wide,
 ## tissue elevated plot
 blood.atlas.elevated.table <- calc_elevated.table(tb.wide = blood.atlas.max.wide, 
                                                   atlas.categories = blood.atlas.category, 
-                                                  cat.colum = "elevated.category")
+                                                  cat.colum = "category")
 blood.atlas.elevated.summary.table <- calc_elevated.summary.table(blood.atlas.elevated.table)
 make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
                        outpath = result_folder,
@@ -878,6 +903,52 @@ make_chord_group_enriched(blood.atlas.elevated.table,
 make_heatmap_group_enriched(elevated.table = blood.atlas.elevated.table, 
                             outpath = result_folder,
                             prefix = "blood_atlas")
+
+make_expression_heatmaps(atlas.max.tb = blood.atlas.max, 
+                         atlas.cat = blood.atlas.category, 
+                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                         tissue_column = "content_name", 
+                         ensemblanno.table = ensemblanno.table,
+                         proteinclass.table = proteinclass.table, 
+                         proteinclass.table_ensg_id_column = "rna.genes", 
+                         proteinclass.table_class_column = "proteinclass.vec.single", 
+                         outpath = result_folder, 
+                         prefix = "blood atlas")
+
+make_expression_heatmaps(atlas.max.tb = blood.atlas.max, 
+                         atlas.cat = blood.atlas.category, 
+                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                         tissue_column = "content_name", 
+                         ensemblanno.table = ensemblanno.table,
+                         proteinclass.table = proteinclass.table, 
+                         proteinclass.table_ensg_id_column = "rna.genes", 
+                         proteinclass.table_class_column = "proteinclass.vec.single", 
+                         outpath = result_folder, 
+                         range_scale_x = T, 
+                         prefix = "blood atlas range scaled")
+
+make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                         atlas.cat = blood.atlas.category, 
+                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                         tissue_column = "content_name", 
+                         ensemblanno.table = ensemblanno.table,
+                         proteinclass.table = proteinclass.table, 
+                         proteinclass.table_ensg_id_column = "rna.genes", 
+                         proteinclass.table_class_column = "proteinclass.vec.single", 
+                         outpath = result_folder, 
+                         prefix = "blood atlas cat on all atlas")
+
+make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                         atlas.cat = blood.atlas.category, 
+                         maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                         tissue_column = "content_name", 
+                         ensemblanno.table = ensemblanno.table,
+                         proteinclass.table = proteinclass.table, 
+                         proteinclass.table_ensg_id_column = "rna.genes", 
+                         proteinclass.table_class_column = "proteinclass.vec.single", 
+                         outpath = result_folder, 
+                         range_scale_x = T,
+                         prefix = "blood atlas cat on all atlas range scaled")
 
 # make_heatmap_group_enriched_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
 #                                                      all.atlas.max.tb = blood.atlas.max, 
