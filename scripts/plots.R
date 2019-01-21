@@ -203,6 +203,54 @@ make_elevated_bar_plot <- function(elevated.summary.table, translate_categories 
   dev.off()
 }
 
+make_all_genes_bar_plot <- function(atlas.cat, translate_categories = c("Tissue" = "Tissue"), outpath, prefix){
+  
+  tissues <- 
+    atlas.cat$`tissues over lim` %>%
+    unique() %>%
+    paste(collapse = ", ") %>%
+    strsplit(split = ", ") %>%
+    {.[[1]]} %>%
+    unique() %>%
+    {.[.[] != ""]}
+  
+  atlas.cat %>%
+    {tibble(tissue = tissues, 
+            `not expressed in any tissue` = filter(., `tissues over lim` == "") %>% nrow(),
+            `not expressed in this tissue` = sapply(tissues, FUN = function(x) filter(., !grepl(x, `tissues over lim`)) %>% nrow()),
+            `tissue enhanced` = sapply(tissues, 
+                                       FUN = function(x) filter(., grepl(x, `enriched tissues`) & elevated.category == "tissue enhanced") %>% nrow()),
+            `low tissue specificity` = sapply(tissues, 
+                                              FUN = function(x) filter(., grepl(x, `tissues over lim`) & elevated.category == "low tissue specificity") %>% nrow()),
+            `group enriched` = sapply(tissues, 
+                                      FUN = function(x) filter(., grepl(x, `enriched tissues`) & elevated.category == "group enriched") %>% nrow()),
+            `tissue enriched` = sapply(tissues, 
+                                       FUN = function(x) filter(., grepl(x, `enriched tissues`) & elevated.category == "tissue enriched") %>% nrow()))} %>%
+    mutate(`not expressed in this tissue` = `not expressed in this tissue` - `not expressed in any tissue`) %>%
+    gather(key = "Classification", value = "Number of genes", -tissue) %>%
+    mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, FUN = function(x) sum(`Number of genes`[tissue == x & Classification %in% c("tissue enriched","celltype enriched",
+                                                                                                                                                               "group enriched","tissue enhanced",
+                                                                                                                                                               "celltype enhanced")])))]))),
+           Classification = gsub(pattern = translate_categories, replacement = names(translate_categories), Classification),
+           Classification = factor(Classification, levels = c("not expressed in any tissue","not expressed in any celltype",
+                                                              "not expressed in this tissue","not expressed in this celltype",
+                                                              "low tissue specificity","tissue enhanced", "celltype enhanced",
+                                                              "group enriched","tissue enriched", "celltype enriched"))) %>%
+    ggplot(aes(tissue, `Number of genes`, fill = Classification))+
+    geom_bar(stat = "identity") +
+    scale_fill_manual(name = "",values = c(elevated.cat.cols, 
+                                           "not expressed in any tissue" = "gray",
+                                           "not expressed in any celltype" = "gray",
+                                           "not expressed in this tissue" = "lightgray",
+                                           "not expressed in this celltype" = "lightgray"))+
+    simple_theme+
+    xlab("")+
+    ylab("Number of genes")+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          legend.position = c(0.8, 0.8))
+  ggsave(paste(outpath, paste0(prefix, '_all_genes_bar.pdf'),sep='/'), width=8, height=5)
+}
+
 ### 4. tissue distribution
 make_tissue_distribution_plot <- function(tb.atlas, expr_column, und.lim = 1, do.tissues = "all", outpath, prefix) {
   pdf(file = paste(outpath, paste0(prefix, '_tissue_distribution.pdf'),sep='/'), width=10, height=10, useDingbats = F)
@@ -397,7 +445,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
       scale_color_manual(values = protein.class.palette)+
       scale_y_log10()+
       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_abundance_jitter_2.pdf'),sep='/'), width=15, height=10)
+  ggsave(paste(outpath, paste0(prefix, '_high_score_jitter_2.pdf'),sep='/'), width=15, height=10)
   
   plot.data <- 
     atlas.max %>%
@@ -405,14 +453,18 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
     mutate(expression = eval(parse(text = maxEx_column)),
            Grouping = eval(parse(text = tissue_column))) %>%
     dplyr::select(Grouping, ensg_id, expression) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    mutate(score = as.numeric(`tissue/group specific score`)) %>%
     # tissue enriched
     filter(elevated.category == "tissue enriched" & Grouping == `enriched tissues`) %>%
     group_by(Grouping) %>%
     # Write gene name if highest 2 % per tissue and/or highest 1 % in total
-    mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10)) %>%
+    mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
+           highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
     ungroup() %>%
-    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
+    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+           highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
+    
     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
 
@@ -427,6 +479,62 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
       scale_y_log10()+
       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
   ggsave(paste(outpath, paste0(prefix, '_high_tissue_enriched_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+  {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
+      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+      geom_text_repel(data = .[.$highest_score,], size = 2)+
+      simple_theme+
+      scale_color_manual(values = protein.class.palette)+
+      scale_y_log10()+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+  ggsave(paste(outpath, paste0(prefix, '_high_score_enriched_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(expression = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = tissue_column))) %>%
+    dplyr::select(Grouping, ensg_id, expression) %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    mutate(score = as.numeric(`tissue/group specific score`)) %>%
+    # tissue enriched
+    filter(elevated.category %in% c("tissue enriched", "tissue enhanced", "group enriched")) %>%
+    filter(expression >= quantile(expression, probs = 0.99)) %>%
+    group_by(Grouping) %>%
+    #Plot 1 % highest
+    #filter(expression >= quantile(expression, probs = 0.9)) %>%
+    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+    mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
+           highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
+    ungroup() %>%
+    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+           highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
+    
+    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+    
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
+  
+  plot.data %>%
+  {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+      geom_text_repel(data = .[.$highest,], size = 2)+
+      simple_theme+
+      scale_color_manual(values = protein.class.palette)+
+      scale_y_log10()+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+  ggsave(paste(outpath, paste0(prefix, '_high_tissue_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+  {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
+      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+      geom_text_repel(data = .[.$highest_score,], size = 2)+
+      simple_theme+
+      scale_color_manual(values = protein.class.palette)+
+      scale_y_log10()+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+  ggsave(paste(outpath, paste0(prefix, '_high_score_elevated_jitter.pdf'),sep='/'), width=15, height=10)
 }
 
 ## 8. Bland-Altman plot

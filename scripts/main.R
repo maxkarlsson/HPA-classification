@@ -832,8 +832,14 @@ make_clustering_plot(tb.wide = blood.atlas.max.wide,
 
 ## tissue elevated plot
 blood.atlas.elevated.table <- calc_elevated.table(tb.wide = blood.atlas.max.wide, 
-                                                  atlas.categories = blood.atlas.category)
+                                                  atlas.categories = blood.atlas.category, 
+                                                  cat.colum = "elevated.category")
 blood.atlas.elevated.summary.table <- calc_elevated.summary.table(blood.atlas.elevated.table)
+make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
+                       outpath = result_folder,
+                       translate_categories = c("Celltype" = "Tissue"),
+                       prefix = 'blood_celltypes')
+
 make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
                        outpath = result_folder,
                        translate_categories = c("Celltype" = "Tissue"),

@@ -27,6 +27,7 @@ get.categories.with.num.expressed <- function(expMax.tb, max_column, cat_column,
               num.na = num_groups - length(max.norm.expression),
               max.2nd.or.lim = max(max.2nd, under.lim*0.1),
               tissues.under.lim = paste(sort(categories[which(max.norm.expression < under.lim)]), collapse=", "),
+              tissues.over.lim = paste(sort(categories[which(max.norm.expression >= under.lim)]), collapse=", "),
               tissues.under.lim.index =  paste(which(max.norm.expression < under.lim), collapse=", ")) %>%
     mutate(category = ifelse(# Genes not expressed above limit:
       num.exp == 0, 1,
@@ -60,6 +61,7 @@ get.categories.with.num.expressed <- function(expMax.tb, max_column, cat_column,
            `tissue/group specific score` = ifelse(category %in% 2:4, tissue.spec.score, ""),
            num.na = num.na,
            `tissues under lim` = tissues.under.lim,
+           `tissues over lim` = tissues.over.lim,
            `tissues under lim index` = tissues.under.lim.index)
   
   category.mat <- 
