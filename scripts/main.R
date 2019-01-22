@@ -889,6 +889,15 @@ make_swarm_expression_plot(atlas.max = blood.atlas.max,
                            outpath = result_folder,
                            prefix = 'blood_celltypes')
 
+make_swarm_expression_circle_plot(atlas.max = blood.atlas.max, 
+                                  atlas.cat = blood.atlas.category, 
+                                  maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                  tissue_column = "content_name",
+                                  plot.order = blood_atlas_hierarchy %>%
+                                    filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                                    content[order(content_l1)],
+                                  outpath = result_folder,
+                                  prefix = 'blood_celltypes')
 # group enriched chord diagram
 blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
@@ -930,7 +939,7 @@ make_expression_heatmaps(atlas.max.tb = blood.atlas.max,
 make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
                          atlas.cat = blood.atlas.category, 
                          maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
-                         tissue_column = "content_name", 
+                         tissue_column = "consensus_content_name", 
                          ensemblanno.table = ensemblanno.table,
                          proteinclass.table = proteinclass.table, 
                          proteinclass.table_ensg_id_column = "rna.genes", 
@@ -941,7 +950,7 @@ make_expression_heatmaps(atlas.max.tb = all.atlas.max,
 make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
                          atlas.cat = blood.atlas.category, 
                          maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
-                         tissue_column = "content_name", 
+                         tissue_column = "consensus_content_name", 
                          ensemblanno.table = ensemblanno.table,
                          proteinclass.table = proteinclass.table, 
                          proteinclass.table_ensg_id_column = "rna.genes", 

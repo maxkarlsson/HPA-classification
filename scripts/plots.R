@@ -537,6 +537,302 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   ggsave(paste(outpath, paste0(prefix, '_high_score_elevated_jitter.pdf'),sep='/'), width=15, height=10)
 }
 
+swarm_circle_plot <- function(plot.df, color_palette, color_column, legend_name, y_column) {
+  plot.df <- 
+    plot.df %>%
+    rename(y = y_column)
+  
+  sectors <- levels(plot.df$Grouping)
+  n_sectors <- length(sectors)
+  text_angle <- 
+    seq(360 - 360 / (n_sectors * 2), by = - 360 / n_sectors, length.out = n_sectors) 
+  text_angle_nice_flip <- 
+    text_angle %>%
+    {ifelse(. > 90 & . < 270, . + 180, .)}
+  
+  ymax <- max(plot.df$y)
+  ymin <- min(plot.df$y)
+  
+  
+  magnitude <- round(log10(c(ymin, ymax)))
+  
+  break_n <- 4
+  breaks <- 
+    10^seq(log10(ceiling(ymin / (10^magnitude[1])) * (10^magnitude[1])), 
+           log10(ceiling(ymax / (10^magnitude[2])) * (10^magnitude[2])), length.out = break_n) %>%
+    round(-floor(log10(.)))
+  
+  xaxis_y <- 1.5*max(breaks) - min(breaks)
+  inner_y <- breaks[1]/2
+    
+    
+  segment_color <- "gray45"
+  
+  plot.df %>% 
+    {ggplot(., aes(sector_index_swarm, y, label = gene_name, color = eval(parse(text = color_column)))) +
+        # Dividers
+        annotate(geom = "segment", 
+                 x = 0:n_sectors + 0.5, 
+                 xend = 0:n_sectors + 0.5,
+                 y = inner_y, 
+                 yend = xaxis_y, 
+                 color = segment_color)+
+        # y-axis breaks
+        annotate(geom = "segment", 
+                 x = rep(0:n_sectors + 0.5, each = break_n) - c(rep(0, break_n), 0.03 * rep(break_n:1, n_sectors)),
+                 xend = rep(0:n_sectors + 0.5, each = break_n) + c(0.03 * rep(break_n:1, n_sectors), rep(0, break_n)),
+                 y = rep(breaks, n_sectors + 1), 
+                 yend = rep(breaks, n_sectors + 1), 
+                 color = segment_color)+
+        # Inner circle
+        annotate(geom = "segment", 
+                 x = seq(0.5, n_sectors - 1 + 0.5), 
+                 xend = seq(1.5, n_sectors + 0.5),
+                 y = inner_y, 
+                 yend = inner_y, 
+                 color = segment_color)+
+        # Outer circle
+        annotate(geom = "segment", 
+                 x = seq(0.5, n_sectors - 1 + 0.5), 
+                 xend = seq(1.5, n_sectors + 0.5),
+                 y = xaxis_y, 
+                 yend = xaxis_y,
+                 color = segment_color)+
+        
+        geom_text(aes(size = range_scale(y, span = c(1, 4))), alpha = 0.8)+
+        
+        scale_color_manual(values = color_palette, name = legend_name)+
+        scale_y_log10(expand = c(0.1, 0), breaks = breaks)+
+        scale_x_continuous(limits = c(0.5, n_sectors + 0.5), expand = c(0,0)) + 
+        scale_size_continuous(guide = F)+
+        ylab(y_column) + 
+        
+        coord_polar()+
+        
+        annotate(geom = "text", 
+                 x = 1:n_sectors, 
+                 y = xaxis_y, 
+                 label = levels(.$Grouping),
+                 angle = text_angle_nice_flip,
+                 vjust = ifelse(text_angle > 90 & text_angle < 270, 1.5, -1),
+                 size = 4)+
+        
+        theme(axis.text.x = element_blank(), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line())}
+}
+
+make_swarm_expression_circle_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, outpath, prefix) {
+  plot.data.unfilt <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(expression = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = tissue_column)))
+  if(is.null(plot.order)) {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = as.factor(Grouping))
+  } else {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = factor(Grouping, levels = plot.order))
+  }
+  
+  plot.data.unfilt <- 
+    plot.data.unfilt %>%
+    dplyr::select(Grouping, ensg_id, expression) %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+    mutate(score = `tissue/group specific score`) 
+  
+  
+  #---- Elevated genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+             mapply(paste0("^", Grouping, "$|^", 
+                           Grouping, ",|,", 
+                           Grouping, ",|,", 
+                           Grouping, "$"), 
+                    `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  sectors <- levels(plot.data$Grouping)
+  
+  plot.data <- 
+    plot.data %>%
+    mutate(sector_index = match(Grouping, sectors),
+           sector_index_swarm = sector_index + runif(length(sector_index), min=-0.35, max=0.35)) 
+  
+  # --All elevated genes
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # --Top 20 % elevated genes
+  
+  plot.data <- 
+    plot.data %>%
+    group_by(Grouping) %>%
+    filter(expression >= quantile(expression, probs = 0.8)) %>%
+    ungroup()
+  
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_top_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_top_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  #---- Tissue enriched genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched") &
+             Grouping == `enriched tissues`) %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  sectors <- levels(plot.data$Grouping)
+  
+  plot.data <- 
+    plot.data %>%
+    mutate(sector_index = match(Grouping, sectors),
+           sector_index_swarm = sector_index + runif(length(sector_index), min=-0.35, max=0.35)) 
+  
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  
+  #---- All genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  sectors <- levels(plot.data$Grouping)
+  
+  plot.data <- 
+    plot.data %>%
+    mutate(sector_index = match(Grouping, sectors),
+           sector_index_swarm = sector_index + runif(length(sector_index), min=-0.35, max=0.35)) 
+  
+  
+  # --Top 1 % genes
+  
+  plot.data <- 
+    plot.data %>%
+    group_by(Grouping) %>%
+    filter(expression >= quantile(expression, probs = 0.99)) %>%
+    ungroup()
+  
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+}
 ## 8. Bland-Altman plot
 
 make_bland_altman_plot <- function(x, y, fill, fillname = "", title = "", Points = F, alpha = 0.1, 
