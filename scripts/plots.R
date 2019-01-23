@@ -654,10 +654,7 @@ make_swarm_expression_circle_plot <- function(atlas.max, atlas.cat, maxEx_column
   plot.data <- 
     plot.data.unfilt %>%
     filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
-             mapply(paste0("^", Grouping, "$|^", 
-                           Grouping, ",|,", 
-                           Grouping, ",|,", 
-                           Grouping, "$"), 
+             mapply(paste0("(^|, )", Grouping, "(, |$)"), 
                     `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
   
@@ -2112,4 +2109,81 @@ make_expression_heatmaps <- function(atlas.max.tb, atlas.cat, maxEx_column, tiss
   
   
 }
+
+
+
+make_score_expression_scatter <- function(atlas.max.tb, atlas.cat, maxEx_column, tissue_column, ensemblanno.table, plot.order = NULL, outpath, prefix) {
+  plot.data <- 
+    atlas.max.tb %>%
+    ungroup() %>%
+    rename(tissue_column = tissue_column,
+           maxEx_column = maxEx_column) %>%
+    left_join(atlas.cat, by = "ensg_id") %>%
+    left_join(select(ensemblanno.table, ensg_id, gene_name) , by = "ensg_id") %>%
+    
+    # Filter so that elevated genes are only kept for the tissues they are elevated in
+    filter(mapply(paste0("(^|, )", tissue_column, "(, |$)"), 
+                  `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+    mutate(score = as.numeric(`tissue/group specific score`)) %>%
+    filter(!is.na(score)) 
+  
+  if(!is.null(plot.order)){
+    plot.data <- 
+      plot.data %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.order))
+  }
+  
+  plot.data %>%
+    ggplot(aes(maxEx_column, score, color = elevated.category)) +
+    geom_point() +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("expression") +
+    ylab("score") + 
+    scale_x_log10() + 
+    scale_y_log10() + 
+    scale_color_manual(values = elevated.cat.cols) +
+    simple_theme
+  
+  ggsave(paste(outpath, paste0(prefix, '_score_expression_scatter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    group_by(tissue_column) %>%
+    mutate(label_size = range_scale(range_scale(score, 1:2) * 
+                                      range_scale(maxEx_column, 1:2), 
+                                    span = c(1,4))) %>%
+    ggplot(aes(maxEx_column, score, color = elevated.category, label = gene_name, size = label_size)) +
+    geom_text() +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("expression") +
+    ylab("score") + 
+    scale_x_log10() + 
+    scale_y_log10() + 
+    scale_color_manual(values = elevated.cat.cols) +
+    simple_theme
+  
+  ggsave(paste(outpath, paste0(prefix, '_score_expression_labels.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    ggplot(aes(maxEx_column, fill = elevated.category)) +
+    geom_density(alpha = 0.5) +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("expression") +
+    scale_x_log10() + 
+    scale_fill_manual(values = elevated.cat.cols) +
+    simple_theme
+  ggsave(paste(outpath, paste0(prefix, '_expression_density.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    ggplot(aes(score, fill = elevated.category)) +
+    geom_density(alpha = 0.5) +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("score") +
+    scale_x_log10() + 
+    scale_fill_manual(values = elevated.cat.cols) +
+    simple_theme
+  ggsave(paste(outpath, paste0(prefix, '_score_density.pdf'),sep='/'), width=15, height=10)
+  
+
+}
+
 
