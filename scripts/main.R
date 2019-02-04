@@ -933,9 +933,13 @@ make_swarm_expression_plot(atlas.max = blood.atlas.max,
                            atlas.cat = blood.atlas.category, 
                            maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
                            tissue_column = "content_name",
+                           plot.order = blood_atlas_hierarchy %>%
+                             filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                             content[order(content_l1)],
                            outpath = result_folder,
                            prefix = 'blood_celltypes')
 
+  
 make_swarm_expression_circle_plot(atlas.max = blood.atlas.max, 
                                   atlas.cat = blood.atlas.category, 
                                   maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
@@ -1145,6 +1149,18 @@ make_specificity_distribution_plot(atlas.cat = blood.atlas.category.6,
                                    type = "Tissue",
                                    outpath = result_folder,
                                    prefix = 'blood_celltypes_6')
+
+
+make_swarm_expression_plot(atlas.max = blood.atlas.max.6, 
+                           atlas.cat = blood.atlas.category.6, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "content_name",
+                           plot.order = blood_atlas_hierarchy %>%
+                             filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                             unique(content_l1[order(content_l2)]),
+                           outpath = result_folder,
+                           prefix = 'blood_cell_lineages_6')
+
 
 ## chord plot
 # make_classification_chord_plot(atlas.cat = blood.atlas.category.6,

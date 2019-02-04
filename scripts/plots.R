@@ -407,7 +407,7 @@ make_classification_chord_plot <- function(atlas.cat, outpath, prefix) {
 }
 
 ## 7. swarm plot
-make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+#make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
   plot.data <- 
     atlas.max %>%
     ungroup() %>%
@@ -830,6 +830,146 @@ make_swarm_expression_circle_plot <- function(atlas.max, atlas.cat, maxEx_column
   ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
   
 }
+
+swarm_plot <- function(plot.df, color_palette, color_column, legend_name, y_column) {
+  plot.df %>%
+    rename(y = y_column) %>%
+    ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
+    #geom_text_repel(direction = "x", segment.color = NA)+
+    geom_text(fontface = "bold")+
+    scale_color_manual(values = color_palette, name = legend_name)+
+    scale_y_log10()+
+    ylab(y_column)+
+    scale_size_continuous(guide = F)+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+          axis.title.x = element_blank(), 
+          panel.grid = element_blank(), 
+          panel.background = element_blank(), 
+          axis.line.y = element_line(),
+          axis.line.x = element_line())
+}
+
+make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, outpath, prefix) {
+  plot.data.unfilt <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(expression = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = tissue_column)))
+  if(is.null(plot.order)) {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = as.factor(Grouping))
+  } else {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = factor(Grouping, levels = plot.order))
+  }
+  
+  plot.data.unfilt <- 
+    plot.data.unfilt %>%
+    dplyr::select(Grouping, ensg_id, expression) %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    left_join(proteinlocalization.table, by = "ensg_id") %>%
+    mutate(score = `tissue/group specific score`) 
+  
+  
+  #---- Elevated genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+             mapply(paste0("(^|, )", Grouping, "(, |$)"), 
+                    `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+    {.[order(.$expression, decreasing = T),][1:1000,]}
+  #####################################
+  
+  # --All elevated genes
+  # Expression
+  plot.data %>%
+    swarm_plot(color_palette = elevated.cat.cols, 
+               color_column = "elevated.category",
+               legend_name = "Elevated category", 
+               y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+               color_column = "predicted_localization_class",
+               legend_name = "Protein location", 
+               y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class",
+                      legend_name = "Protein location", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_category_jitter.pdf'),sep='/'), width=15, height=10)
+
+  
+  #---- Tissue enriched genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched") &
+             Grouping == `enriched tissues`) 
+  
+  # Expression
+  plot.data %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class",
+                      legend_name = "Protein location", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class",
+                      legend_name = "Protein location", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  
+  #---- All genes
+
+  # --Top 1000 genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    {.[order(.$expression, decreasing = T),][1:1000,]}
+  
+  # Expression
+  plot.data %>%
+    swarm_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class",
+                      legend_name = "Protein location", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+}
+
 ## 8. Bland-Altman plot
 
 make_bland_altman_plot <- function(x, y, fill, fillname = "", title = "", Points = F, alpha = 0.1, 
