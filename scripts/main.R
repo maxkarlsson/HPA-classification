@@ -36,6 +36,7 @@ contenttable_path <- './data/anno/content_table.txt' ## lims tissueid to tissue 
 consensustissue_path <- './data/anno/consensus_tissue.tsv' ## lims tissue to organ
 brainregions_path <- './data/anno/brain_regions.txt' ## brain_regions_anno
 proteinclass_path <- './data/anno/gene.classes.txt' ## protein classification
+proteinlocalization_path <- './data/anno/new_proteinclass_all_19670.txt' ## protein localization classification
 tissuehierarchy_path <- './ref/colors_92.tsv' # tissue colors and hierarchy
 blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
@@ -75,6 +76,34 @@ ensemblanno.table <-
 proteinclass.table <-
   proteinclass_path %>%
   readr::read_delim(delim = "\t")
+
+proteinlocalization.table <-
+  proteinlocalization_path %>%
+  readr::read_delim(delim = "\t") %>%
+  mutate(predicted_localization_class = case_when(class == "Predicted intracellular proteins,Predicted membrane proteins,Predicted secreted proteins" ~ "intracellular, membrane, secreted isoforms",
+                                                  class == "Predicted membrane proteins,Predicted secreted proteins" ~ "membrane and secreted isoforms",
+                                                  class == "Predicted intracellular proteins,Predicted secreted proteins" ~ "intracellular and secreted isoforms",
+                                                  class == "Predicted intracellular proteins,Predicted membrane proteins" ~ "intracellular and membrane isoforms",
+                                                  class == "Predicted membrane proteins" ~ "membrane",
+                                                  class == "Predicted intracellular proteins" ~ "intracellular",
+                                                  class == "Predicted secreted proteins" ~ "secreted"),
+         predicted_intracellular = case_when(predicted_localization_class %in% c("intracellular, membrane, secreted isoforms",
+                                                                                 "intracellular and secreted isoforms",
+                                                                                 "intracellular and membrane isoforms",
+                                                                                 "intracellular") ~ T,
+                                             T ~ F),
+         predicted_membrane = case_when(predicted_localization_class %in% c("intracellular, membrane, secreted isoforms",
+                                                                            "membrane and secreted isoforms",
+                                                                            "intracellular and membrane isoforms",
+                                                                            "membrane") ~ T,
+                                        T ~ F),
+         predicted_secreted = case_when(predicted_localization_class %in% c("intracellular, membrane, secreted isoforms",
+                                                                            "membrane and secreted isoforms",
+                                                                            "intracellular and secreted isoforms",
+                                                                            "secreted") ~ T,
+                                        T ~ F))
+
+         
 
 content.table <-
   contenttable_path %>%
