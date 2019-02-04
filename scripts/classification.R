@@ -127,3 +127,169 @@ calc_elevated.summary.table <- function(elevated.table, celltype = F) {
     t() %>%
     set_colnames(cat_names)
 }
+
+
+
+####
+
+
+# 
+# 
+# 
+# blood.atlas.total.PBMC <-
+#   all.atlas %>%
+#   filter(method == "Blood") %>% 
+#   # Remove Total for classification
+#   filter(content_name == "total PBMC") %>%
+#   # Remove genes that are imputed
+#   filter(!imputed) %>%
+#   group_by(content_name, ensg_id) %>% 
+#   mutate(method = as.character(method)) %>%
+#   dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
+#                                    method = get_method(method, ., max(., na.rm = T))),
+#                       .vars = grep("expression$", colnames(.), value = T)) 
+# 
+# 
+# enriched_genes <- 
+#   blood.atlas.category %>% 
+#   filter(elevated.category == "tissue enriched") %$%
+#   ensg_id
+# 
+# blood.atlas.max.wide <-  
+#   blood.atlas.max %>%
+#   filter(ensg_id %in% enriched_genes) %>%
+#   select(content_name, ensg_id, NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+#   mutate(NX = ifelse(NX < 1, 0, 
+#                      NX)) %>%
+#   
+#   filter(ensg_id %in% {group_by(., ensg_id) %>% 
+#            summarise(n = length(NX[NX >= 1])) %>% 
+#            filter(n == 1) %$%
+#            ensg_id}) %>%
+#   spread(key = content_name, value = NX) %>%
+#   column_to_rownames("ensg_id") %>%
+#   as.matrix() 
+# 
+# blood.atlas.max.wide %>%
+#   as.tibble(rownames = "ensg_id") %>%
+#   gather(key = "celltype", value = "NX", -ensg_id) %$%
+#   {ggdendroheat(ensg_id, celltype, NX, 
+#                 x_clustering_method = "euclidean", 
+#                 range_scale_x = T, 
+#                 under_lim_tile_color = "white", 
+#                 under_lim = log10(1 + 1))+
+#       scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+#       theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+#       xlab("genes")}
+# 
+# aqa <- 
+#   blood.atlas.max %>%
+#   filter(ensg_id %in% enriched_genes) %>%
+#   select(content_name, ensg_id, NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+#   mutate(NX = ifelse(NX < 1, 0, 
+#                      NX)) %>%
+#   
+#   filter(ensg_id %in% {group_by(., ensg_id) %>% 
+#       summarise(n = length(NX[NX >= 1])) %>% 
+#       filter(n == 1) %$%
+#       ensg_id}) %>%
+#   filter(NX!=0) %>%
+#   left_join(blood.atlas.total.PBMC %>%
+#               ungroup %>%
+#               filter(ensg_id %in% rownames(blood.atlas.max.wide)) %>%
+#               select(ensg_id, total_NX = limma_gene_dstmm.zero.impute.expression_maxEx),
+#             by = "ensg_id") %>%
+#   mutate(fraction = total_NX / NX)
+# 
+# aqa_levels <- 
+#   group_by(aqa,content_name) %>%
+#   summarise(med = median(fraction)) %>% 
+#   left_join(blood_atlas_hierarchy, by = c("content_name" = "content")) %>%
+#   mutate(content_name = factor(content_name, levels = content_name[order(med)])) 
+# 
+# 
+# aqa2 <- 
+#   aqa %>%
+#   mutate(fraction = total_NX / NX,
+#          content_name = factor(content_name, levels = aqa_levels %$%
+#                                  content_name[order(med)])) 
+# 
+# aqa2 %>%
+#   {ggplot(., aes(content_name, fraction)) + 
+#       geom_boxplot() + 
+#       annotate("text", x = aqa_levels$content_name, y = aqa_levels$med, label = round(aqa_levels$med * 100, 1), color = "red")+
+#       simple_theme + 
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + 
+#       scale_y_log10()}
+# 
+# aqa_levels %>%
+#   ggplot(aes(content_name, med)) +
+#   geom_bar(stat = "identity")+
+#   annotate("text", x = aqa_levels$content_name, y = aqa_levels$med, label = round(aqa_levels$med * 100, 1), 
+#            color = "black", vjust = -0.8)+
+#   annotate("text", x = 3, y = 0.3, label = paste0("Sum = ", round(sum(aqa_levels$med * 100), 1), " %"), size = 5)+
+#   simple_theme + 
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+# 
+# aqa_levels_up <- 
+#   aqa_levels %>% 
+#   group_by(content_l1) %>%
+#   summarise(med = sum(med)) %>%
+#   mutate(content_l1 = factor(content_l1, levels = content_l1[order(med)])) 
+# 
+# aqa_ranges <-
+#   tibble(celltype = c("B-cells", "dendritic cells", "granulocytes", "monocytes", "NK-cell", "T-cells"),
+#          ymin = c(0, 0.01, 0, 0.1, 0, 0.45),
+#          ymax = c(0.15, 0.02, 0, 0.3, 0.15, 0.7))
+# 
+# aqa_levels_up %>%
+#   ggplot(aes(content_l1, med)) +
+#   
+#   geom_bar(stat = "identity", alpha = 0) +
+#   geom_segment(data = aqa_ranges, aes(x = celltype, xend = celltype, y = ymin, yend = ymax)) +
+#   geom_point(data = aqa_ranges, aes(x = celltype, y = ymin)) +
+#   geom_point(data = aqa_ranges, aes(x = celltype, y = ymax)) +
+#   geom_bar(stat = "identity", alpha = 0.9) + 
+#   annotate("text", x = aqa_levels_up$content_l1, y = aqa_levels_up$med, label = round(aqa_levels_up$med * 100, 1), 
+#            color = "black", vjust = -0.8)+
+#   annotate("text", x = 3, y = 0.3, label = paste0("Sum = ", round(sum(aqa_levels_up$med * 100), 1), " %"), size = 5)+
+#   simple_theme + 
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) 
+# 
+# ######
+# blood.atlas.total.PBMC.wide <- 
+#   blood.atlas.total.PBMC %>%
+#   filter(ensg_id %in% rownames(blood.atlas.max.wide)) %>%
+#   select(content_name, ensg_id, NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+#   spread(key = content_name, value = NX) %>%
+#   column_to_rownames("ensg_id") %>%
+#   as.matrix() 
+# 
+# # Check that the order is identical
+# all(rownames(blood.atlas.max.wide) == rownames(blood.atlas.total.PBMC.wide))
+# 
+# blood.atlas.max.fractions <-  
+#   blood.atlas.max.wide %>%
+#   apply(MARGIN = 2, FUN = function(x) x / blood.atlas.total.PBMC.wide[,1])
+#   
+# 
+# library(matlib)
+# A <- matrix(c(1, 2, -1, 2), 2, 2)
+# b <- c(2,1)
+# 
+# A <- head(blood.atlas.max.wide, 100)
+# b <- head(blood.atlas.total.PBMC.wide, 100)
+# 
+# A <- (blood.atlas.max.wide)
+# b <- (blood.atlas.total.PBMC.wide)
+# 
+# A <- matrix(c(100, 1, 1000, 1), 2, 2)
+# b <- c(500,1)
+# 
+# showEqn(A, b)
+# all.equal( R(A), R(cbind(A,b)) )
+# plotEqn(A,b)
+# apa <- Solve(A, b, fractions = TRUE, vars = colnames(A))
+# 
+# x <- MASS::ginv(A) %*% b
+# tibble(colnames(A), x[,1])
