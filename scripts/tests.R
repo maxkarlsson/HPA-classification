@@ -1630,3 +1630,175 @@ for( i in seq(1, length(changing_enriched_genes$ensg_id), 4)) {
   ggsave(paste(result_folder, paste0("changing enriched genes", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
   
 }
+
+
+
+###################################################################
+## Test to compare blood atlas classification with LIMS
+###################################################################
+
+#read_delim('./data/lims/bloodcells_hpa_regional_category_92.tsv', delim = "\t")
+
+# Atlas
+blood.atlas.LIMS <- read_delim('./data/lims/rna_blood.tsv', delim = "\t")
+
+blood.atlas.R <- 
+  all.atlas %>%
+  filter(method == "Blood") %>%
+  select(ensg_id = lims_id,
+         tissue, 
+         expression,
+         sample_type_id)
+
+for( i in 1:length(blood.atlas.R)) {
+  print(names(blood.atlas.R)[i])
+  print(setdiff(unique(blood.atlas.LIMS[,i][[1]]), unique(blood.atlas.R[,i][[1]])))
+  
+}
+
+blood.atlas %>%
+  select(ensg_id = lims_id,
+         tissue, 
+         expression,
+         sample_type_id) %>%
+  left_join(blood.atlas.LIMS, by = c("ensg_id", "tissue", "sample_type_id")) %T>%
+  {filter(., expression.x != expression.y) %>%
+      print()} %T>%
+  {print(all(.$expression.x == .$expression.y))} %>%
+  ggplot(aes(expression.x, expression.y))+
+  geom_hex(bins = 100) + 
+  scale_x_log10()+
+  scale_y_log10()
+  
+# Atlas max
+blood.atlas.max.LIMS <- 
+  read_delim('./data/lims/consensus_bloodcells_hpa_92.tsv', delim = "\t") 
+  
+blood.atlas.max.R <- 
+  all.atlas %>%
+  filter(method == "Blood") %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
+  select(ensg_id, content_name, limma_gene_dstmm.zero.impute.expression) %>%
+  group_by(ensg_id, content_name) %>% 
+  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T)),
+                      .vars = grep("expression$", colnames(.), value = T)) %>%
+  rename(norm_exp = maxEx)
+
+left_join(blood.atlas.max.LIMS, blood.atlas.max.R, by = c("ensg_id", "content_name")) %>%
+  ggplot(aes(norm_exp.x, norm_exp.y))+
+  geom_hex(bins = 100) + 
+  scale_x_log10()+
+  scale_y_log10()
+
+
+### Try normalization with different ref columns
+tmm_method_normalization_test <- function(expression, method, tissue.method, ensg_id, refcolumn = 1){
+  # TMM: Method normalization
+  methods <- unique(method)
+  tibble(expression, tissue.method, ensg_id) %>%
+    left_join({for(i in 1:length(methods)){
+      # tb <-
+      #   filter(., method == methods[i]) %>%
+      #   spread(key = tissue.method, value = expression) %>%
+      #   column_to_rownames("ensg_id") %>%
+      #   as.matrix() %>%
+      #   NOISeq::tmm() %>%
+      #   {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} 
+      
+      tb <-
+        filter(., method == methods[i]) %>%
+        spread(key = tissue.method, value = expression) %>%
+        column_to_rownames("ensg_id") %>%
+        as.matrix()  
+      
+      
+      tb <- 
+        tb %>%
+        NOISeq::tmm(refColumn = refcolumn) %>%
+        {.[, -1]} %>%
+        {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} 
+      
+      if(i == 1) {
+        MM <- tb
+      } else MM <- full_join(MM, tb, by = "ensg_id")
+    }
+      MM %>%
+        gather(key = "tissue.method", value = "tmm.expression", -ensg_id)}, 
+    by = c("ensg_id", "tissue.method")) %>% 
+    mutate(tmm.expression = ifelse(is.na(tmm.expression), 
+                                   expression, 
+                                   tmm.expression),
+           tmm.expression = ifelse(tmm.expression<0, 0, 
+                                   tmm.expression)) %$%
+    return(tmm.expression)
+}
+
+blood.atlas.refc <- all.atlas.raw
+for(i in 1:18) {
+  blood.atlas.refc_temp <- 
+    all.atlas.raw %>%
+    mutate(
+      # Impute missing values
+      imputed = case_when(is.na(expression) ~ TRUE,
+                          TRUE ~ FALSE),
+      # TMM scaling of data with imputation (set to 0)
+      
+      imputed.zero.expression = ifelse(imputed, 0, expression),
+      dstmm.zero.expression = tmm_method_normalization_test(imputed.zero.expression, method, tissue.method, lims_id, refcolumn = i),
+      
+      # Gene pareto. "Imputed" values are set to NA to not count.
+      gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), 
+                                                                   method, lims_id))  %>%
+    # Scale so that under limit is 1, scale by 3
+    mutate_at(.funs = funs(. / (under_limit(., expression, method, scale_by = 3))), 
+              .vars = grep(".expression$", colnames(.), value = T)) 
+  
+  blood.atlas.refc <- 
+    blood.atlas.refc %>% 
+    {eval(parse(text = paste0("mutate(., norm.expression", i, " = blood.atlas.refc_temp$gene_dstmm.zero.impute.expression)")))}
+}
+blood.atlas.refc <- 
+  blood.atlas.refc %>%
+  mutate(imputed = case_when(is.na(expression) ~ TRUE,
+                             TRUE ~ FALSE))
+blood.atlas.max.refc.R <-
+  blood.atlas.refc %>%
+  filter(method == "Blood") %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
+  group_by(content_name, ensg_id) %>% 
+  mutate(method = as.character(method)) %>%
+  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T)),
+                      .vars = grep("expression", colnames(.), value = T)) 
+
+
+left_join(blood.atlas.max.LIMS, blood.atlas.max.refc.R, by = c("ensg_id", "content_name")) %>%
+  ggplot(aes(norm_exp, norm.expression18_maxEx))+
+  geom_hex(bins = 100) + 
+  scale_x_log10()+
+  scale_y_log10()
+####
+
+
+
+
+
+blood.atlas.category %>%
+  select(ensg_id, 
+         specificity_category = elevated.category,
+         distribution_category = express.category.2,
+         enhanced_score = `tissue/group specific score`,
+         enhanced_tissues = `enriched tissues`) %>%
+  mutate(enhanced_score = round(enhanced_score),
+         distribution_category = gsub("expressed", "detected", distribution_category)) %>%
+  left_join(read_delim('./data/lims/bloodcells_hpa_category_92.tsv', delim = "\t") %>% 
+              mutate(specificity_category = tolower(specificity_category)), by = "ensg_id") %T>%
+  {filter(., specificity_category.x != specificity_category.y) %>%
+      print()} %T>%
+  {filter(., distribution_category.x != distribution_category.y) %>%
+      print()} %T>%
+  {filter(., enhanced_tissues.x != enhanced_tissues.y) %>%
+      print()} 
+
+

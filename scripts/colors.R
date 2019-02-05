@@ -51,6 +51,10 @@ protein.class.palette <- c("secreted" = '#911D51',
                            "none" = "black",
                            '#00C9BC', '#97C542', '#FFA05E')
 
+protein.localization.palette2 <- c("membrane" = "#CE70A4",
+                                  "secreted" = 	"#FCAC3B",
+                                  "membrane and secreted isoforms" = "#755A85")
+
 protein.localization.palette <- c("intracellular and membrane isoforms" = "#858141",
                                   "membrane" = "#6DB9C6",
                                   "intracellular" = "#FCAC3B",

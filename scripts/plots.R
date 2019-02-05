@@ -4,7 +4,11 @@ library('gridExtra')
 library('ClassDiscovery')
 library('gplots')
 
+#####
 
+
+
+#####
 make_gene_expression_barplot <- function(atlas.max.tb, maxEx_columns, content_column, content_color) {
   
   plot.data <- 
@@ -834,9 +838,11 @@ make_swarm_expression_circle_plot <- function(atlas.max, atlas.cat, maxEx_column
 swarm_plot <- function(plot.df, color_palette, color_column, legend_name, y_column) {
   plot.df %>%
     rename(y = y_column) %>%
-    ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
+    {ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
     #geom_text_repel(direction = "x", segment.color = NA)+
-    geom_text(fontface = "bold")+
+    geom_text(data = subset(., eval(parse(text = color_column)) != ""), fontface = "bold")+
+    ggbeeswarm::geom_beeswarm(data = subset(., eval(parse(text = color_column)) == ""), color = "black") + 
+        
     scale_color_manual(values = color_palette, name = legend_name)+
     scale_y_log10()+
     ylab(y_column)+
@@ -846,7 +852,7 @@ swarm_plot <- function(plot.df, color_palette, color_column, legend_name, y_colu
           panel.grid = element_blank(), 
           panel.background = element_blank(), 
           axis.line.y = element_line(),
-          axis.line.x = element_line())
+          axis.line.x = element_line())}
 }
 
 make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, outpath, prefix) {
@@ -870,7 +876,12 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
     dplyr::select(Grouping, ensg_id, expression) %>%
     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
     left_join(proteinlocalization.table, by = "ensg_id") %>%
-    mutate(score = `tissue/group specific score`) 
+    mutate(score = `tissue/group specific score`,
+           predicted_localization_class_simple = case_when(predicted_localization_class == "intracellular" ~ "",
+                                                           predicted_localization_class == "intracellular and membrane isoforms" ~ "membrane",
+                                                           predicted_localization_class == "intracellular and secreted isoforms" ~ "secreted",
+                                                           predicted_localization_class == "intracellular, membrane, secreted isoforms" ~ "membrane and secreted isoforms",
+                                                           T ~ predicted_localization_class))
   
   
   #---- Elevated genes
@@ -894,7 +905,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   
   plot.data %>%
     swarm_plot(color_palette = protein.localization.palette, 
-               color_column = "predicted_localization_class",
+               color_column = "predicted_localization_class_simple",
                legend_name = "Protein location", 
                y_column = "expression")
   ggsave(paste(outpath, paste0(prefix, '_all_elevated_category_jitter.pdf'),sep='/'), width=15, height=10)
@@ -913,7 +924,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
     filter(score != "") %>%
     mutate(score = as.numeric(score)) %>%
     swarm_plot(color_palette = protein.localization.palette, 
-                      color_column = "predicted_localization_class",
+                      color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "score")
   ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_category_jitter.pdf'),sep='/'), width=15, height=10)
@@ -929,7 +940,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   # Expression
   plot.data %>%
     swarm_plot(color_palette = protein.localization.palette, 
-                      color_column = "predicted_localization_class",
+                      color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "expression")
   ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_category_jitter.pdf'),sep='/'), width=15, height=10)
@@ -939,7 +950,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
     filter(score != "") %>%
     mutate(score = as.numeric(score)) %>%
     swarm_plot(color_palette = protein.localization.palette, 
-                      color_column = "predicted_localization_class",
+                      color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "score")
   ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_category_jitter.pdf'),sep='/'), width=15, height=10)
@@ -963,7 +974,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   
   plot.data %>%
     swarm_plot(color_palette = protein.localization.palette, 
-                      color_column = "predicted_localization_class",
+                      color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "expression")
   ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_category_jitter.pdf'),sep='/'), width=15, height=10)
@@ -2326,4 +2337,113 @@ make_score_expression_scatter <- function(atlas.max.tb, atlas.cat, maxEx_column,
 
 }
 
+elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+  atlas.max_temp <- 
+    atlas.max %>% 
+    rename(maxEx_column = maxEx_column,
+           tissue_column = tissue_column)
+  
+  calculate_elevated_sum_NX <- function(tissue) {
+    atlas.cat %>%
+      filter(grepl(paste0("(^|, )", unique(tissue), "(, |$)"), `enriched tissues`)) %>%
+      {filter(atlas.max_temp, ensg_id %in% .$ensg_id & tissue_column == unique(tissue))} %$%
+      sum(maxEx_column)
+  }
+  
+  plot.data <- 
+    atlas.max_temp %>%
+    group_by(tissue_column) %>% 
+    summarise(total_NX = sum(maxEx_column),
+              elevated_NX = calculate_elevated_sum_NX(tissue_column), 
+              fraction = elevated_NX / total_NX) 
+  
+  plot.data %>%
+    mutate(., tissue_column = factor(tissue_column, levels = tissue_column[order(total_NX)])) %>%
+    ggplot(aes(tissue_column, total_NX))+
+    geom_bar(stat = "identity", fill = "white", color = "darkgray") + 
+    geom_bar(aes(tissue_column, elevated_NX), stat = "identity", fill = "red") + 
+    geom_text(aes(tissue_column, elevated_NX, label = paste0(round(fraction*100, digits = 1), "%")), hjust = -0.1)+
+    simple_theme + 
+    coord_flip()
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_barplot1.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    mutate(., tissue_column = factor(tissue_column, levels = tissue_column[order(elevated_NX)])) %>%
+    ggplot(aes(tissue_column, total_NX))+
+    geom_bar(stat = "identity", fill = "white", color = "darkgray") + 
+    geom_bar(aes(tissue_column, elevated_NX), stat = "identity", fill = "red") + 
+    geom_text(aes(tissue_column, elevated_NX, label = paste0(round(fraction*100, digits = 1), "%")), hjust = -0.1)+
+    simple_theme + 
+    coord_flip()
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_barplot2.pdf'),sep='/'), width=15, height=10)
 
+}
+make_elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+  elevated_NX_fraction_barplots(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix)
+  
+  #### intrecellular proteins
+  proteinlocalization.table %>% 
+    filter(predicted_intracellular) %>%
+    left_join(atlas.max, by = "ensg_id") %>%
+    elevated_NX_fraction_barplots(atlas.cat, maxEx_column, tissue_column, outpath, prefix = paste0(prefix, "_intracellular"))
+  
+  #### secreted proteins
+  proteinlocalization.table %>% 
+    filter(predicted_secreted) %>%
+    left_join(atlas.max, by = "ensg_id") %>%
+    elevated_NX_fraction_barplots(atlas.cat, maxEx_column, tissue_column, outpath, prefix = paste0(prefix, "_secreted"))
+  
+  #### membrane proteins
+  proteinlocalization.table %>% 
+    filter(predicted_membrane) %>%
+    left_join(atlas.max, by = "ensg_id") %>%
+    elevated_NX_fraction_barplots(atlas.cat, maxEx_column, tissue_column, outpath, prefix = paste0(prefix, "_membrane"))
+  
+  #######
+    
+  atlas.max_temp <- 
+    atlas.max %>% 
+    rename(maxEx_column = maxEx_column,
+           tissue_column = tissue_column)
+  
+  calculate_elevated_sum_NX <- function(tissue) {
+    atlas.cat %>%
+      filter(grepl(paste0("(^|, )", unique(tissue), "(, |$)"), `enriched tissues`)) %>%
+      {filter(atlas.max_temp, ensg_id %in% .$ensg_id & tissue_column == unique(tissue))} %$%
+      sum(maxEx_column)
+  }
+  
+  plot.data <- 
+    atlas.max_temp %>%
+    left_join(proteinlocalization.table %>%
+                mutate(location = case_when(predicted_secreted ~ "secreted",
+                                            predicted_membrane ~ "membrane",
+                                            predicted_intracellular ~ "intracellular",
+                                            T ~ "")),
+              by = "ensg_id") %>%
+    group_by(tissue_column, location) %>% 
+    summarise(total_NX = sum(maxEx_column),
+              elevated_NX = calculate_elevated_sum_NX(tissue_column), 
+              fraction = elevated_NX / total_NX) 
+  
+  
+  plot.data_order <- 
+    plot.data %>%
+    group_by(tissue_column) %>%
+    summarise(total_NX = sum(total_NX)) %$% 
+    tissue_column[order(total_NX)]
+  
+  plot.data %>%
+    ungroup() %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+    ggplot(aes(tissue_column, total_NX, fill = location))+
+    geom_bar(stat = "identity", color = "darkgray") + 
+    simple_theme + 
+    coord_flip() +
+    scale_fill_manual(values = protein.localization.palette)
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_location.pdf'),sep='/'), width=15, height=10)
+  
+}

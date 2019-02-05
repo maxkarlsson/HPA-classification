@@ -345,6 +345,43 @@ if(!file.exists(paste(result_folder, paste0('gene_categories_blood_cells.txt'),s
 # print number of different categories of genes
 table(blood.atlas.category$category.text)
 
+blood.atlas.category.cytoscape.nodes <- 
+  blood.atlas.category %>% 
+  group_by(elevated.category, `enriched tissues`) %>% 
+  summarise(n = length(ensg_id)) %>%
+  ungroup() %>%
+  mutate(node_id = 1:nrow(.))
+
+first <- T
+for(content_name in unique(blood.atlas$content_name)) {
+  temp <- 
+    blood.atlas.category.cytoscape.nodes %>%
+    filter(grepl(paste0("(^|, )", content_name, "(, |$)"), `enriched tissues`)) %>% 
+    mutate(content_name = content_name, 
+           edge = 1)
+  
+  if(first){
+    blood.atlas.category.cytoscape.nodes.full <- temp
+      
+    first <- F
+  } else {
+    blood.atlas.category.cytoscape.nodes.full <- 
+      rbind(blood.atlas.category.cytoscape.nodes.full, temp)
+  }
+  
+    
+}
+
+blood.atlas.category.cytoscape.nodes.full %>%
+  left_join(blood_atlas_hierarchy %>% 
+              filter(!content %in% c("blood", "Total PBMCs")) %>% 
+              {.[with(., order(content_l3, content_l2, content_l1, content)),]} %>% 
+              mutate(circle_order_1 = 1:nrow(.), 
+                     circle_order_2 = 1:nrow(.),
+                     content_name = content), 
+            by = "content_name") %>%
+  filter(n > 2 & elevated.category %in% c("group enriched", "tissue enriched")) %>%
+  write_delim(paste(result_folder, paste0('gene_categories_blood_cells_summarised.txt'),sep='/'), delim = "\t")
 
 #
 # ----------- Blood atlas classification (6 cells) ----------- 
@@ -675,6 +712,14 @@ make_number_detected_genes_barplot(all.atlas.max.tb = all.atlas.max,
                                    maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
                                    tissue_column = "consensus_content_name",
                                    outpath = result_folder,
+                                   prefix = "all_atlas")
+
+# Total elevated expression fraction
+make_elevated_NX_fraction_barplots(atlas.max = all.atlas.max, 
+                                   atlas.cat = all.atlas.category, 
+                                   maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                   tissue_column = "consensus_content_name",
+                                   outpath = result_folder, 
                                    prefix = "all_atlas")
 
 # =========== *Brain altas* =========== 
@@ -1110,6 +1155,15 @@ make_elevated_organ_total_chord(cat1 = blood.atlas.category,
                                 cat2_name = "tissues",
                                 outpath = result_folder, 
                                 prefix = "Tissue to Blood tissue enriched")
+
+# Total elevated expression fraction
+make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max, 
+                                   atlas.cat = blood.atlas.category, 
+                                   maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                   tissue_column = "content_name",
+                                   outpath = result_folder, 
+                                   prefix = "blood_atlas")
+
 # =========== *Blood altas (6 cells)* =========== 
 
 blood.atlas.max.wide.6 <- generate_wide(blood.atlas.max.6, ensg_column='ensg_id', group_column='content_name', 
@@ -1231,3 +1285,11 @@ make_expression_heatmaps(atlas.max.tb = all.atlas.max,
                          outpath = result_folder, 
                          range_scale_x = T,
                          prefix = "blood atlas 6 cat on all atlas range scaled")
+
+# Total elevated expression fraction
+make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max.6, 
+                                   atlas.cat = blood.atlas.category.6, 
+                                   maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                   tissue_column = "content_name",
+                                   outpath = result_folder, 
+                                   prefix = "blood_atlas_6")
