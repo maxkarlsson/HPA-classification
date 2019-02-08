@@ -3268,7 +3268,7 @@ make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, ou
     rename(method_column = method_column, 
            tissue_column = tissue_column) %>%
     left_join(group_by(., method_column, tissue) %>%
-                summarise(total_tpm = sum(expression)),
+                summarise(total_tpm = sum(expression, na.rm = T)),
               by = c("method_column", "tissue")) %>%
     mutate(expression = expression/(total_tpm / 1e6))
   
