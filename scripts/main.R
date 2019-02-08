@@ -219,7 +219,7 @@ if(!file.exists(paste(result_folder, paste0('all.atlas.txt'),sep='/'))) {
       # TMM scaling of data with imputation (set to 0)
       
       imputed.zero.expression = ifelse(imputed, 0, expression),
-      dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id, median_column = F),
+      dstmm.zero.expression = tmm_method_normalization(imputed.zero.expression, method, tissue.method, lims_id),
       
       # Gene pareto. "Imputed" values are set to NA to not count.
       gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), 
@@ -497,6 +497,8 @@ table(brain.atlas.category$category.text)
 #
 
 # =========== *All altas =========== 
+
+make_sum_TPM_plot(all.atlas, all.atlas.category, tissue_column = "content_name", method_column = "method", outpath = result_folder, prefix = "atlas")
 
 all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
                                     group_column='consensus_content_name', 

@@ -5,7 +5,755 @@ library('ClassDiscovery')
 library('gplots')
 
 #####
-
+make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, outpath, prefix) {
+  atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
+                                      group_column='consensus_content_name', 
+                                      max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+  
+  atlas.elevated.table <- calc_elevated.table(tb.wide = atlas.max.wide, 
+                                              atlas.categories = atlas.cat)
+  atlas.elevated.summary.table <- calc_elevated.summary.table(atlas.elevated.table)
+  
+  ## ----- Spearman method cluster ------
+  #plots <- c("elevated_bar", "cluster")
+  
+  #if("elevated_bar" %in% plots | "all" %in% plots) {}
+  
+  make_spearman_method_dendrogram(all.atlas.tb = atlas, 
+                                  Ex_column = Ex_column, 
+                                  content_column = content_column, 
+                                  named_color_replacement = dataset.colors, 
+                                  outpath = outpath, 
+                                  prefix = paste0(prefix, "_method_color"))
+  
+  make_spearman_method_dendrogram(all.atlas.tb = atlas, 
+                                  Ex_column = Ex_column, 
+                                  content_column = content_column, 
+                                  named_color_replacement = tissue.colors, 
+                                  outpath = outpath, 
+                                  prefix = paste0(prefix, "_tissue_color"))
+  
+  
+  ## ----- tissue distribution of normalized values -----
+  make_tissue_distribution_plot(tb.atlas = atlas, 
+                                expr_column = Ex_column,
+                                outpath = outpath,
+                                prefix = prefix)
+  
+  ## ----- PCA and clustering plots -----
+  atlas.max.pca.values <- pca.cal(atlas.max.wide)
+  scores <- atlas.max.pca.values[[1]]
+  loadings <- 
+    atlas.max.pca.values[[2]] %>%
+    as.tibble(rownames = "ensg_id") %>%
+    mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+  
+  make_PCA_plots(scores = scores,
+                 loadings = loadings,
+                 groups = setNames(rownames(atlas.max.pca.values[[1]]), 
+                                   rownames(atlas.max.pca.values[[1]])),
+                 groups.color = tissue.colors,
+                 outpath = outpath,
+                 prefix = prefix)
+  
+  make_clustering_plot(tb.wide = atlas.max.wide, 
+                       colors = tissue.colors, 
+                       outpath = outpath,
+                       prefix = prefix)
+  
+  ## ----- tissue elevated plot -----
+  
+  make_elevated_bar_plot(elevated.summary.table = atlas.elevated.summary.table, 
+                         outpath = outpath,
+                         prefix = prefix)
+  
+  ## ----- specificity distribution ----
+  make_specificity_distribution_plot(atlas.cat = atlas.cat, 
+                                     type = "Tissue",
+                                     outpath = outpath,
+                                     prefix = prefix)
+  
+  ## chord plot
+  make_classification_chord_plot(atlas.cat = atlas.cat,
+                                 outpath = outpath,
+                                 prefix = prefix)
+  
+  
+  
+  ## swarm plot
+  make_swarm_expression_plot(atlas.max = all.atlas.max, 
+                             atlas.cat = all.atlas.category, 
+                             maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                             tissue_column = "consensus_content_name",
+                             outpath = result_folder,
+                             prefix = 'all_tissues')
+  
+  # group enriched chord diagram
+  all_atlas_hierarchy <- 
+    contenthierarchy.table.tissue %>%
+    select(1:2) %>%
+    rename(content = 1, content_l1 = 2)
+  make_chord_group_enriched(all.atlas.elevated.table, 
+                            grid.col = tissue.colors, 
+                            #tissue_hierarcy = all_atlas_hierarchy,
+                            tissue_hierarcy = rbind(all_atlas_hierarchy, mutate(all_atlas_hierarchy, content = paste(content, 1))),
+                            palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                            outpath = result_folder, 
+                            prefix = "all_atlas")
+  
+  make_heatmap_group_enriched(all.atlas.elevated.table, 
+                              outpath = result_folder,
+                              prefix = "all_atlas")
+  
+  make_heatmap_group_enriched_expression_levels_circle(elevated.table = all.atlas.elevated.table,
+                                                       all.atlas.max.tb = all.atlas.max, 
+                                                       maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                                       tissue_column = "consensus_content_name",
+                                                       outpath = result_folder,
+                                                       prefix = "all_atlas") 
+  
+  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                           atlas.cat = all.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           prefix = "all atlas")
+  
+  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                           atlas.cat = all.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           range_scale_x = T,
+                           prefix = "all atlas range scaled")
+  
+  
+  
+  # make_heatmap_all_elevated_expression_levels_circle(elevated.table = all.atlas.elevated.table,
+  #                                                    all.atlas.max.tb = all.atlas.max, 
+  #                                                    maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+  #                                                    tissue_column = "consensus_content_name",
+  #                                                    outpath = result_folder,
+  #                                                    prefix = "all_atlas") 
+  
+  # make_heatmap_group_and_enhanced_expression_levels_circle(elevated.table = all.atlas.elevated.table,
+  #                                                          all.atlas.max.tb = all.atlas.max, 
+  #                                                          maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+  #                                                          tissue_column = "consensus_content_name",
+  #                                                          outpath = result_folder,
+  #                                                          prefix = "all_atlas") 
+  
+  # make_heatmap_group_enriched_expression_levels_circle(elevated.table = all.atlas.elevated.table,
+  #                                                      all.atlas.max.tb = all.atlas.max, 
+  #                                                      maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+  #                                                      tissue_column = "consensus_content_name",
+  #                                                      outpath = result_folder,
+  #                                                      prefix = "all_atlas",
+  #                                                      y_dendrogram = F) 
+  # 
+  # make_heatmap_group_enriched_expression_levels_circle(elevated.table = all.atlas.elevated.table,
+  #                                                      all.atlas.max.tb = all.atlas.max, 
+  #                                                      maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+  #                                                      tissue_column = "consensus_content_name",
+  #                                                      outpath = result_folder,
+  #                                                      prefix = "all_atlas_dendro",
+  #                                                      y_dendrogram = T) 
+  
+  # Number of expressed genes
+  make_number_detected_genes_barplot(all.atlas.max.tb = all.atlas.max, 
+                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                     tissue_column = "consensus_content_name",
+                                     outpath = result_folder,
+                                     prefix = "all_atlas")
+  
+  # Total elevated expression fraction
+  make_elevated_NX_fraction_barplots(atlas.max = all.atlas.max, 
+                                     atlas.cat = all.atlas.category, 
+                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                     tissue_column = "consensus_content_name",
+                                     outpath = result_folder, 
+                                     prefix = "all_atlas")
+  
+  # =========== *Brain altas* =========== 
+  
+  brain.atlas.max.wide <- generate_wide(brain.atlas.max, ensg_column='ensg_id', group_column='subgroup', 
+                                        max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+  
+  brain.atlas.max.wide_all_regions <- generate_wide(brain.atlas.max_all_regions, ensg_column='ensg_id',
+                                                    group_column='content_name',
+                                                    max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+  
+  ## tissue distribution of normalized values
+  make_tissue_distribution_plot(tb.atlas = brain.atlas, 
+                                expr_column = "limma_gene_dstmm.zero.impute.expression",
+                                outpath = result_folder,
+                                prefix = 'brain_regions')
+  
+  ## PCA and clustering plots
+  brain.atlas.max.pca.values <- pca.cal(brain.atlas.max.wide)
+  scores <- brain.atlas.max.pca.values[[1]]
+  loadings <- 
+    brain.atlas.max.pca.values[[2]] %>%
+    as.tibble(rownames = "ensg_id") %>%
+    mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+  tissue.colors <- with(brainregions.table, setNames(subgroup.color, subgroup))
+  
+  make_PCA_plots(scores = scores,
+                 loadings = loadings,
+                 groups = setNames(rownames(brain.atlas.max.pca.values[[1]]), rownames(brain.atlas.max.pca.values[[1]])),
+                 groups.color = tissue.colors,
+                 outpath = result_folder,
+                 prefix = 'brain_regions')
+  
+  make_clustering_plot(tb.wide = brain.atlas.max.wide, 
+                       colors = tissue.colors, 
+                       outpath = result_folder,
+                       prefix = 'brain_regions')
+  
+  cell.colors <- with(brainregions.table, setNames(subgroup.color, tissue.type))
+  make_clustering_plot(tb.wide = brain.atlas.max.wide_all_regions, 
+                       colors = cell.colors, 
+                       outpath = result_folder,
+                       prefix = 'brain_all_cells')
+  
+  ## tissue elevated plot
+  brain.atlas.elevated.table <- calc_elevated.table(tb.wide = brain.atlas.max.wide, 
+                                                    atlas.categories = brain.atlas.category)
+  brain.atlas.elevated.summary.table <- calc_elevated.summary.table(brain.atlas.elevated.table)
+  make_elevated_bar_plot(elevated.summary.table = brain.atlas.elevated.summary.table, 
+                         outpath = result_folder,
+                         prefix = 'brain_regions')
+  
+  ## specificity distribution
+  make_specificity_distribution_plot(atlas.cat = brain.atlas.category, 
+                                     type = "Tissue",
+                                     outpath = result_folder,
+                                     prefix = 'brain_regions')
+  
+  ## chord plot
+  make_classification_chord_plot(atlas.cat = brain.atlas.category,
+                                 outpath = result_folder,
+                                 prefix = 'brain_tissues')
+  
+  ## swarm plot
+  make_swarm_expression_plot(atlas.max = brain.atlas.max, 
+                             atlas.cat = brain.atlas.category, 
+                             maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                             tissue_column = "subgroup",
+                             outpath = result_folder,
+                             prefix = 'brain_regions')
+  
+  # group enriched chord diagram
+  #brain_atlas_hierarchy <- readr::read_delim("ref/brain_atlas_hierarchy.txt", delim = "\t")
+  contenthierarchy.table.brain <- contenthierarchy.table %>% filter(type=='brain')
+  tissue.colors.brain <- with(contenthierarchy.table.brain, setNames(c(color, color, color), c(tissue_name, organ_name, paste(organ_name, 1))))
+  
+  brain.atlas.elevated.table_all_regions <-
+    calc_elevated.table(tb.wide = brain.atlas.max.wide_all_regions,
+                        atlas.categories = brain.atlas.category_all_regions)
+  
+  brain.atlas.elevated.table <-
+    calc_elevated.table(tb.wide = brain.atlas.max.wide,
+                        atlas.categories = brain.atlas.category)
+  
+  brain_atlas_hierarchy <- 
+    contenthierarchy.table.brain %>%
+    select(content=organ_name)
+  
+  make_chord_group_enriched(brain.atlas.elevated.table, 
+                            grid.col = tissue.colors.brain, 
+                            tissue_hierarcy = rbind(brain_atlas_hierarchy, mutate(brain_atlas_hierarchy, content = paste(content, 1))),
+                            palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                            outpath = result_folder, 
+                            prefix = "brain_atlas")
+  
+  make_heatmap_group_enriched(brain.atlas.elevated.table_all_regions, 
+                              outpath = result_folder,
+                              prefix = "brain_atlas_all_regions")
+  
+  make_heatmap_median_expression_levels(elevated.table = brain.atlas.elevated.table,
+                                        all.atlas.max.tb = brain.atlas.max, 
+                                        maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                        tissue_column = "subgroup",
+                                        enrichment = c(3),
+                                        outpath = result_folder,
+                                        prefix = "brain_atlas_group_enriched")
+  
+  make_heatmap_median_expression_levels(elevated.table = brain.atlas.elevated.table,
+                                        all.atlas.max.tb = brain.atlas.max, 
+                                        maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                        tissue_column = "subgroup",
+                                        enrichment = c(2, 3, 4),
+                                        outpath = result_folder,
+                                        prefix = "brain_atlas_all_elevated")
+  
+  make_heatmap_expression_levels(elevated.table = brain.atlas.elevated.table,
+                                 all.atlas.max.tb = brain.atlas.max, 
+                                 maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                 tissue_column = "subgroup",
+                                 enrichment = c(3),
+                                 outpath = result_folder,
+                                 prefix = "brain_atlas_group_enriched")
+  
+  make_heatmap_expression_levels(elevated.table = brain.atlas.elevated.table,
+                                 all.atlas.max.tb = brain.atlas.max, 
+                                 maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                 tissue_column = "subgroup",
+                                 enrichment = c(2,3,4),
+                                 outpath = result_folder,
+                                 prefix = "brain_atlas_all_elevated")
+  
+  make_heatmap_expression_levels(elevated.table = brain.atlas.elevated.table,
+                                 all.atlas.max.tb = brain.atlas.max, 
+                                 maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                 tissue_column = "subgroup",
+                                 enrichment = c(2),
+                                 outpath = result_folder,
+                                 prefix = "brain_atlas_tissue_enriched")
+  
+  # =========== *Blood altas* =========== 
+  
+  blood.atlas.max.wide <- generate_wide(blood.atlas.max, ensg_column='ensg_id', group_column='content_name', 
+                                        max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+  
+  blood.atlas.category %>%
+    left_join(proteinclass.table, by = c("ensg_id" = "rna.genes")) %>%
+    filter(category %in% 2:4) %$%
+    table(proteinclass.vec.single)
+  
+  
+  blood.atlas.max %>%
+    filter(ensg_id %in% unique(ensg_id)[1:100]) %>%
+    make_gene_expression_barplot(maxEx_columns = c("Raw" = "expression_maxEx", "TMM" = "dstmm.zero.expression_maxEx", "TMM + Pareto" = "gene_dstmm.zero.impute.expression_maxEx"),
+                                 content_column = "content_name", 
+                                 content_color = with(blood_atlas_colors, setNames(color, content)))
+  
+  # Tissue distribution
+  make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                                 Ex_column = "limma_gene_dstmm.zero.impute.expression", 
+                                 content_column = "content_name",
+                                 und.lim = 1, 
+                                 do.tissues = "all", 
+                                 outpath = result_folder, 
+                                 prefix = "Blood atlas NX")
+  
+  make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                                 Ex_column = "expression", 
+                                 content_column = "content_name",
+                                 und.lim = 1, 
+                                 do.tissues = "all", 
+                                 outpath = result_folder, 
+                                 prefix = "Blood atlas X")
+  
+  make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                                 Ex_column = "dstmm.zero.expression", 
+                                 content_column = "content_name",
+                                 und.lim = 1, 
+                                 do.tissues = "all", 
+                                 outpath = result_folder, 
+                                 prefix = "Blood atlas TMM")
+  
+  make_tissue_distributions_plot(atlas.tb = blood.atlas, 
+                                 Ex_column = "gene_dstmm.zero.impute.expression", 
+                                 content_column = "content_name",
+                                 und.lim = 1, 
+                                 do.tissues = "all", 
+                                 outpath = result_folder, 
+                                 prefix = "Blood atlas TMM pareto")
+  
+  ## tissue distribution of normalized values
+  make_tissue_distribution_plot(tb.atlas = blood.atlas, 
+                                expr_column = "limma_gene_dstmm.zero.impute.expression",
+                                outpath = result_folder,
+                                prefix = 'blood_cells')
+  
+  ## PCA and clustering plots
+  blood.atlas.max.pca.values <- pca.cal(blood.atlas.max.wide)
+  scores <- blood.atlas.max.pca.values[[1]]
+  loadings <- 
+    blood.atlas.max.pca.values[[2]] %>%
+    as.tibble(rownames = "ensg_id") %>%
+    mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+  tissue.colors <- with(contenthierarchy.table, setNames(c(color, color, color), c(tissue_name, organ_name, paste(tissue_name, 1))))
+  
+  make_PCA_plots(scores = scores,
+                 loadings = loadings,
+                 groups = setNames(rownames(blood.atlas.max.pca.values[[1]]), rownames(blood.atlas.max.pca.values[[1]])),
+                 groups.color = tissue.colors,
+                 outpath = result_folder,
+                 prefix = 'blood_celltypes')
+  
+  make_clustering_plot(tb.wide = blood.atlas.max.wide, 
+                       colors = tissue.colors, 
+                       outpath = result_folder,
+                       prefix = 'blood_celltypes')
+  
+  ## tissue elevated plot
+  blood.atlas.elevated.table <- calc_elevated.table(tb.wide = blood.atlas.max.wide, 
+                                                    atlas.categories = blood.atlas.category, 
+                                                    cat.colum = "category")
+  blood.atlas.elevated.summary.table <- calc_elevated.summary.table(blood.atlas.elevated.table)
+  make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
+                         outpath = result_folder,
+                         translate_categories = c("Celltype" = "Tissue"),
+                         prefix = 'blood_celltypes')
+  
+  make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table, 
+                         outpath = result_folder,
+                         translate_categories = c("Celltype" = "Tissue"),
+                         prefix = 'blood_celltypes')
+  
+  make_score_expression_scatter(atlas.max.tb = blood.atlas.max, 
+                                atlas.cat = blood.atlas.category, 
+                                maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                tissue_column = "content_name", 
+                                ensemblanno.table = ensemblanno.table,
+                                plot.order = blood_atlas_hierarchy %>%
+                                  filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                                  content[order(content_l1)],  
+                                outpath = result_folder, 
+                                prefix = "blood_celltypes")
+  
+  ## specificity distribution
+  make_specificity_distribution_plot(atlas.cat = blood.atlas.category, 
+                                     type = "Tissue",
+                                     outpath = result_folder,
+                                     prefix = 'blood_celltypes')
+  
+  ## chord plot
+  make_classification_chord_plot(atlas.cat = blood.atlas.category,
+                                 outpath = result_folder,
+                                 prefix = 'blood_tissues')
+  
+  ## swarm plot
+  make_swarm_expression_plot(atlas.max = blood.atlas.max, 
+                             atlas.cat = blood.atlas.category, 
+                             maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                             tissue_column = "content_name",
+                             plot.order = blood_atlas_hierarchy %>%
+                               filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                               content[order(content_l1)],
+                             outpath = result_folder,
+                             prefix = 'blood_celltypes')
+  
+  
+  make_swarm_expression_circle_plot(atlas.max = blood.atlas.max, 
+                                    atlas.cat = blood.atlas.category, 
+                                    maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                    tissue_column = "content_name",
+                                    plot.order = blood_atlas_hierarchy %>%
+                                      filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                                      content[order(content_l1)],
+                                    outpath = result_folder,
+                                    prefix = 'blood_celltypes')
+  # group enriched chord diagram
+  blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
+  blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
+  
+  make_chord_group_enriched(blood.atlas.elevated.table, 
+                            grid.col = with(blood_atlas_colors, setNames(color, content)), 
+                            tissue_hierarcy = blood_atlas_hierarchy,
+                            palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                            outpath = result_folder,reverse = T, 
+                            prefix = "blood_atlas")
+  
+  make_heatmap_group_enriched(elevated.table = blood.atlas.elevated.table, 
+                              outpath = result_folder,
+                              prefix = "blood_atlas")
+  
+  make_expression_heatmaps(atlas.max.tb = blood.atlas.max, 
+                           atlas.cat = blood.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           prefix = "blood atlas")
+  
+  make_expression_heatmaps(atlas.max.tb = blood.atlas.max, 
+                           atlas.cat = blood.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           range_scale_x = T, 
+                           prefix = "blood atlas range scaled")
+  
+  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                           atlas.cat = blood.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           prefix = "blood atlas cat on all atlas")
+  
+  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                           atlas.cat = blood.atlas.category, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           range_scale_x = T,
+                           prefix = "blood atlas cat on all atlas range scaled")
+  
+  # make_heatmap_group_enriched_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
+  #                                                      all.atlas.max.tb = blood.atlas.max, 
+  #                                                      maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+  #                                                      tissue_column = "content_name",
+  #                                                      outpath = result_folder,
+  #                                                      prefix = "blood_atlas") 
+  
+  make_heatmap_median_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                        all.atlas.max.tb = blood.atlas.max, 
+                                        maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                        tissue_column = "content_name",
+                                        enrichment = c(3),
+                                        outpath = result_folder,
+                                        prefix = "blood_atlas_group_enriched")
+  
+  make_heatmap_median_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                        all.atlas.max.tb = blood.atlas.max, 
+                                        maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                        tissue_column = "content_name",
+                                        enrichment = c(2, 3, 4),
+                                        outpath = result_folder,
+                                        prefix = "blood_atlas_all_elevated")
+  
+  make_heatmap_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                 all.atlas.max.tb = blood.atlas.max, 
+                                 maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                 tissue_column = "content_name",
+                                 enrichment = c(3),
+                                 outpath = result_folder,
+                                 prefix = "blood_atlas_group_enriched")
+  
+  make_heatmap_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                 all.atlas.max.tb = blood.atlas.max, 
+                                 maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                 tissue_column = "content_name",
+                                 enrichment = c(2,3,4),
+                                 outpath = result_folder,
+                                 prefix = "blood_atlas_all_elevated")
+  
+  make_heatmap_expression_levels(elevated.table = blood.atlas.elevated.table,
+                                 all.atlas.max.tb = blood.atlas.max, 
+                                 maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                 tissue_column = "content_name",
+                                 enrichment = c(2),
+                                 outpath = result_folder,
+                                 prefix = "blood_atlas_tissue_enriched")
+  
+  # Categories between blood and all atlas
+  make_class_comparison_chord(cat1 = blood.atlas.category, 
+                              cat2 = all.atlas.category,
+                              outpath = result_folder, prefix = "blood")
+  
+  # Number of expressed genes
+  make_number_detected_genes_barplot(all.atlas.max.tb = blood.atlas.max, 
+                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                     tissue_column = "content_name",
+                                     outpath = result_folder,
+                                     prefix = "blood_atlas")
+  
+  # Comparison of elevated genes to tissue atlas
+  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                  cat2 = all.atlas.category, 
+                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                  elevated_cats = c(2,3,4), 
+                                  direction = 1, 
+                                  cat1_name = "celltypes", 
+                                  cat2_name = "tissues",
+                                  outpath = result_folder, 
+                                  prefix = "Blood to tissue elevated")
+  
+  
+  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                  cat2 = all.atlas.category, 
+                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                  elevated_cats = c(2,3,4), 
+                                  direction = 2, 
+                                  cat1_name = "celltypes", 
+                                  cat2_name = "tissues",
+                                  outpath = result_folder, 
+                                  prefix = "Tissue to Blood elevated")
+  
+  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                  cat2 = all.atlas.category, 
+                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                  elevated_cats = c(2), 
+                                  direction = 1, 
+                                  cat1_name = "celltypes", 
+                                  cat2_name = "tissues",
+                                  outpath = result_folder, 
+                                  prefix = "Blood to tissue tissue enriched")
+  
+  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
+                                  cat2 = all.atlas.category, 
+                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
+                                  elevated_cats = c(2), 
+                                  direction = 2, 
+                                  cat1_name = "celltypes", 
+                                  cat2_name = "tissues",
+                                  outpath = result_folder, 
+                                  prefix = "Tissue to Blood tissue enriched")
+  
+  # Total elevated expression fraction
+  make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max, 
+                                     atlas.cat = blood.atlas.category, 
+                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                     tissue_column = "content_name",
+                                     outpath = result_folder, 
+                                     prefix = "blood_atlas")
+  
+  # =========== *Blood altas (6 cells)* =========== 
+  
+  blood.atlas.max.wide.6 <- generate_wide(blood.atlas.max.6, ensg_column='ensg_id', group_column='content_name', 
+                                          max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+  
+  ## PCA and clustering plots
+  blood.atlas.max.pca.values.6 <- pca.cal(blood.atlas.max.wide.6)
+  scores <- blood.atlas.max.pca.values.6[[1]]
+  loadings <- 
+    blood.atlas.max.pca.values.6[[2]] %>%
+    as.tibble(rownames = "ensg_id") %>%
+    mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+  
+  make_PCA_plots(scores = scores,
+                 loadings = loadings,
+                 groups = setNames(rownames(blood.atlas.max.pca.values.6[[1]]), rownames(blood.atlas.max.pca.values.6[[1]])),
+                 groups.color = with(blood_atlas_colors, setNames(color, content)),
+                 outpath = result_folder,
+                 prefix = 'blood_celltypes_6')
+  
+  make_clustering_plot(tb.wide = blood.atlas.max.wide.6, 
+                       colors = with(blood_atlas_colors, setNames(color, content)), 
+                       outpath = result_folder,
+                       prefix = 'blood_celltypes_6')
+  
+  
+  ## tissue elevated plot
+  blood.atlas.elevated.table.6 <- calc_elevated.table(tb.wide = blood.atlas.max.wide.6, 
+                                                      atlas.categories = blood.atlas.category.6)
+  blood.atlas.elevated.summary.table.6 <- calc_elevated.summary.table(blood.atlas.elevated.table.6)
+  make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table.6, 
+                         outpath = result_folder,
+                         prefix = 'blood_celltypes_6')
+  
+  ## specificity distribution
+  make_specificity_distribution_plot(atlas.cat = blood.atlas.category.6, 
+                                     type = "Tissue",
+                                     outpath = result_folder,
+                                     prefix = 'blood_celltypes_6')
+  
+  
+  make_swarm_expression_plot(atlas.max = blood.atlas.max.6, 
+                             atlas.cat = blood.atlas.category.6, 
+                             maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                             tissue_column = "content_name",
+                             plot.order = blood_atlas_hierarchy %>%
+                               filter(!content %in% c("blood", "Total PBMCs")) %$% 
+                               unique(content_l1[order(content_l2)]),
+                             outpath = result_folder,
+                             prefix = 'blood_cell_lineages_6')
+  
+  
+  ## chord plot
+  # make_classification_chord_plot(atlas.cat = blood.atlas.category.6,
+  #                                outpath = result_folder,
+  #                                prefix = 'blood_tissues_6')
+  
+  # group enriched chord diagram
+  
+  
+  make_chord_group_enriched(blood.atlas.elevated.table.6, 
+                            grid.col = with(blood_atlas_colors, setNames(color, content)), 
+                            tissue_hierarcy = blood_atlas_hierarchy %>%
+                              select(content_l1, content_l2, content_l3) %>%
+                              rename(content = content_l1,
+                                     content_l1 = content_l2,
+                                     content_l2 = content_l3),
+                            palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                            outpath = result_folder,reverse = T, 
+                            prefix = "blood_atlas_6")
+  
+  make_heatmap_group_enriched(elevated.table = blood.atlas.elevated.table.6, 
+                              outpath = result_folder,
+                              prefix = "blood_atlas_6")
+  
+  
+  make_expression_heatmaps(atlas.max.tb = blood.atlas.max.6, 
+                           atlas.cat = blood.atlas.category.6, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           prefix = "blood atlas 6")
+  
+  make_expression_heatmaps(atlas.max.tb = blood.atlas.max.6, 
+                           atlas.cat = blood.atlas.category.6, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           range_scale_x = T, 
+                           prefix = "blood atlas 6 range scaled")
+  
+  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                           atlas.cat = blood.atlas.category.6, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           prefix = "blood atlas 6 cat on all atlas")
+  
+  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                           atlas.cat = blood.atlas.category.6, 
+                           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                           tissue_column = "consensus_content_name", 
+                           ensemblanno.table = ensemblanno.table,
+                           proteinclass.table = proteinclass.table, 
+                           proteinclass.table_ensg_id_column = "rna.genes", 
+                           proteinclass.table_class_column = "proteinclass.vec.single", 
+                           outpath = result_folder, 
+                           range_scale_x = T,
+                           prefix = "blood atlas 6 cat on all atlas range scaled")
+  
+  # Total elevated expression fraction
+  make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max.6, 
+                                     atlas.cat = blood.atlas.category.6, 
+                                     maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",
+                                     tissue_column = "content_name",
+                                     outpath = result_folder, 
+                                     prefix = "blood_atlas_6")
+}
 
 
 #####
@@ -411,135 +1159,135 @@ make_classification_chord_plot <- function(atlas.cat, outpath, prefix) {
 }
 
 ## 7. swarm plot
-#make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
-  plot.data <- 
-    atlas.max %>%
-    ungroup() %>%
-    mutate(expression = eval(parse(text = maxEx_column)),
-           Grouping = eval(parse(text = tissue_column))) %>%
-    dplyr::select(Grouping, ensg_id, expression) %>%
-    #Plot 1 % highest
-    filter(expression >= quantile(expression, probs = 0.99)) %>%
-    group_by(Grouping) %>%
-    # Write gene name if highest 0.5 % per tissue and/or highest 1 % in total
-    mutate(highest = expression >= quantile(expression, probs = 0.995) | rank(expression) >= (length(expression) - 8)) %>%
-    ungroup() %>%
-    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
-    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
-    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
-    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
-
-  
-  plot.data %>%
-  {ggplot(., aes(Grouping, expression, label = gene_name, color = elevated.category)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 2)+
-      simple_theme+
-      scale_color_manual(values = elevated.cat.cols)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10)
-  
-  plot.data %>%
-  {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 2)+
-      simple_theme+
-      scale_color_manual(values = protein.class.palette)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_score_jitter_2.pdf'),sep='/'), width=15, height=10)
-  
-  plot.data <- 
-    atlas.max %>%
-    ungroup() %>%
-    mutate(expression = eval(parse(text = maxEx_column)),
-           Grouping = eval(parse(text = tissue_column))) %>%
-    dplyr::select(Grouping, ensg_id, expression) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
-    mutate(score = as.numeric(`tissue/group specific score`)) %>%
-    # tissue enriched
-    filter(elevated.category == "tissue enriched" & Grouping == `enriched tissues`) %>%
-    group_by(Grouping) %>%
-    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
-    mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
-           highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
-    ungroup() %>%
-    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
-           highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
-    
-    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
-    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
-
-    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
-  
-  plot.data %>%
-  {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 2)+
-      simple_theme+
-      scale_color_manual(values = protein.class.palette)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_tissue_enriched_jitter.pdf'),sep='/'), width=15, height=10)
-  
-  plot.data %>%
-  {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest_score,], size = 2)+
-      simple_theme+
-      scale_color_manual(values = protein.class.palette)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_score_enriched_jitter.pdf'),sep='/'), width=15, height=10)
-  
-  plot.data <- 
-    atlas.max %>%
-    ungroup() %>%
-    mutate(expression = eval(parse(text = maxEx_column)),
-           Grouping = eval(parse(text = tissue_column))) %>%
-    dplyr::select(Grouping, ensg_id, expression) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
-    mutate(score = as.numeric(`tissue/group specific score`)) %>%
-    # tissue enriched
-    filter(elevated.category %in% c("tissue enriched", "tissue enhanced", "group enriched")) %>%
-    filter(expression >= quantile(expression, probs = 0.99)) %>%
-    group_by(Grouping) %>%
-    #Plot 1 % highest
-    #filter(expression >= quantile(expression, probs = 0.9)) %>%
-    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
-    mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
-           highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
-    ungroup() %>%
-    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
-           highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
-    
-    left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
-    left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
-    
-    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
-  
-  plot.data %>%
-  {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 2)+
-      simple_theme+
-      scale_color_manual(values = protein.class.palette)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_tissue_elevated_jitter.pdf'),sep='/'), width=15, height=10)
-  
-  plot.data %>%
-  {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest_score,], size = 2)+
-      simple_theme+
-      scale_color_manual(values = protein.class.palette)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
-  ggsave(paste(outpath, paste0(prefix, '_high_score_elevated_jitter.pdf'),sep='/'), width=15, height=10)
-}
+# make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+#   plot.data <- 
+#     atlas.max %>%
+#     ungroup() %>%
+#     mutate(expression = eval(parse(text = maxEx_column)),
+#            Grouping = eval(parse(text = tissue_column))) %>%
+#     dplyr::select(Grouping, ensg_id, expression) %>%
+#     #Plot 1 % highest
+#     filter(expression >= quantile(expression, probs = 0.99)) %>%
+#     group_by(Grouping) %>%
+#     # Write gene name if highest 0.5 % per tissue and/or highest 1 % in total
+#     mutate(highest = expression >= quantile(expression, probs = 0.995) | rank(expression) >= (length(expression) - 8)) %>%
+#     ungroup() %>%
+#     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
+#     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+#     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+#     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+#     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+# 
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = elevated.category)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = elevated.cat.cols)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_score_jitter_2.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data <- 
+#     atlas.max %>%
+#     ungroup() %>%
+#     mutate(expression = eval(parse(text = maxEx_column)),
+#            Grouping = eval(parse(text = tissue_column))) %>%
+#     dplyr::select(Grouping, ensg_id, expression) %>%
+#     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+#     mutate(score = as.numeric(`tissue/group specific score`)) %>%
+#     # tissue enriched
+#     filter(elevated.category == "tissue enriched" & Grouping == `enriched tissues`) %>%
+#     group_by(Grouping) %>%
+#     # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+#     mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
+#            highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
+#     ungroup() %>%
+#     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+#            highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
+#     
+#     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+#     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+# 
+#     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_tissue_enriched_jitter.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest_score,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_score_enriched_jitter.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data <- 
+#     atlas.max %>%
+#     ungroup() %>%
+#     mutate(expression = eval(parse(text = maxEx_column)),
+#            Grouping = eval(parse(text = tissue_column))) %>%
+#     dplyr::select(Grouping, ensg_id, expression) %>%
+#     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+#     mutate(score = as.numeric(`tissue/group specific score`)) %>%
+#     # tissue enriched
+#     filter(elevated.category %in% c("tissue enriched", "tissue enhanced", "group enriched")) %>%
+#     filter(expression >= quantile(expression, probs = 0.99)) %>%
+#     group_by(Grouping) %>%
+#     #Plot 1 % highest
+#     #filter(expression >= quantile(expression, probs = 0.9)) %>%
+#     # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+#     mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
+#            highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
+#     ungroup() %>%
+#     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+#            highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
+#     
+#     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+#     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+#     
+#     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_tissue_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest_score,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_score_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+# }
 
 swarm_circle_plot <- function(plot.df, color_palette, color_column, legend_name, y_column) {
   plot.df <- 
@@ -2418,15 +3166,18 @@ make_elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_colum
   plot.data <- 
     atlas.max_temp %>%
     left_join(proteinlocalization.table %>%
-                mutate(location = case_when(predicted_secreted ~ "secreted",
+                mutate(location = case_when(!predicted_localization_class %in% c("membrane", "secreted", "intracellular") ~ "multiple locations",
+                                            predicted_secreted ~ "secreted",
                                             predicted_membrane ~ "membrane",
                                             predicted_intracellular ~ "intracellular",
                                             T ~ "")),
               by = "ensg_id") %>%
     group_by(tissue_column, location) %>% 
-    summarise(total_NX = sum(maxEx_column),
-              elevated_NX = calculate_elevated_sum_NX(tissue_column), 
-              fraction = elevated_NX / total_NX) 
+    summarise(total_NX = sum(maxEx_column)) %>%
+    left_join(group_by(., tissue_column) %>% summarise(sum_total_NX = sum(total_NX)), by = "tissue_column") %>%
+    mutate(fraction = total_NX / sum_total_NX )
+  
+  write_delim(plot.data, paste(outpath, paste0(prefix, '_sum_abundance_location.txt'),sep='/'), delim = "\t")
   
   
   plot.data_order <- 
@@ -2437,7 +3188,8 @@ make_elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_colum
   
   plot.data %>%
     ungroup() %>%
-    mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+           location = factor(location, levels = c("multiple locations", "intracellular", "membrane", "secreted"))) %>%
     ggplot(aes(tissue_column, total_NX, fill = location))+
     geom_bar(stat = "identity", color = "darkgray") + 
     simple_theme + 
@@ -2446,4 +3198,234 @@ make_elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_colum
   
   ggsave(paste(outpath, paste0(prefix, '_total_NX_location.pdf'),sep='/'), width=15, height=10)
   
+  # Classification elevated
+  plot.data <- 
+    atlas.max_temp %>%
+    left_join(atlas.cat,
+              by = "ensg_id") %>%
+    group_by(tissue_column, elevated.category) %>% 
+    summarise(total_NX = sum(maxEx_column)) %>%
+    left_join(group_by(., tissue_column) %>% summarise(sum_total_NX = sum(total_NX)), by = "tissue_column") %>%
+    mutate(fraction = total_NX / sum_total_NX )
+  
+  write_delim(plot.data, paste(outpath, paste0(prefix, '_sum_abundance_elevated_category.txt'),sep='/'), delim = "\t")
+  
+  plot.data_order <- 
+    plot.data %>%
+    group_by(tissue_column) %>%
+    summarise(total_NX = sum(total_NX)) %$% 
+    tissue_column[order(total_NX)]
+  
+  plot.data %>%
+    ungroup() %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+           elevated.category = factor(elevated.category, levels = c("not detected", "low tissue specificity", 
+                                                                    "tissue enhanced", "group enriched", "tissue enriched"))) %>%
+    ggplot(aes(tissue_column, total_NX, fill = elevated.category))+
+    geom_bar(stat = "identity", color = "darkgray") + 
+    simple_theme + 
+    coord_flip() +
+    scale_fill_manual(values = elevated.cat.cols)
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_elevation.pdf'),sep='/'), width=15, height=10)
+  
+  # Classification distribution
+  plot.data <- 
+    atlas.max_temp %>%
+    left_join(atlas.cat,
+              by = "ensg_id") %>%
+    group_by(tissue_column, express.category.2) %>% 
+    summarise(total_NX = sum(maxEx_column)) %>%
+    left_join(group_by(., tissue_column) %>% summarise(sum_total_NX = sum(total_NX)), by = "tissue_column") %>%
+    mutate(fraction = total_NX / sum_total_NX )
+  
+  write_delim(plot.data, paste(outpath, paste0(prefix, '_sum_abundance_distribution_category.txt'),sep='/'), delim = "\t")
+  
+  plot.data_order <- 
+    plot.data %>%
+    group_by(tissue_column) %>%
+    summarise(total_NX = sum(total_NX)) %$% 
+    tissue_column[order(total_NX)]
+  
+  plot.data %>%
+    ungroup() %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+           express.category.2 = factor(express.category.2, levels = c("not expressed", "expressed in all", "expressed in many",
+                                                                      "expressed in some", "expressed in single"))) %>%
+    ggplot(aes(tissue_column, total_NX, fill = express.category.2))+
+    geom_bar(stat = "identity", color = "darkgray") + 
+    simple_theme + 
+    coord_flip() +
+    scale_fill_manual(values = expressed.cat.cols)
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_distribution.pdf'),sep='/'), width=15, height=10)
+  
+}
+
+make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, outpath, prefix) {
+  atlas_temp <- 
+    atlas %>%
+    rename(method_column = method_column, 
+           tissue_column = tissue_column) %>%
+    left_join(group_by(., method_column, tissue) %>%
+                summarise(total_tpm = sum(expression)),
+              by = c("method_column", "tissue")) %>%
+    mutate(expression = expression/(total_tpm / 1e6))
+  
+  for(method in unique(atlas_temp$method_column)) {
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(atlas.cat, by = "ensg_id") %>%
+      group_by(tissue_column, elevated.category) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(elevated.category == "tissue enriched") %>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+      
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+             elevated.category = factor(elevated.category, levels = c("not detected", "low tissue specificity", 
+                                                                      "tissue enhanced", "group enriched", "tissue enriched"))) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = elevated.category))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = elevated.cat.cols) + 
+      ggtitle(method)
+      
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_elevation.pdf'),sep='/'), width=15, height=10)
+    
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(atlas.cat, by = "ensg_id") %>%
+      group_by(tissue_column, express.category.2) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(express.category.2 == "expressed in single") %>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+             express.category.2 = factor(express.category.2, levels = c("not expressed", "expressed in all", "expressed in many",
+                                                                        "expressed in some", "expressed in single"))) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = express.category.2))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = expressed.cat.cols)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_distribution.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization 
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(!predicted_localization_class %in% c("membrane", "secreted", "intracellular") ~ "multiple locations",
+                                              predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+      group_by(tissue_column, location) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(location == "secreted")%>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+             location = factor(location, levels = c("multiple locations", "intracellular", "membrane", "secreted"))) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = location))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = protein.localization.palette)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization 2
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table,
+                by = "ensg_id") %>%
+      mutate(location = predicted_localization_class) %>%
+      group_by(tissue_column, location) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(location == "secreted")%>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = location))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = protein.localization.palette)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location_all.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization hierarchy
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+      group_by(tissue_column, location) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(location == "secreted")%>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = location))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = protein.localization.palette)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location_hierarchy.pdf'),sep='/'), width=15, height=10)
+  }
+    
 }

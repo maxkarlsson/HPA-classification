@@ -12,31 +12,17 @@ impute_expression <- function(expression, tissue.method, ensg_id) {
     return(imputed.expression)
 }
 
-tmm_method_normalization <- function(expression, method, tissue.method, ensg_id, median_column = T){
+tmm_method_normalization <- function(expression, method, tissue.method, ensg_id){
   # TMM: Method normalization
   methods <- unique(method)
   tibble(expression, tissue.method, ensg_id) %>%
     left_join({for(i in 1:length(methods)){
-      # tb <-
-      #   filter(., method == methods[i]) %>%
-      #   spread(key = tissue.method, value = expression) %>%
-      #   column_to_rownames("ensg_id") %>%
-      #   as.matrix() %>%
-      #   NOISeq::tmm() %>%
-      #   {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} 
-      
       tb <-
         filter(., method == methods[i]) %>%
         spread(key = tissue.method, value = expression) %>%
         column_to_rownames("ensg_id") %>%
-        as.matrix()  
-      
-      if(median_column) tb <- cbind(apply(tb, MARGIN = 1, mean), tb)
-      
-      tb <- 
-        tb %>%
-        NOISeq::tmm(refColumn = 1) %>%
-        {.[, -1]} %>%
+        as.matrix() %>%
+        NOISeq::tmm() %>%
         {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} 
       
       if(i == 1) {
