@@ -753,6 +753,18 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                      tissue_column = "content_name",
                                      outpath = result_folder, 
                                      prefix = "blood_atlas_6")
+  
+  
+  
+  
+  #####
+  #####
+  #####
+  
+  
+  make_classification_pie_chart(atlas.cat = blood.atlas.category.6, 
+                                outpath = result_folder, 
+                                prefix = "blood_atlas_6")
 }
 
 
