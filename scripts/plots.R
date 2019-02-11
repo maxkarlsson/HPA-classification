@@ -3429,3 +3429,142 @@ make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, ou
   }
     
 }
+
+make_classification_pie_chart <- function(atlas.cat, outpath, prefix) {
+  atlas.cat %>%
+    group_by(elevated.category) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("tissue enriched",
+               "group enriched",
+               "tissue enhanced",
+               "low tissue specificity",
+               "not detected"),
+             .$elevated.category), ]} %>%
+    mutate(elevated.category = factor(elevated.category, levels = rev(c("tissue enriched",
+                                                                        "group enriched",
+                                                                        "tissue enhanced",
+                                                                        "low tissue specificity",
+                                                                        "not detected"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = elevated.category)) +
+    geom_bar(stat = "identity", show.legend = T, color = "white", size = 1)+
+    #geom_text(aes(x = 1.8, y = label_y, label = elevated.category))+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme_void() + 
+    theme(legend.key = element_rect(colour = NA),
+          legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.key.size= unit(0.5, "cm"),
+          legend.title = element_text(face="italic"))
+  ggsave(paste(outpath, paste0(prefix, '_elevated_pie1.pdf'),sep='/'), width=8, height=8)
+  
+  atlas.cat %>%
+    group_by(elevated.category) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("tissue enriched",
+               "group enriched",
+               "tissue enhanced",
+               "low tissue specificity",
+               "not detected"),
+             .$elevated.category), ]} %>%
+    mutate(elevated.category = factor(elevated.category, levels = rev(c("tissue enriched",
+                                                                        "group enriched",
+                                                                        "tissue enhanced",
+                                                                        "low tissue specificity",
+                                                                        "not detected"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = elevated.category)) +
+    geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+    geom_text(aes(x = 1.8, 
+                  y = label_y, 
+                  label = elevated.category),
+              size = 4)+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme_void() 
+  ggsave(paste(outpath, paste0(prefix, '_elevated_pie2.pdf'),sep='/'), width=8, height=8)
+  
+  
+  ### Distribution
+  
+  atlas.cat %>%
+    group_by(express.category.2) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("expressed in single",
+               "expressed in some",
+               "expressed in many",
+               "expressed in all",
+               "not expressed"),
+             .$express.category.2), ]} %>%
+    filter(!is.na(number)) %>%
+    mutate(express.category.2 = factor(express.category.2, levels = rev(c("expressed in single",
+                                                                        "expressed in some",
+                                                                        "expressed in many",
+                                                                        "expressed in all",
+                                                                        "not expressed"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = express.category.2)) +
+    geom_bar(stat = "identity", show.legend = T, color = "white", size = 1)+
+    #geom_text(aes(x = 1.8, y = label_y, label = elevated.category))+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = expressed.cat.cols) + 
+    theme_void() + 
+    theme(legend.key = element_rect(colour = NA),
+          legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.key.size= unit(0.5, "cm"),
+          legend.title = element_text(face="italic"))
+  ggsave(paste(outpath, paste0(prefix, '_distribution_pie1.pdf'),sep='/'), width=8, height=8)
+  
+  atlas.cat %>%
+    group_by(express.category.2) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("expressed in single",
+               "expressed in some",
+               "expressed in many",
+               "expressed in all",
+               "not expressed"),
+             .$express.category.2), ]} %>%
+    filter(!is.na(number)) %>%
+    mutate(express.category.2 = factor(express.category.2, levels = rev(c("expressed in single",
+                                                                          "expressed in some",
+                                                                          "expressed in many",
+                                                                          "expressed in all",
+                                                                          "not expressed"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = express.category.2)) +
+    geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+    geom_text(aes(x = 1.8, 
+                  y = label_y, 
+                  label = express.category.2),
+              size = 4)+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = expressed.cat.cols) + 
+    theme_void() 
+  ggsave(paste(outpath, paste0(prefix, '_distribution_pie2.pdf'),sep='/'), width=8, height=8)
+}

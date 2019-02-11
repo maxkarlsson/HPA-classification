@@ -500,6 +500,10 @@ table(brain.atlas.category$category.text)
 
 make_sum_TPM_plot(all.atlas, all.atlas.category, tissue_column = "content_name", method_column = "method", outpath = result_folder, prefix = "atlas")
 
+make_classification_pie_chart(atlas.cat = all.atlas.category, 
+                              outpath = result_folder, 
+                              prefix = "all_atlas")
+
 all.atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
                                     group_column='consensus_content_name', 
                                     max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
@@ -733,6 +737,11 @@ brain.atlas.max.wide_all_regions <- generate_wide(brain.atlas.max_all_regions, e
                                                   group_column='content_name',
                                                   max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
 
+make_classification_pie_chart(atlas.cat = brain.atlas.category, 
+                              outpath = result_folder, 
+                              prefix = "brain_atlas")
+
+
 ## tissue distribution of normalized values
 make_tissue_distribution_plot(tb.atlas = brain.atlas, 
                               expr_column = "limma_gene_dstmm.zero.impute.expression",
@@ -865,6 +874,10 @@ make_heatmap_expression_levels(elevated.table = brain.atlas.elevated.table,
 
 blood.atlas.max.wide <- generate_wide(blood.atlas.max, ensg_column='ensg_id', group_column='content_name', 
                                       max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+
+make_classification_pie_chart(atlas.cat = blood.atlas.category, 
+                              outpath = result_folder, 
+                              prefix = "blood_atlas")
 
 blood.atlas.category %>%
   left_join(proteinclass.table, by = c("ensg_id" = "rna.genes")) %>%
@@ -1170,6 +1183,11 @@ make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max,
 
 blood.atlas.max.wide.6 <- generate_wide(blood.atlas.max.6, ensg_column='ensg_id', group_column='content_name', 
                                         max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+
+make_classification_pie_chart(atlas.cat = blood.atlas.category.6, 
+                              outpath = result_folder, 
+                              prefix = "blood_atlas_6")
+
 
 ## PCA and clustering plots
 blood.atlas.max.pca.values.6 <- pca.cal(blood.atlas.max.wide.6)
