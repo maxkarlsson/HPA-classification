@@ -2099,6 +2099,15 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
     dev.off()
   }
   
+  for(filt in c("excat", "elcat")) {
+    pdf(paste(outpath, paste0(prefix, " classification ", filt, ".pdf"), sep = "/"), 
+        width = 10, height = 10, useDingbats = F)
+    df %>%
+      filter(sapply(transfer, FUN = function(x) grepl(x, filt))) %$%
+      chord_classification_clockwise(from, to, sizes, chord_col, plot.group[1:(length(plot.group)/2)], plot.order, line_expansion = 10000)
+    dev.off()
+  }
+  
 }
 
 
@@ -2600,7 +2609,7 @@ make_dendrogram <- function(var1, var2, value, method = "spearman"){
 get_dendrogram_segments <- function(dendrogram) {
   dendrogram %>%
     ggdendro::dendro_data() %$%
-    segments
+    left_join(segments, labels, by = c("xend" = "x", "yend" = "y"))
 }
 
 range_scale_manual <- function(x, xmax, xmin, span, dodge = 0) { 
@@ -2616,6 +2625,7 @@ range_scale <- function(x, span) {
 }
 ggdendroheat <- function(x, y, value, fill_factor = NA, show.legend = T, xdendrogram = T, ydendrogram = T,
                          x_margin = 0.2, y_margin = 0.2, xaxis_order = NULL, yaxis_order = NULL, 
+                         xdendrogram_color = NULL, ydendrogram_color = NULL,
                          range_scale_x = F, range_scale_y = F, x_clustering_method = "spearman", y_clustering_method = "spearman",
                          under_lim_tile_color = NA, under_lim = 1){
   
@@ -2686,30 +2696,67 @@ ggdendroheat <- function(x, y, value, fill_factor = NA, show.legend = T, xdendro
   y_factors <- length(labels(y_dendrogram))
   
   if(xdendrogram) {
-    g <- g + 
-      geom_segment(data = x_dendrogram_segments, 
-                   aes(x = x, 
-                       xend = xend,
-                       y = range_scale_manual(yend, max(y, yend), min(y, yend), 
-                                       span = c(y_factors, y_factors/(1 - y_margin)), 
-                                       dodge = 0.5), 
-                       yend = range_scale_manual(y, max(y, yend), min(y, yend), 
-                                          span = c(y_factors, y_factors/(1 - y_margin)), 
-                                          dodge = 0.5)))
+    
+    if(!is.null(xdendrogram_color)) {
+      g <- g + 
+        geom_segment(data = x_dendrogram_segments %>%
+                       mutate(label = xdendrogram_color[match(x_dendrogram_segments$label, names(xdendrogram_color))]), 
+                     aes(x = x, 
+                         xend = xend,
+                         y = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                dodge = 0.5), 
+                         yend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                   dodge = 0.5),
+                         color = label))
+    } else{
+      g <- g + 
+        geom_segment(data = x_dendrogram_segments, 
+                     aes(x = x, 
+                         xend = xend,
+                         y = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                dodge = 0.5), 
+                         yend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                   dodge = 0.5)))
+    }
+    
+    
     xp <- c(x_factors + x_margin)
   } 
   
   if(ydendrogram) {
-    g <- g + 
-      geom_segment(data = y_dendrogram_segments, 
-                   aes(x = range_scale_manual(yend, max(y, yend), min(y, yend), 
-                                       span = c(x_factors, x_factors/(1 - x_margin)), 
-                                       dodge = 0.5), 
-                       xend = range_scale_manual(y, max(y, yend), min(y, yend), 
-                                          span = c(x_factors, x_factors/(1 - x_margin)), 
-                                          dodge = 0.5),
-                       y = x, 
-                       yend = xend)) 
+    if(!is.null(ydendrogram_color)) {
+      g <- g + 
+        geom_segment(data = y_dendrogram_segments %>%
+                       mutate(label = ydendrogram_color[match(y_dendrogram_segments$label, names(ydendrogram_color))]), 
+                     aes(x = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                dodge = 0.5), 
+                         xend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                   dodge = 0.5),
+                         y = x, 
+                         yend = xend,
+                         color = label))
+    } else{
+      g <- g + 
+        geom_segment(data = y_dendrogram_segments, 
+                     aes(x = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                dodge = 0.5), 
+                         xend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                   dodge = 0.5),
+                         y = x, 
+                         yend = xend))
+      
+    }
+    
+    
+    
     yp <- c(y_factors + y_margin)
   }
   
@@ -3021,7 +3068,116 @@ make_expression_heatmaps <- function(atlas.max.tb, atlas.cat, maxEx_column, tiss
   
 }
 
-
+make_immunodeficiency_expression_heatmaps <- function(atlas.max.tb, atlas.cat, immunodeficiency.table, maxEx_column, tissue_column, 
+                                     ensemblanno.table, proteinclass.table = NULL, proteinclass.table_ensg_id_column = "", 
+                                     proteinclass.table_class_column = "", outpath, prefix, range_scale_x = F) {
+  genes <- 
+    atlas.max.tb %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = tissue_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+    
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
+  
+  
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = proteinclass.table_ensg_id_column, 
+                       protein_class = proteinclass.table_class_column), by = "ensg_id")
+  }
+  
+  
+  
+  
+  #-----------------------------------------------------------------
+  ## All elevated genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced"))
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## categories
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1), 
+                fill_factor = elevated.category)+
+      scale_fill_manual(values = elevated.cat.cols) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  #-----------------------------------------------------------------
+  ## All genes
+  plot.data <- 
+    genes 
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_genes_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## categories
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1), 
+                fill_factor = elevated.category)+
+      scale_fill_manual(values = elevated.cat.cols) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_genes_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  
+}
 
 make_score_expression_scatter <- function(atlas.max.tb, atlas.cat, maxEx_column, tissue_column, ensemblanno.table, plot.order = NULL, outpath, prefix) {
   plot.data <- 

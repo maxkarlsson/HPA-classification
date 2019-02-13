@@ -1,0 +1,253 @@
+Major groups of PIDs	Subgroups of PIDs	Disease	Gene	Inheritance	OMIM number	GDI-Phred
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	gc deficiency	IL2RG	XL	300400	0.26766
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	JAK3 deficiency	JAK3	AR	600173	3.69742
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	IL7R? deficiency	IL7RA	AR	146661	NA
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	CD45 deficiency	PTPRC	AR	151460	1.75714
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	CD3? deficiency	CD3D	AR	186790	0.59015
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	CD3? deficiency	CD3E	AR	186830	1.24983
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	CD3? deficiency 	CD3Z	AR	186740	NA
+I. Combined immunodeficiencies	T-B+ Severe Combined Immunodeficiency (SCID)	Coronin-1A deficiency	CORO1A	AR	605000	0.77143
+I. Combined immunodeficiencies	T-B- SCID. DNA recombination defects	RAG 1 deficiency	RAG1	AR	601457	8.76351
+I. Combined immunodeficiencies	T-B- SCID. DNA recombination defects	RAG 2 deficiency	RAG2	AR	601457	3.54108
+I. Combined immunodeficiencies	T-B- SCID. DNA recombination defects	DCLRE1C (Artemis) deficiency	DCLRE1C	AR	602450	8.47749
+I. Combined immunodeficiencies	T-B- SCID. DNA recombination defects	DNA PKcs deficiency	PRKDC	AR	600899	6.57755
+I. Combined immunodeficiencies	T-B- SCID. DNA recombination defects	"Reticular dysgenesis, AK2 deficiency"	AK2	AR	103020	1.93027
+I. Combined immunodeficiencies	T-B- SCID. DNA recombination defects	Adenosine deaminase (ADA) deficiency	ADA	AR	102700	5.60704
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	CD40 ligand deficiency	CD40LG	XL	300386	1.34110
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	CD40 deficiency	CD40	AR	109535	1.01750
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	Purine nucleoside phosphorylase (PNP) deficiency	PNP	AR	164050	8.03621
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	CD3? deficiency	CD3G	AR	186740	10.80204
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	CD8 deficiency	CD8A	AR	186910	3.49019
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	ZAP-70 deficiency	ZAP70	AR	269840	1.46999
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class I deficiency	TAP1	AR	604571	13.77511
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class I deficiency	TAP2	AR	604571	10.18092
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class I deficiency	TAPBP	AR	604571	2.21028
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class II deficiency	CIITA	AR	209920	4.20745
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class II deficiency	RFX5	AR	209920	4.54115
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class II deficiency	RFXAP	AR	209920	0.98228
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MHC class II deficiency	RFXANK	AR	209920	4.32126
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	ITK deficiency	ITK	AR	613011	1.53970
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	SH2D1A deficiency (XLP1)	SH2D1A	XL	308240	0.04688
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	Cartilage hair hypoplasia	RMRP	AR	250250	NA
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MAGT1 deficiency	MAGT1	XL	300715	0.82051
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	DOCK8 deficiency	DOCK8	AR	243700	18.28926
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	RhoH Deficiency	RHOH	AR	602037	0.68348
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MST1 deficiency	STK4	AR	614868	7.88897
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	TCR? deficiency	TRAC	AR	615387	NA
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	LCK deficiency	LCK	AR	153390	3.34580
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	MALT1 deficiency	MALT1	AR	604860	2.21841
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	IL21R deficiency	IL21R	AR	605383	3.92928
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	UNC119 deficiency	UNC119	AD	604011	1.47560
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	CARD11 deficiency	CARD11	AR	615206	2.86659
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	OX40 deficiency	TNFRSF4	AR	615593	0.92448
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	IKBKB deficiency	IKBKB	AR	615592	3.39162
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	Activated PI3K-?	PIK3CD	AD	602839	3.55263
+I. Combined immunodeficiencies	Combined immunodeficiencies generally less profound than severe combined immunodeficiency        	Omenn syndrome	LIG4	AR	603554	8.68899
+II. Combined immunodeficiencies with associated or syndromic features	Congenital thrombocytopenia	Wiskott-Aldrich syndrome (WAS)	WAS	XL	301000	1.13817
+II. Combined immunodeficiencies with associated or syndromic features	Congenital thrombocytopenia	WIP deficiency	WIPF1	AR	614493	0.96977
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	Ataxia-telangiectasia	ATM	AR	208900	15.62160
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	Ataxia-telangiectasia-like disease (ATLD)*	MRE11A	AR	604391	3.10867
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	Nijmegen breakage syndrome	NBN	AR	251260	9.39528
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	Bloom Syndrome	BLM	AR	210900	5.92615
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	Immunodeficiency with centromeric instability and facial anomalies (ICF)	DNMT3B	AR	242860	3.03837
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	Immunodeficiency with centromeric instability and facial anomalies (ICF)	ZBTB24	AR	242860	4.12229
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	PMS2 Deficiency 	PMS2	AR	600259	5.54211
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	RNF168 deficiency	RNF168	AR	611943	7.27250
+II. Combined immunodeficiencies with associated or syndromic features	DNA repair defects	MCM4 deficiency 	MCM4	AR	609981	2.23027
+II. Combined immunodeficiencies with associated or syndromic features	Thymic defects with additional congenital anomalies	DiGeorge anomaly 	TBX1	AD	188400	7.92600
+II. Combined immunodeficiencies with associated or syndromic features	Thymic defects with additional congenital anomalies	CHARGE syndrome	CHD7	AD	214800	4.76744
+II. Combined immunodeficiencies with associated or syndromic features	Thymic defects with additional congenital anomalies	CHARGE syndrome	SEMA3E	AD	608892	6.21822
+II. Combined immunodeficiencies with associated or syndromic features	Immune-osseous dysplasias        	Cartilage hair hypoplasia	RMRP	AR	250250	NA
+II. Combined immunodeficiencies with associated or syndromic features	Immune-osseous dysplasias        	Schimke syndrome	SMARCAL1	AR	242900	6.17659
+II. Combined immunodeficiencies with associated or syndromic features	Hyper-IgE syndromes (HIES)	AD-HIES (Job’s Syndrome)	STAT3	AD	147060	1.52170
+II. Combined immunodeficiencies with associated or syndromic features	Hyper-IgE syndromes (HIES)	Tyk2 deficiency	TYK2	AR	611521	7.41708
+II. Combined immunodeficiencies with associated or syndromic features	Hyper-IgE syndromes (HIES)	DOCK8 deficiency	DOCK8	AR	243700	18.28926
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	XL-DKC 	DKC1	XL	305000	1.74518
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	AR-DKC due to NHP2 deficiency	NHP2	AR	613987	0.85525
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	AR-DKC due to NOP10 deficiency	NOP10	AR	224230	0.64158
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	AR-DKC due to RTEL1 deficiency	RTEL1	AR	608833	6.80132
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	AD-DKC due to TERC deficiency	TERC	AD	127550	NA
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	AD-DKC due to TERT deficiency	TERT	AD	614742	1.50879
+II. Combined immunodeficiencies with associated or syndromic features	Dyskeratosis congenital (DKC)	AD-DKC due to TINF2 deficiency	TINF2	AD	613990	3.49366
+II. Combined immunodeficiencies with associated or syndromic features	Defects of Vitamin B12 and Folate metabolism	TCN2 deficiency	TCN2	AR	275350	8.06455
+II. Combined immunodeficiencies with associated or syndromic features	Defects of Vitamin B12 and Folate metabolism	SLC46A1 deficiency	SLC46A1	AR	229050	1.55461
+II. Combined immunodeficiencies with associated or syndromic features	Defects of Vitamin B12 and Folate metabolism	MTHFD1 deficiency	MTHFD1	AR	Not assigned	10.16705
+II. Combined immunodeficiencies with associated or syndromic features	Comel-Netherton Syndrome	NA	SPINK5	AR	256500	29.29597
+II. Combined immunodeficiencies with associated or syndromic features	Winged helix deficiency (Nude)	NA	FOXN1	AR	600838	9.08407
+II. Combined immunodeficiencies with associated or syndromic features	ORAI-I deficiency	NA	ORAI1	AR	610277	1.00209
+II. Combined immunodeficiencies with associated or syndromic features	STIM1 deficiency	NA	STIM1	AR	605921	3.30996
+II. Combined immunodeficiencies with associated or syndromic features	STAT5b deficiency	NA	STAT5B	AR	245590	1.31577
+II. Combined immunodeficiencies with associated or syndromic features	1Hepatic veno-occlusive disease with immunodeficiency (VODI)	NA	SP110	AR	235550	7.12571
+II. Combined immunodeficiencies with associated or syndromic features	IKAROS deficiency	NA	IKZF1	AD	Not assigned	0.70589
+II. Combined immunodeficiencies with associated or syndromic features	FILS syndrome	NA	POLE	AR	615139	8.98803
+II. Combined immunodeficiencies with associated or syndromic features	Immunodeficiency with multiple intestinal atresias	NA	TTC7A	AR	243150	7.40607
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	BTK deficiency	BTK	XL	300300	0.41735
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	? heavy chain deficiency	IGHM	AR	147020	NA
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	l5 deficiency	IGLL1	AR	146770	4.83519
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	Ig? deficiency	CD79A	AR	112205	1.30856
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	Ig? deficiency	CD79B	AR	147245	0.33550
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	BLNK deficiency	BLNK	AR	604615	1.97448
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	PI3 kinase deficiency	PIK3R1	AR	171833	8.50101
+III. Predominantly antibody deficiencies	Severe reduction in all serum immunoglobulin isotypes with profoundly decreased or absent B cells	E47 transcription factor deficiency	TCF3	AD	147141	6.18027
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	ICOS deficiency	ICOS	AR	604558	1.51225
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	CD19 deficiency	CD19	AR	107265	2.61413
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	CD81 deficiency	CD81	AR	186845	0.70276
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	CD20  deficiency	MS4A1	AR	112210	0.92585
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	CD21 deficiency	CR2	AR	614699	15.21947
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	TACI deficiency	TNFRSF13B	AR/AD	604907	5.14551
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	LRBA deficiency	LRBA	AR	606453	13.94798
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	BAFF receptor deficiency	TNFRSF13C	AR	606269	3.16997
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	TWEAK	TNFSF12	AD	602695	NA
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	NFKB2 deficiency	NFKB2	AD	615577	1.70783
+III. Predominantly antibody deficiencies	Severe reduction in at least 2 serum immunoglobulin isotypes  with normal or low number of B cells	"WHIM (Warts, Hypogammaglobulinemia, infections, Myelokathexis) syndrome"	CXCR4	AD	193670	0.28802
+III. Predominantly antibody deficiencies	Severe reduction in serum IgG and IgA with normal/elevated IgM and normal numbers of B cells	CD40L deficiency	CD40LG	XL	300386	1.34110
+III. Predominantly antibody deficiencies	Severe reduction in serum IgG and IgA with normal/elevated IgM and normal numbers of B cells	CD40 deficiency	CD40	AR	109535	1.01750
+III. Predominantly antibody deficiencies	Severe reduction in serum IgG and IgA with normal/elevated IgM and normal numbers of B cells	AID deficiency	AICDA 	AR	605257	1.20008
+III. Predominantly antibody deficiencies	Severe reduction in serum IgG and IgA with normal/elevated IgM and normal numbers of B cells	UNG deficiency	UNG	AR	191525	1.20535
+III. Predominantly antibody deficiencies	Isotype or light chain deficiencies with generally normal numbers of B cells	? chain deficiency	IGKC	AR	147200	NA
+III. Predominantly antibody deficiencies	Isotype or light chain deficiencies with generally normal numbers of B cells	PRKC ?	PRKCD	AR	615559	1.13875
+III. Predominantly antibody deficiencies	Isotype or light chain deficiencies with generally normal numbers of B cells	Activated PI3K-?	PIK3CD	AD	602839	3.55263
+IV. Diseases of Immune Dysregulation	Familial hemophagocytic lymphohistiocytosis (FHL) syndrome without hypopigmentation	Perforin deficiency  (FHL2)	PRF1	AR	603553	3.47879
+IV. Diseases of Immune Dysregulation	Familial hemophagocytic lymphohistiocytosis (FHL) syndrome without hypopigmentation	UNC13D / Munc13-4  deficiency (FHL3)	UNC13D	AR	608898	7.80779
+IV. Diseases of Immune Dysregulation	Familial hemophagocytic lymphohistiocytosis (FHL) syndrome without hypopigmentation	"Syntaxin 11 deficiency,  (FHL4) "	STX11	AR	603552	4.53989
+IV. Diseases of Immune Dysregulation	Familial hemophagocytic lymphohistiocytosis (FHL) syndrome without hypopigmentation	STXBP2 / Munc18-2 deficiency (FHL5)	STXBP2	AR	613101	3.70158
+IV. Diseases of Immune Dysregulation	FHL syndromes with hypopigmentation	Chediak-Higashi syndrome	LYST	AR	214500	7.39996
+IV. Diseases of Immune Dysregulation	FHL syndromes with hypopigmentation	"Griscelli  syndrome, type2"	RAB27A 	AR	607624	1.13154
+IV. Diseases of Immune Dysregulation	FHL syndromes with hypopigmentation	"Hermansky-Pudlak syndrome, type 2"	AP3B1	AR	608233	4.90676
+IV. Diseases of Immune Dysregulation	Lymphoproliferative syndromes	SH2D1A deficiency (XLP1)	SH2D1A	XL	308240	0.04688
+IV. Diseases of Immune Dysregulation	Lymphoproliferative syndromes	XIAP deficiency (XLP2)	XIAP	XL	300635	6.43257
+IV. Diseases of Immune Dysregulation	Lymphoproliferative syndromes	ITK deficiency	ITK	AR	613011	1.53970
+IV. Diseases of Immune Dysregulation	Lymphoproliferative syndromes	CD27 deficiency	CD27	AR	615122	6.40434
+IV. Diseases of Immune Dysregulation	Genetic defects of regulatory T cells	"(a) IPEX, immune dysregulation, polyendocrinopathy, enteropathy X-linked"	FOXP3	XL	304790	1.22709
+IV. Diseases of Immune Dysregulation	Genetic defects of regulatory T cells	CD25 deficiency	IL2RA	AR	606367	0.34222
+IV. Diseases of Immune Dysregulation	Genetic defects of regulatory T cells	STAT5b deficiency	STAT5B	AR	245590	1.31577
+IV. Diseases of Immune Dysregulation	Autoimmunity without lymphoproliferation	"APECED (APS-1),  autoimmune polyendocrinopathy with candidiasis and ectodermal dystrophy"	AIRE	AR	240300	3.17827
+IV. Diseases of Immune Dysregulation	Autoimmunity without lymphoproliferation	ITCH deficiency	ITCH	AR	613385	1.18051
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	ALPS-FAS	FAS	AR/AD	601859	2.33810
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	ALPS-FASLG	FASLG	AR	134638	0.92915
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	ALPS-Caspase10	CASP10	AD	603909	5.01039
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	ALPS-Caspase 8	CASP8	AR	607271	2.11059
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	FADD deficiency	FADD	AR	613759	0.19483
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	CARD11 gain of function (GOF) mutations	CARD11	AD	606445	2.86659
+IV. Diseases of Immune Dysregulation	Autoimmune lymphoproliferative syndrome (ALPS )	PRKCdelta deficiency	PRKCD	AR	615559	1.13875
+IV. Diseases of Immune Dysregulation	Immune dysregulation with colitis	IL-10 deficiency	IL10	AR	not assigned	0.21135
+IV. Diseases of Immune Dysregulation	Immune dysregulation with colitis	IL-10R? deficiency	IL10RA	AR	613148	4.86232
+IV. Diseases of Immune Dysregulation	Immune dysregulation with colitis	IL-10R? deficiency	IL10RB	AR	612567	10.33886
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	"TREX1 deficiency, Aicardi-Goutieres syndrome 1 (AGS1)"	TREX1	AR/AD	606609	0.94817
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	"RNASEH2B deficiency, AGS2"	RNASEH2B	AR	610326	3.42276
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	"RNASEH2C deficiency, AGS3"	RNASEH2C	AR	610330	2.82129
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	"RNASEH2A deficienc y, AGS4"	RNASEH2A	AR	606034	3.31139
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	"SAMHD1 deficiency , AGS5"	SAMHD1	AR	612952	0.57187
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	"ADAR1 deficiency , AGS6"	ADAR	AR	615010	1.87521
+IV. Diseases of Immune Dysregulation	Type 1 Interferonopathies	Spondyloenchondro-dysplasia with immune dysregulation (SPENCD)	ACP5	AR	607944	5.81715
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	Severe congenital neutropenia 1 (ELANE deficiency)	ELANE	AD	202700	1.69633
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	Cyclic neutropenia	ELANE	AD	162800	1.69633
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	SCN2 (GFI 1 deficiency)	GFI1	AD	613107	3.10367
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	SCN3 (Kostmann Disease)	HAX1	AR	610738	0.88754
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	SCN4 (G6PC3 deficiency)	G6PC3	AR	612541	3.15387
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	SCN5	VPS45	AR	615285	3.91449
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	Glycogen storage disease  type 1b	SLC37A4	AR	232220	2.40713
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	X-linked neutropenia/myelodysplasia	WAS	XL	300299	1.13817
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	P14/LAMTOR2 deficiency 	LAMTOR2	AR	610389	0.09609
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	Barth Syndrome	TAZ	XL	302060	0.45960
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	Cohen syndrome	VPS13B	AR	216550	15.59736
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Neutrophil function	Clericuzio syndrome Poikiloderma with neutropenia	USB1	AR	613276	4.15800
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Leukocyte adhesion deficiency type 1 (LAD1)	ITGB2	AR	116920	2.32291
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Leukocyte adhesion deficiency   type 2 (LAD2)	SLC35C1	AR	266265	5.51199
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Leukocyte adhesion deficiency  type 3 (LAD3)	FERMT3	AR	612840	2.50959
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Rac 2 deficiency	RAC2	AD	602049	0.16451
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	?-actin deficiency	ACTB	AD	102630	0.06330
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Localized juvenile Periodontitis	FPR1	AR	136537	7.66928
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Papillon-Lefèvre Syndrome	CTSC	AR	245000	4.87049
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Specific granule deficiency	CEBPE	AR	245480	1.07343
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Motility	Shwachman-Diamond Syndrome	SBDS	AR	260400	2.88683
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Respiratory Burst	X-linked chronic granulomatous   disease (CGD)	CYBB	XL	306400	1.12290
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Respiratory Burst	Autosomal recessive CGD – p22 phox deficiency	CYBA	AR	233690	4.15974
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Respiratory Burst	Autosomal recessive CGD – p47 phox deficiency	NCF1	AR	233700	1.23387
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Respiratory Burst	Autosomal recessive CGD – p67 phox deficiency	NCF2	AR	233710	13.42911
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Defects of Respiratory Burst	Autosomal recessive CGD – p40 phox deficiency	NCF4	AR	601488	1.45383
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	IL-12 and IL-23 receptor b1 chain deficiency	IL12RB1	AR	209950	3.78996
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	IL-12p40 deficiency	IL12B	AR	161561	2.67291
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	IFN-? receptor 1 deficiency	IFNGR1	AR/AD	107470	4.32908
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	IFN-? receptor 2 deficiency	IFNGR2	AR	147569	3.96123
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	STAT1 deficiency (AD form)	STAT1	AD	600555	0.73972
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	Macrophage gp91 phox deficiency	CYBB	XL	306400	1.12290
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	IRF8-deficiency (AD form)	IRF8	AD	601565	1.26169
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Mendelian susceptibility to Mycobacterial Disease (MSMD)	ISG15	ISG15	AR	14751	6.95277
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Other Defects	IRF 8-deficiency (AR form)	IRF8	AR	614893	1.26169
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Other Defects	GATA2 deficiency (Mono MAC Syndrome)	GATA2	AD	137295	8.75850
+"V.Congenital Defects of Phagocyte Number, Function, or Both"	Other Defects	Pulmonary alveolar proteinosis	CSF2RA	Biallelic mutations in pseudoautosomal gene	306250	5.63621
+VI. Defects in Innate Immunity	Anhidrotic ectodermaldysplasia withimmunodeficiency(EDA-ID)	"EDA-ID, X-linked (NEMO deficiency)"	IKBKG	XL	300248	0.09337
+VI. Defects in Innate Immunity	Anhidrotic ectodermaldysplasia withimmunodeficiency(EDA-ID)	"EDA-ID,autosomal-dominant"	NFKBIA	AD	612132	0.89545
+VI. Defects in Innate Immunity	TIR signaling pathway deficiency	IRAK-4 deficiency	IRAK4	AR	607676	5.19884
+VI. Defects in Innate Immunity	TIR signaling pathway deficiency	MyD88 deficiency	MYD88	AR	612260	0.84849
+VI. Defects in Innate Immunity	HOIL1 deficiency	NA	RBCK1	AR	Not assigned	0.61540
+VI. Defects in Innate Immunity	"""WHIM (Warts, Hypogammaglobulinemia,  Infections, Myelokathexis) syndrome"""	NA	CXCR4	AD	193670	0.28802
+VI. Defects in Innate Immunity	Epidermodysplasia verruciformis	EVER1 deficiency	TMC6	AR	226400	12.75965
+VI. Defects in Innate Immunity	Epidermodysplasia verruciformis	EVER2 deficiency	TMC8	AR	226400	4.97185
+VI. Defects in Innate Immunity	Predisposition to severe viral infection	STAT2 deficiency	STAT2	AR	Not assigned	4.98513
+VI. Defects in Innate Immunity	Predisposition to severe viral infection	MCM4 deficiency	MCM4	AR	609981	2.23027
+VI. Defects in Innate Immunity	Herpes simplex encephalitis (HSE)	TLR3 deficiency	TLR3	AR/AD	613002	9.63966
+VI. Defects in Innate Immunity	Herpes simplex encephalitis (HSE)	UNC93B1 deficiency	UNC93B1	AR	610551	2.66921
+VI. Defects in Innate Immunity	Herpes simplex encephalitis (HSE)	TRAF3 deficiency	TRAF3	AD	614849	8.81729
+VI. Defects in Innate Immunity	Herpes simplex encephalitis (HSE)	TRIF deficiency	TICAM1	AR/AD	614850	6.88939
+VI. Defects in Innate Immunity	Herpes simplex encephalitis (HSE)	TBK1 deficiency	TBK1	AD	Not assigned	2.07750
+VI. Defects in Innate Immunity	Predisposition to invasive fungal diseases	CARD9 deficiency 	CARD9	AR	212050	7.21015
+VI. Defects in Innate Immunity	Chronic mucocutaneous candidiasis (CMC)	IL-17RA deficiency	IL17RA	AR	605461	10.96810
+VI. Defects in Innate Immunity	Chronic mucocutaneous candidiasis (CMC)	IL-17F deficiency	IL17F	AD	606496	4.72703
+VI. Defects in Innate Immunity	Chronic mucocutaneous candidiasis (CMC)	STAT1 gain-of-function	STAT1	AD	614162	0.73972
+VI. Defects in Innate Immunity	Chronic mucocutaneous candidiasis (CMC)	ACT1 deficiency	TRAF3IP2	AR	615527	5.71579
+VI. Defects in Innate Immunity	Trypanosomiasis	NA	APOL1	AD	603743	4.95097
+VI. Defects in Innate Immunity	Isolated congenital asplenia (ICA)	NA	RPSA	AD	271400	0.15368
+VII. Autoinflammatory Disorders	Defects effecting the inflammasome	Familial Mediterranean Fever	MEFV	AR	249100	7.13488
+VII. Autoinflammatory Disorders	Defects effecting the inflammasome	Mevalonate kinase deficiency (Hyper IgD syndrome)	MVK	AR	260920	3.67097
+VII. Autoinflammatory Disorders	Defects effecting the inflammasome	Muckle-Wells syndrome	NLRP3	AD	191900	1.87076
+VII. Autoinflammatory Disorders	Defects effecting the inflammasome	Familial cold autoinflammatory syndrome  	NLRP12	AD	120100	11.08055
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	TNF receptor-associated periodic syndrome (TRAPS)	TNFRSF1A	AD	142680	2.71793
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	Early onset inflammatory  bowel disease  	IL10	AR	124092	0.21135
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	Early onset inflammatory  bowel disease  	IL10RA	AR	146933	4.86232
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	Early onset inflammatory  bowel disease  	IL10RB	AR	123889	10.33886
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	"Pyogenic sterile arthritis, pyoderma gangrenosum, acne (PAPA) syndrome  "	PSTPIP1 	AD	604416	3.21350
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	Blau syndrome	NOD2	AD	186580	4.62729
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	Chronic recurrent multifocal osteomyelitis and congenital dyserythropoietic anemia (Majeed syndrome) 	LPIN2 	AR	609628	3.31663
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	DIRA (Deficiency of the Interleukin 1 Receptor Antagonist)	IL1RN 	AR	612852	0.67491
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	DITRA – Deficiency of IL-36 receptor antagonist 	IL36RN	AR	614204	2.75336
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	SLC29A3  mutation	SLC29A3	AR	602782	18.55162
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	CAMPS (CARD14 mediated psoriasis )	CARD14 	AD	173200	9.49890
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	Cherubism	SH3BP2 	AD	11840	2.23361
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	CANDLE (chronic atypical neutrophilic dermatitis with lipodystrophy)	PSMB8 	AD	256040	7.64727
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	HOIL-1 deficiency 	RBCK1	AR	610924	0.61540
+VII. Autoinflammatory Disorders	Non inflammasome-related conditions	PLAID (PLC?2 associated antibody deficiency and immune dysregulation)	PLCG2 	AD	614878	5.24986
+VIII. Complement Deficiencies	NA	C1q deficiency	C1QA	AR	120550	0.31014
+VIII. Complement Deficiencies	NA	C1q deficiency	C1QB	AR	601269	0.75740
+VIII. Complement Deficiencies	NA	C1q deficiency	C1QC	AR	120575	0.85444
+VIII. Complement Deficiencies	NA	C1r deficiency	C1R	AR	216950	7.67058
+VIII. Complement Deficiencies	NA	C1s deficiency	C1S	AR	120580	6.58867
+VIII. Complement Deficiencies	NA	C4 deficiency	C4A	AR	120810	1.32179
+VIII. Complement Deficiencies	NA	C4 deficiency	C4B	AR	120820	0.76798
+VIII. Complement Deficiencies	NA	C2 deficiency	C2	AR	217000	3.08646
+VIII. Complement Deficiencies	NA	C3 deficiency	C3	AR/AD	120700	4.43999
+VIII. Complement Deficiencies	NA	C5 deficiency	C5	AR	120900	15.54132
+VIII. Complement Deficiencies	NA	C6 deficiency	C6	AR	217050	5.69020
+VIII. Complement Deficiencies	NA	C7 deficiency	C7	AR	217070	12.19075
+VIII. Complement Deficiencies	NA	C8? deficiency	C8A	AR	120950	10.18787
+VIII. Complement Deficiencies	NA	C8? deficiency	C8G	AR	120950	5.57646
+VIII. Complement Deficiencies	NA	C8b deficiency	C8B	AR	120960	4.94126
+VIII. Complement Deficiencies	NA	C9 deficiency	C9	AR	613825	3.71776
+VIII. Complement Deficiencies	NA	C1 inhibitor deficiency	SERPING1	AD	138470	7.30820
+VIII. Complement Deficiencies	NA	Factor B	CFB	AD	138470	4.88072
+VIII. Complement Deficiencies	NA	Factor D deficiency	CFD	AR	134350	3.35060
+VIII. Complement Deficiencies	NA	Properdin deficiency	CFP	XL	312060	1.86633
+VIII. Complement Deficiencies	NA	Factor I deficiency	CFI	AR	610984	2.21508
+VIII. Complement Deficiencies	NA	Factor H deficiency	CFH	AR	609814	6.09993
+VIII. Complement Deficiencies	NA	Factor H –related protein deficiencies	CFHR3	AR	235400	4.17191
+VIII. Complement Deficiencies	NA	Factor H –related protein deficiencies	CFHR1	AR	235400	1.83843
+VIII. Complement Deficiencies	NA	Thrombomodulin	THBD	AD	188040	5.10144
+VIII. Complement Deficiencies	NA	MASP1 deficiency 	MASP1	AR	600521	4.77477
+VIII. Complement Deficiencies	NA	MASP2 deficiency	MASP2	AR	605102	6.18949
+VIII. Complement Deficiencies	NA	3MC syndrome (COLEC11 deficiency)	COLEC11	AR	612502	6.71501
+VIII. Complement Deficiencies	NA	Complement Receptor 2 (CR2) deficiency	CR2	AR	614699	15.21947
+VIII. Complement Deficiencies	NA	Complement Receptor 3 (CR3) deficiency	ITGB2	AR	116920	2.32291
+VIII. Complement Deficiencies	NA	Membrane Cofactor Protein (CD46) deficiency	CD46	AD	120920	1.49781
+VIII. Complement Deficiencies	NA	Membrane Attack Complex Inhibitor (CD59) deficiency	CD59	AR	107271	0.02628
+VIII. Complement Deficiencies	NA	Ficolin 3 deficiency	FCN3	AR	604973	3.01786

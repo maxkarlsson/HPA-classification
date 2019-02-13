@@ -38,6 +38,9 @@ brainregions_path <- './data/anno/brain_regions.txt' ## brain_regions_anno
 proteinclass_path <- './data/anno/gene.classes.txt' ## protein classification
 proteinlocalization_path <- './data/anno/new_proteinclass_all_19670.txt' ## protein localization classification
 tissuehierarchy_path <- './ref/colors_92.tsv' # tissue colors and hierarchy
+celllines_path <- './data/lims/consensus_celline_hpa_92.tsv'
+immunodeficiency_genes <- './ref/PID_genes_Petter_190202.txt'
+
 blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
 contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
@@ -104,6 +107,23 @@ proteinlocalization.table <-
                                         T ~ F))
 
          
+immunodeficiency.table <- 
+  immunodeficiency_genes %>%
+  readr::read_delim(delim = "\t") %>%
+  mutate(Gene = trimws(Gene),
+         Gene = case_when(Gene == "IL7RA" ~ "IL7R",
+                          Gene == "CD3Z" ~ "CD247",
+                          Gene == "MRE11A" ~ "MRE11",
+                          T ~ Gene)) %>%
+  left_join(ensemblanno.table, by = c("Gene" = "gene_name")) %>%
+  
+  # Filter genes that are not protein coding:
+  filter(!Gene %in% c("RMRP", "TERC")) %>%
+  
+  # Filter IgG and T-cell receptor related genes (not in Atlas):
+  filter(!Gene %in% c("TRAC", "IGHM", "IGKC"))
+
+
 
 content.table <-
   contenttable_path %>%
@@ -204,6 +224,14 @@ all.atlas.raw <-
   left_join(gene.table, by = c("lims_id" = "eg_id")) %>%
   left_join(content.table, by = c("tissue" = "content_id")) %>%
   left_join(consensustissue.table, by = c("tissue" = "content_id", "content_name" = "content_name"))
+
+
+# 
+cell.lines.atlas <-
+  celllines_path %>%
+  readr::read_delim(delim = "\t") 
+  
+
 
 #
 # ----------- Step 2. normalization ----------- 
@@ -495,6 +523,50 @@ table(brain.atlas.category$category.text)
 #
 # ----------- Visulization ----------- 
 #
+plot.data <- 
+  all.atlas.max %>%
+  select(ensg_id, 
+         consensus_content_name, 
+         norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+  mutate(atlas = "tissue") %>%
+# rbind(all.atlas.max %>%
+#         select(ensg_id, 
+#                consensus_content_name, 
+#                norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+#         mutate(atlas = "tissue"),
+#       brain.atlas.max %>%
+#         select(ensg_id, 
+#                consensus_content_name = subgroup, 
+#                norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+#         mutate(atlas = "brain")) %>%
+  rbind(blood.atlas.max %>%
+          select(ensg_id, 
+                 consensus_content_name = content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+          mutate(atlas = "blood")) %>% 
+  ungroup() %>%
+  rbind(select(cell.lines.atlas, 1:3) %>%
+          rename(consensus_content_name = celline_name) %>%
+          mutate(atlas = "celline")) %>%
+  filter(norm_exp >= 1) %>%
+  group_by(consensus_content_name, atlas) %>%
+  summarise(n_detected_genes = length(ensg_id)) %>% 
+  ungroup() %>%
+  mutate(consensus_content_name = factor(consensus_content_name, levels = unique(consensus_content_name[order(atlas, n_detected_genes)]))) 
+  
+plot.data %>%
+  ggplot(aes(consensus_content_name, n_detected_genes, fill = atlas)) +
+  geom_bar(stat = "identity") +
+  simple_theme + 
+  theme(axis.text.x = element_blank())
+ggsave(paste(outpath,'detected_genes_bar.pdf',sep='/'), width=8, height=8)
+
+plot.data %>%
+  ggplot(aes(atlas, n_detected_genes, fill = atlas, color = atlas)) +
+  geom_boxplot(alpha = 0.2) + 
+  ggbeeswarm::geom_beeswarm() +
+  simple_theme
+ggsave(paste(outpath,'detected_genes_boxplot.pdf',sep='/'), width=8, height=8)
 
 # =========== *All altas =========== 
 
@@ -1069,6 +1141,33 @@ make_expression_heatmaps(atlas.max.tb = all.atlas.max,
                          outpath = result_folder, 
                          range_scale_x = T,
                          prefix = "blood atlas cat on all atlas range scaled")
+
+
+make_immunodeficiency_expression_heatmaps(atlas.max.tb = blood.atlas.max, 
+                                          atlas.cat = blood.atlas.category, 
+                                          immunodeficiency.table = immunodeficiency.table,
+                                          maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                          tissue_column = "content_name", 
+                                          ensemblanno.table = ensemblanno.table,
+                                          proteinclass.table = proteinclass.table, 
+                                          proteinclass.table_ensg_id_column = "rna.genes", 
+                                          proteinclass.table_class_column = "proteinclass.vec.single", 
+                                          outpath = result_folder, 
+                                          range_scale_x = F,
+                                          prefix = "blood atlas immuno deficiency")
+
+make_immunodeficiency_expression_heatmaps(atlas.max.tb = blood.atlas.max, 
+                                          atlas.cat = blood.atlas.category, 
+                                          immunodeficiency.table = immunodeficiency.table,
+                                          maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx", 
+                                          tissue_column = "content_name", 
+                                          ensemblanno.table = ensemblanno.table,
+                                          proteinclass.table = proteinclass.table, 
+                                          proteinclass.table_ensg_id_column = "rna.genes", 
+                                          proteinclass.table_class_column = "proteinclass.vec.single", 
+                                          outpath = result_folder, 
+                                          range_scale_x = T,
+                                          prefix = "blood atlas immuno deficiency range scaled")
 
 # make_heatmap_group_enriched_expression_levels_circle(elevated.table = blood.atlas.elevated.table,
 #                                                      all.atlas.max.tb = blood.atlas.max, 
