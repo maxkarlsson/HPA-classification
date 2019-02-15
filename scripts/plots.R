@@ -7,6 +7,7 @@ library('gplots')
 #####
 make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, content_hierarchy = NULL, 
                        content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
+                       subatlas_unit = "celltype",
                        outpath, prefix) {
   atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
                                       group_column='consensus_content_name', 
@@ -195,7 +196,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   }
   
   
-  ## ----- bar plots ----
+  ## ----- bar and pie plots ----
   # Number of expressed genes
   if("number detected bar" %in% plots | "all" %in% plots) {
     make_number_detected_genes_barplot(all.atlas.max.tb = atlas.max, 
@@ -215,6 +216,11 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                        prefix = prefix)
   }
   
+  if("classification pie" %in% plots | "all" %in% plots) {
+    make_classification_pie_chart(atlas.cat = atlas.category, 
+                                  outpath = outpath, 
+                                  prefix = prefix)
+  }
   
   
   
@@ -241,6 +247,8 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                   prefix = prefix)
   }
   
+  
+  
   # =========== *Subatlas*    ===========
   if("brain" %in% plot.atlas | "blood" %in% plot.atlas) {
     
@@ -251,6 +259,32 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                   outpath = outpath, 
                                   prefix = prefix)
     }
+    
+    if("class comparison chord" %in% plots | "all" %in% plots) {
+      #Comparison of elevated genes to tissue atlas
+      make_elevated_organ_total_chord(cat1 = atlas.category, 
+                                      cat2 = all.atlas.category, 
+                                      grid.col = content_colors, 
+                                      elevated_cats = c(2,3,4), 
+                                      direction = 1, 
+                                      cat1_name = subatlas_unit, 
+                                      cat2_name = "tissues",
+                                      outpath = outpath, 
+                                      prefix = paste(prefix, "_tissue_elevated", sep = "_"))
+      
+      
+      make_elevated_organ_total_chord(cat1 = atlas.category, 
+                                      cat2 = atlas.category, 
+                                      grid.col = content_colors, 
+                                      elevated_cats = c(2), 
+                                      direction = 1, 
+                                      cat1_name = "celltypes", 
+                                      cat2_name = "tissues",
+                                      outpath = outpath, 
+                                      prefix = paste(prefix, "_tissue_enriched", sep = "_"))
+      
+    }
+    
   }
     
   
@@ -301,219 +335,37 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                range_scale_x = T,
                                prefix = "blood atlas cat on all atlas range scaled")
       
+      make_immunodeficiency_expression_heatmaps(atlas.max.tb = atlas.max,
+                                                atlas.cat = atlas.category,
+                                                immunodeficiency.table = immunodeficiency.table,
+                                                maxEx_column = maxEx_column,
+                                                tissue_column = content_column,
+                                                ensemblanno.table = ensemblanno.table,
+                                                proteinclass.table = proteinclass.table,
+                                                proteinclass.table_ensg_id_column = "rna.genes",
+                                                proteinclass.table_class_column = "proteinclass.vec.single",
+                                                outpath = outpath,
+                                                range_scale_x = F,
+                                                prefix = prefix)
+      
+      make_immunodeficiency_expression_heatmaps(atlas.max.tb = atlas.max,
+                                                atlas.cat = atlas.category,
+                                                immunodeficiency.table = immunodeficiency.table,
+                                                maxEx_column = maxEx_column,
+                                                tissue_column = content_column,
+                                                ensemblanno.table = ensemblanno.table,
+                                                proteinclass.table = proteinclass.table,
+                                                proteinclass.table_ensg_id_column = "rna.genes",
+                                                proteinclass.table_class_column = "proteinclass.vec.single",
+                                                outpath = outpath,
+                                                range_scale_x = F,
+                                                prefix = paste(prefix, "range_scaled"))
+
+      
     }
   }
   
   
-    
-    
-    
-    
-    
-    
-    
-    
-  
-  
-  
-  # Number of expressed genes
-  make_number_detected_genes_barplot(all.atlas.max.tb = blood.atlas.max, 
-                                     maxEx_column = maxEx_column,
-                                     tissue_column = "content_name",
-                                     outpath = outpath,
-                                     prefix = "blood_atlas")
-  
-  # Comparison of elevated genes to tissue atlas
-  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
-                                  cat2 = all.atlas.category, 
-                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
-                                  elevated_cats = c(2,3,4), 
-                                  direction = 1, 
-                                  cat1_name = "celltypes", 
-                                  cat2_name = "tissues",
-                                  outpath = outpath, 
-                                  prefix = "Blood to tissue elevated")
-  
-  
-  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
-                                  cat2 = all.atlas.category, 
-                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
-                                  elevated_cats = c(2,3,4), 
-                                  direction = 2, 
-                                  cat1_name = "celltypes", 
-                                  cat2_name = "tissues",
-                                  outpath = outpath, 
-                                  prefix = "Tissue to Blood elevated")
-  
-  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
-                                  cat2 = all.atlas.category, 
-                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
-                                  elevated_cats = c(2), 
-                                  direction = 1, 
-                                  cat1_name = "celltypes", 
-                                  cat2_name = "tissues",
-                                  outpath = outpath, 
-                                  prefix = "Blood to tissue tissue enriched")
-  
-  make_elevated_organ_total_chord(cat1 = blood.atlas.category, 
-                                  cat2 = all.atlas.category, 
-                                  grid.col = c(tissue.colors, with(blood_atlas_colors, setNames(color, content))), 
-                                  elevated_cats = c(2), 
-                                  direction = 2, 
-                                  cat1_name = "celltypes", 
-                                  cat2_name = "tissues",
-                                  outpath = outpath, 
-                                  prefix = "Tissue to Blood tissue enriched")
-  
-  # Total elevated expression fraction
-  make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max, 
-                                     atlas.cat = blood.atlas.category, 
-                                     maxEx_column = maxEx_column,
-                                     tissue_column = "content_name",
-                                     outpath = outpath, 
-                                     prefix = "blood_atlas")
-  
-  # =========== *Blood altas (6 cells)* =========== 
-  
-  blood.atlas.max.wide.6 <- generate_wide(blood.atlas.max.6, ensg_column='ensg_id', group_column='content_name', 
-                                          max_column=maxEx_column)
-  
-  ## PCA and clustering plots
-  blood.atlas.max.pca.values.6 <- pca.cal(blood.atlas.max.wide.6)
-  scores <- blood.atlas.max.pca.values.6[[1]]
-  loadings <- 
-    blood.atlas.max.pca.values.6[[2]] %>%
-    as.tibble(rownames = "ensg_id") %>%
-    mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
-  
-  make_PCA_plots(scores = scores,
-                 loadings = loadings,
-                 groups = setNames(rownames(blood.atlas.max.pca.values.6[[1]]), rownames(blood.atlas.max.pca.values.6[[1]])),
-                 groups.color = with(blood_atlas_colors, setNames(color, content)),
-                 outpath = outpath,
-                 prefix = 'blood_celltypes_6')
-  
-  make_clustering_plot(tb.wide = blood.atlas.max.wide.6, 
-                       colors = with(blood_atlas_colors, setNames(color, content)), 
-                       outpath = outpath,
-                       prefix = 'blood_celltypes_6')
-  
-  
-  ## tissue elevated plot
-  blood.atlas.elevated.table.6 <- calc_elevated.table(tb.wide = blood.atlas.max.wide.6, 
-                                                      atlas.categories = blood.atlas.category.6)
-  blood.atlas.elevated.summary.table.6 <- calc_elevated.summary.table(blood.atlas.elevated.table.6)
-  make_elevated_bar_plot(elevated.summary.table = blood.atlas.elevated.summary.table.6, 
-                         outpath = outpath,
-                         prefix = 'blood_celltypes_6')
-  
-  ## specificity distribution
-  make_specificity_distribution_plot(atlas.cat = blood.atlas.category.6, 
-                                     type = "Tissue",
-                                     outpath = outpath,
-                                     prefix = 'blood_celltypes_6')
-  
-  
-  make_swarm_expression_plot(atlas.max = blood.atlas.max.6, 
-                             atlas.cat = blood.atlas.category.6, 
-                             maxEx_column = maxEx_column, 
-                             tissue_column = "content_name",
-                             plot.order = blood_atlas_hierarchy %>%
-                               filter(!content %in% c("blood", "Total PBMCs")) %$% 
-                               unique(content_l1[order(content_l2)]),
-                             outpath = outpath,
-                             prefix = 'blood_cell_lineages_6')
-  
-  
-  ## chord plot
-  # make_classification_chord_plot(atlas.cat = blood.atlas.category.6,
-  #                                outpath = outpath,
-  #                                prefix = 'blood_tissues_6')
-  
-  # group enriched chord diagram
-  
-  
-  make_chord_group_enriched(blood.atlas.elevated.table.6, 
-                            grid.col = with(blood_atlas_colors, setNames(color, content)), 
-                            tissue_hierarcy = blood_atlas_hierarchy %>%
-                              select(content_l1, content_l2, content_l3) %>%
-                              rename(content = content_l1,
-                                     content_l1 = content_l2,
-                                     content_l2 = content_l3),
-                            palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
-                            outpath = outpath,reverse = T, 
-                            prefix = "blood_atlas_6")
-  
-  make_heatmap_group_enriched(elevated.table = blood.atlas.elevated.table.6, 
-                              outpath = outpath,
-                              prefix = "blood_atlas_6")
-  
-  
-  make_expression_heatmaps(atlas.max.tb = blood.atlas.max.6, 
-                           atlas.cat = blood.atlas.category.6, 
-                           maxEx_column = maxEx_column, 
-                           tissue_column = "content_name", 
-                           ensemblanno.table = ensemblanno.table,
-                           proteinclass.table = proteinclass.table, 
-                           proteinclass.table_ensg_id_column = "rna.genes", 
-                           proteinclass.table_class_column = "proteinclass.vec.single", 
-                           outpath = outpath, 
-                           prefix = "blood atlas 6")
-  
-  make_expression_heatmaps(atlas.max.tb = blood.atlas.max.6, 
-                           atlas.cat = blood.atlas.category.6, 
-                           maxEx_column = maxEx_column, 
-                           tissue_column = "content_name", 
-                           ensemblanno.table = ensemblanno.table,
-                           proteinclass.table = proteinclass.table, 
-                           proteinclass.table_ensg_id_column = "rna.genes", 
-                           proteinclass.table_class_column = "proteinclass.vec.single", 
-                           outpath = outpath, 
-                           range_scale_x = T, 
-                           prefix = "blood atlas 6 range scaled")
-  
-  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
-                           atlas.cat = blood.atlas.category.6, 
-                           maxEx_column = maxEx_column, 
-                           tissue_column = "consensus_content_name", 
-                           ensemblanno.table = ensemblanno.table,
-                           proteinclass.table = proteinclass.table, 
-                           proteinclass.table_ensg_id_column = "rna.genes", 
-                           proteinclass.table_class_column = "proteinclass.vec.single", 
-                           outpath = outpath, 
-                           prefix = "blood atlas 6 cat on all atlas")
-  
-  make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
-                           atlas.cat = blood.atlas.category.6, 
-                           maxEx_column = maxEx_column, 
-                           tissue_column = "consensus_content_name", 
-                           ensemblanno.table = ensemblanno.table,
-                           proteinclass.table = proteinclass.table, 
-                           proteinclass.table_ensg_id_column = "rna.genes", 
-                           proteinclass.table_class_column = "proteinclass.vec.single", 
-                           outpath = outpath, 
-                           range_scale_x = T,
-                           prefix = "blood atlas 6 cat on all atlas range scaled")
-  
-  # Total elevated expression fraction
-  make_elevated_NX_fraction_barplots(atlas.max = blood.atlas.max.6, 
-                                     atlas.cat = blood.atlas.category.6, 
-                                     maxEx_column = maxEx_column,
-                                     tissue_column = "content_name",
-                                     outpath = outpath, 
-                                     prefix = "blood_atlas_6")
-  
-  
-  
-  
-  #####
-  #####
-  #####
-  
-  
-  make_classification_pie_chart(atlas.cat = blood.atlas.category.6, 
-                                outpath = outpath, 
-                                prefix = "blood_atlas_6")
 }
 
 
