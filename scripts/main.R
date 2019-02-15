@@ -543,7 +543,7 @@ plot.data <-
           select(ensg_id, 
                  consensus_content_name = content_name, 
                  norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
-          mutate(atlas = "blood")) %>% 
+          mutate(atlas = "blood cells")) %>% 
   ungroup() %>%
   rbind(select(cell.lines.atlas, 1:3) %>%
           rename(consensus_content_name = celline_name) %>%
@@ -568,6 +568,87 @@ plot.data %>%
   simple_theme
 ggsave(paste(outpath,'detected_genes_boxplot.pdf',sep='/'), width=8, height=8)
 
+plot.data <- 
+  all.atlas.max %>%
+  select(ensg_id, 
+         consensus_content_name, 
+         norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+  filter(!consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+  mutate(atlas = "tissues") %>%
+  ungroup() %>%
+  rbind(all.atlas %>%
+          select(ensg_id, 
+                 content_name,
+                 consensus_content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression) %>%
+          filter(consensus_content_name %in% c("brain", "intestine", "lymphoid system")) %>%
+          mutate(atlas = consensus_content_name) %>%
+          select(ensg_id,
+                 consensus_content_name = content_name,
+                 norm_exp,
+                 atlas)) %>%
+  rbind(blood.atlas.max %>%
+          select(ensg_id, 
+                 consensus_content_name = content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+          mutate(atlas = "blood cells") %>%
+          ungroup()) %>% 
+  ungroup() %>%
+  rbind(select(cell.lines.atlas, 1:3) %>%
+          rename(consensus_content_name = celline_name) %>%
+          mutate(atlas = "celline")) %>%
+  filter(norm_exp >= 1) %>%
+  group_by(consensus_content_name, atlas) %>%
+  summarise(n_detected_genes = length(unique(ensg_id))) %>% 
+  ungroup()
+
+plot.data %>%
+  ggplot(aes(atlas, n_detected_genes, fill = atlas, color = atlas)) +
+  geom_boxplot(alpha = 0.2) + 
+  ggbeeswarm::geom_beeswarm() +
+  simple_theme
+ggsave(paste(outpath,'detected_genes_separate_boxplot.pdf',sep='/'), width=8, height=8)
+
+
+plot.data <- 
+  all.atlas.max %>%
+  select(ensg_id, 
+         consensus_content_name, 
+         norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+  filter(!consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+  mutate(atlas = "tissues") %>%
+  ungroup() %>%
+  rbind(all.atlas %>%
+          select(ensg_id, 
+                 content_name,
+                 consensus_content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression) %>%
+          filter(consensus_content_name %in% c("brain", "intestine", "lymphoid system")) %>%
+          mutate(atlas = consensus_content_name) %>%
+          select(ensg_id,
+                 consensus_content_name = content_name,
+                 norm_exp,
+                 atlas)) %>%
+  rbind(blood.atlas.max %>%
+          select(ensg_id, 
+                 consensus_content_name = content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+          mutate(atlas = "blood cells") %>%
+          ungroup()) %>% 
+  ungroup() %>%
+  rbind(select(cell.lines.atlas, 1:3) %>%
+          rename(consensus_content_name = celline_name) %>%
+          mutate(atlas = "celline")) %>%
+  filter(norm_exp >= 1) %>%
+  group_by(atlas) %>%
+  summarise(total_detected_genes = length(unique(ensg_id))) %>% 
+  ungroup()
+
+plot.data %>%
+  ggplot(aes(atlas, total_detected_genes, fill = atlas, color = atlas)) +
+  geom_bar(stat = "identity") + 
+  simple_theme
+ggsave(paste(outpath,'total_detected_genes_bar.pdf',sep='/'), width=8, height=8)
 # =========== *All altas =========== 
 
 make_sum_TPM_plot(all.atlas, all.atlas.category, tissue_column = "content_name", method_column = "method", outpath = result_folder, prefix = "atlas")
