@@ -9,12 +9,15 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                        content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
                        subatlas_unit = "celltype",
                        outpath, prefix) {
-  atlas.max.wide <- generate_wide(all.atlas.max, ensg_column='ensg_id', 
-                                      group_column='consensus_content_name', 
-                                      max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+  
+  atlas.max.wide <- generate_wide(atlas.max, 
+                                  ensg_column = 'ensg_id', 
+                                  group_column = content_column, 
+                                  max_column = maxEx_column)
   
   atlas.elevated.table <- calc_elevated.table(tb.wide = atlas.max.wide, 
                                               atlas.categories = atlas.cat)
+  
   atlas.elevated.summary.table <- calc_elevated.summary.table(atlas.elevated.table)
   
   ## ----- Spearman method cluster ------
@@ -61,14 +64,14 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                    loadings = loadings,
                    groups = setNames(rownames(atlas.max.pca.values[[1]]), 
                                      rownames(atlas.max.pca.values[[1]])),
-                   groups.color = tissue.colors,
+                   groups.color = content_colors,
                    outpath = outpath,
                    prefix = prefix)
   }
   
   if("cluster" %in% plots | "all" %in% plots) {
     make_clustering_plot(tb.wide = atlas.max.wide, 
-                         colors = tissue.colors, 
+                         colors = content_colors, 
                          outpath = outpath,
                          prefix = prefix)
   }
@@ -112,13 +115,6 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_heatmap_group_enriched(atlas.elevated.table, 
                                 outpath = outpath,
                                 prefix = prefix)
-    
-    make_heatmap_group_enriched_expression_levels_circle(elevated.table = atlas.elevated.table,
-                                                         all.atlas.max.tb = atlas.max, 
-                                                         maxEx_column = maxEx_column,
-                                                         tissue_column = content_column,
-                                                         outpath = outpath,
-                                                         prefix = prefix) 
     
     make_expression_heatmaps(atlas.max.tb = atlas.max, 
                              atlas.cat = all.atlas.category, 

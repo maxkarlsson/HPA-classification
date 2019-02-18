@@ -43,9 +43,7 @@ immunodeficiency_genes <- './ref/PID_genes_Petter_190202.txt'
 
 blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
-contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
-tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), 
-                                                              c(tissue_name, organ_name, paste(tissue_name, 1))))
+
 
 
 ## datasets
@@ -136,6 +134,7 @@ consensustissue.table <-
                     col_types = cols(content_id = col_character(),
                                      consensus_content_id = col_character()))
 
+
 brainregions.table <-
   brainregions_path %>%
   readr::read_delim(delim = "\t")
@@ -143,6 +142,10 @@ brainregions.table <-
 contenthierarchy.table <- 
   tissuehierarchy_path %>%
   readr::read_delim(delim = "\t")
+
+contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
+tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), 
+                                                              c(tissue_name, organ_name, paste(tissue_name, 1))))
 
 ## input datasets
 hpa.atlas <-
@@ -662,11 +665,42 @@ ggsave(paste(outpath,'total_detected_genes_bar.pdf',sep='/'), width=8, height=8)
 
 
 # =========== *Blood altas* =========== 
-make_plots(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, content_hierarchy = NULL, 
-                       content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
-                       subatlas_unit = "celltype",
-                       outpath, prefix)
+make_plots(atlas = blood.atlas, 
+           atlas.max = blood.atlas.max, 
+           atlas.cat = blood.atlas.category, 
+           Ex_column = "limma_gene_dstmm.zero.impute.expression", 
+           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",  
+           content_column = "content_name", 
+           content_hierarchy = blood_atlas_hierarchy, 
+           content_colors = with(blood_atlas_colors, setNames(color, content)), 
+           plots = "all", 
+           plot.atlas = "blood", 
+           plot.order = blood_atlas_hierarchy %>%
+             filter(!content %in% c("blood", "Total PBMCs")) %$% 
+             content[order(content_l1)],
+           subatlas_unit = "celltype",
+           outpath = result_folder, 
+           prefix = "blood_cells")
 
+
+###
+atlas = blood.atlas 
+atlas.max = blood.atlas.max 
+atlas.cat = blood.atlas.category 
+Ex_column = "limma_gene_dstmm.zero.impute.expression" 
+maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx"  
+content_column = "content_name" 
+content_hierarchy = blood_atlas_hierarchy 
+content_colors = with(blood_atlas_colors, setNames(color, content))
+plots = "all" 
+plot.atlas = "blood" 
+plot.order = blood_atlas_hierarchy %>%
+  filter(!content %in% c("blood", "Total PBMCs")) %$% 
+  content[order(content_l1)]
+subatlas_unit = "celltype"
+outpath = result_folder 
+prefix = "blood_cells"
+###
 
 # =========== *Blood altas (6 cells)* =========== 
 
