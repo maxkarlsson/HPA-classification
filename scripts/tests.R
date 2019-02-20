@@ -1149,7 +1149,7 @@ for( i in seq(1, length(AsaGener), 5)) {
   
 }
 
-essential_genes <- readr::read_delim("./doc/essential genes.txt", delim = "\t") %$% ENSG
+essential_genes <- readr::read_delim("./ref/essential genes.txt", delim = "\t") %$% ENSG
 
 for( i in seq(1, length(essential_genes), 4)) {
   j = i + 3
@@ -1383,3 +1383,422 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
   circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, cex=0.6,adj = c(0, 0.3))
   #  circos.axis(h = "top", labels.cex = 0.5, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
+
+
+
+
+
+
+#################################################################
+
+test.tb <- 
+  all.atlas %>%
+  mutate(X = expression,
+         before = limma_gene_dstmm.zero.impute.expression, 
+         after = limma_gene_dstmm.zero.impute.expression_median,
+         log2_fold_change = log2((after-before)/before))
+
+test.tb.sum <- 
+  test.tb %>%
+  group_by(content_name) %>%
+  summarise(X = sum(X, na.rm = T),
+            before = sum(before, na.rm = T),
+            after = sum(after, na.rm = T)) %>%
+            {.[order(.$X),]}
+
+test.tb %>%
+  {ggplot(., aes(log2_fold_change)) + 
+      geom_density()+
+      geom_vline(xintercept = mean(.$log2_fold_change, na.rm = T), color = "red") + 
+      annotate(geom = "text", label = mean(.$log2_fold_change, na.rm = T), x = 0, y = 1, color = "red")+
+      simple_theme} 
+
+test.tb %>%
+  ggplot(aes(before + 1, after + 1)) + 
+  geom_hex(bins = 100) + 
+  facet_wrap(~ content_name) + 
+  scale_x_log10() + 
+  scale_y_log10() + 
+  simple_theme
+
+test.tb %>%
+  filter(ensg_id %in% sample(unique(ensg_id), 30)) %>%
+  ggplot(aes(before + 1, after + 1, color = content_name)) + 
+  geom_point(show.legend = F) + 
+  facet_wrap(~ ensg_id) + 
+  scale_x_log10() + 
+  scale_y_log10() + 
+  scale_color_manual(values = tissue.colors)+
+  simple_theme
+
+test.tb %>%
+  ggplot(aes((before + after)/2, (after - before) / ((before + after)/2))) +
+  geom_hex(bins = 100)+
+  simple_theme + 
+  scale_x_log10()
+
+ggsave(paste(result_folder, "Scatter before after median refcol.pdf", sep = "/"), height = 16, width = 20)
+  
+all_atlas_cat <- 
+  all.atlas %>%
+  left_join(all.atlas.category, by = "ensg_id") %>%
+  rename(X = expression, 
+         before = limma_gene_dstmm.zero.impute.expression, 
+         after = limma_gene_dstmm.zero.impute.expression_median) 
+
+for( i in seq(1, length(essential_genes), 4)) {
+  j = i + 3
+  if(j > length(essential_genes)) j = length(essential_genes)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, before, after)%>%
+    filter(ensg_id %in% essential_genes[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "before", "after")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    
+    #geom_vline(xintercept = c(5), size = 5, alpha = 0.3, color = "pink")+
+    geom_hline(yintercept = 1, color = "red", linetype = "dashed")+
+    
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    annotate(geom = "rect", xmin=c(56, 71)-0.5,xmax=c(56, 71)+0.5,ymin=-Inf,ymax=Inf, alpha=0.1,fill="green")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0("essential genes", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
+  
+}
+
+
+
+atlas.test.max <- 
+  test.tb %>% 
+  select(1:11, before, after) %>%
+  rename(before_expression = before,
+         after_expression = after) %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
+  group_by(consensus_content_name, ensg_id) %>% 
+  mutate(method = as.character(method)) %>%
+  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T),
+                                   method = get_method(method, ., max(., na.rm = T))),
+                      .vars = grep("expression$", colnames(.), value = T))
+
+all.atlas.test.category.before <- get.categories.with.num.expressed(atlas.test.max,
+                                                        max_column = "before_expression_maxEx",
+                                                        cat_column = "consensus_content_name",
+                                                        enrich.fold = 4,
+                                                        under.lim = 1,
+                                                        group.num = 6)
+
+all.atlas.test.category.after <- get.categories.with.num.expressed(atlas.test.max,
+                                                                    max_column = "after_expression_maxEx",
+                                                                    cat_column = "consensus_content_name",
+                                                                    enrich.fold = 4,
+                                                                    under.lim = 1,
+                                                                    group.num = 6)
+
+cats_joined <- 
+  left_join(all.atlas.test.category.before, all.atlas.test.category.after, by = "ensg_id") %>%
+  mutate(status = case_when(express.category.2.x == express.category.2.y & 
+                              elevated.category.x == elevated.category.y & 
+                              `enriched tissues.x` == `enriched tissues.y` ~ "Same",
+                            express.category.2.x == express.category.2.y & 
+                              elevated.category.x == elevated.category.y ~"Changed enriched tissue",
+                            express.category.2.x != express.category.2.y & 
+                              elevated.category.x != elevated.category.y ~ "Changed both categories",
+                            express.category.2.x != express.category.2.y ~ "Changed express category",
+                            elevated.category.x == elevated.category.y ~ "Changed elevated category"))
+  # group_by(express.category.2.x, elevated.category.x, `enriched tissues.x`, express.category.2.y, elevated.category.y, `enriched tissues.y`, same_all)
+  # summarise()
+
+cat1 <- all.atlas.test.category.before; cat2 = all.atlas.test.category.after
+unique_categories <- unique(c(cat1$category.text, cat2$category.text))
+plot.colors <- cat.cols[which(names(cat.cols) %in% unique_categories)]
+
+left_join(cat1, cat2, by = "ensg_id") %>%
+  group_by(express.category.2.x, elevated.category.x) %>%
+  summarise(number = length(express.category.2.x)) %>%
+  ungroup() %>%
+  mutate(category.text.x = paste("from", category.text.x),
+         category.text.y = paste("to", category.text.y)) %$%
+  chord_classification(from = category.text.x, 
+                       to = category.text.y, 
+                       sizes = number,
+                       grid.col = c(setNames(plot.colors, paste("from", names(plot.colors))), setNames(plot.colors, paste("to", names(plot.colors)))),
+                       groups = c(rep(1, length(plot.colors)),
+                                  rep(2, length(plot.colors))), 
+                       plot.order = c(paste("from", names(plot.colors)),
+                                      rev(paste("to", names(plot.colors)))))
+
+make_class_comparison_chord(cat1 = all.atlas.test.category.before, 
+                            cat2 = all.atlas.test.category.after,
+                            outpath = result_folder, prefix = "comp before after")
+make_class_comparison_chord(cat1, cat2, line_expansion = 10000,
+                            outpath = result_folder, 
+                            prefix = "compare_before_after",
+                            excat_suffix = c(" before", " after"),
+                            elcat_suffix = c(" before", " after"),
+                            excat_prefix = c("", ""),
+                            elcat_prefix = c("", ""),
+                            excat_gsub_pattern = c(" after", ""),
+                            excat_gsub_replace = c(" before", ""),
+                            elcat_gsub_pattern = c(" after", ""),
+                            elcat_gsub_replace = c(" before", ""),
+                            excat_cats = c("expressed in all", "expressed in many", "expressed in some", "expressed in single", "not expressed"),
+                            elcat_cats = c("tissue enriched", "group enriched", "tissue enhanced", "low tissue specificity", "not detected"))
+
+changing_genes <- 
+  left_join(all.atlas.test.category.before, all.atlas.test.category.after, by = "ensg_id") %>% 
+  filter(elevated.category.x != elevated.category.y) 
+
+for( i in seq(1, length(changing_genes$ensg_id), 4)) {
+  j = i + 3
+  if(j > length(changing_genes$ensg_id)) j = length(changing_genes$ensg_id)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, before, after)%>%
+    filter(ensg_id %in% changing_genes$ensg_id[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "before", "after")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    
+    #geom_vline(xintercept = c(5), size = 5, alpha = 0.3, color = "pink")+
+    geom_hline(yintercept = 1, color = "red", linetype = "dashed")+
+    
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    annotate(geom = "rect", xmin=c(56, 71)-0.5,xmax=c(56, 71)+0.5,ymin=-Inf,ymax=Inf, alpha=0.1,fill="green")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0("changing genes", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
+  
+}
+  
+
+changing_enriched_genes <- 
+  left_join(all.atlas.test.category.before, all.atlas.test.category.after, by = "ensg_id") %>% 
+  filter(elevated.category.x != elevated.category.y) %>%
+  filter(elevated.category.x == "tissue enriched")
+
+for( i in seq(1, length(changing_enriched_genes$ensg_id), 4)) {
+  j = i + 3
+  if(j > length(changing_enriched_genes$ensg_id)) j = length(changing_enriched_genes$ensg_id)
+  
+  all_atlas_cat  %>%
+    #filter(X < 1 & method == "HPA") %>% 
+    gather(key = "Type", value = "Value", X, before, after)%>%
+    filter(ensg_id %in% changing_enriched_genes$ensg_id[i:j]) %>%
+    #filter(ensg_id == "ENSG00000276017") %>% View
+    mutate(Type = factor(Type, levels = c("X", "before", "after")),
+           #tissue = factor(tissue, levels = unique(tissue[order(group)])),
+           label = paste(express.category.2, 
+                         elevated.category, sep = "\n")) %>%
+    ggplot(aes(content_name, Value, fill = method, group = method))+
+    
+    #geom_vline(xintercept = c(5), size = 5, alpha = 0.3, color = "pink")+
+    geom_hline(yintercept = 1, color = "red", linetype = "dashed")+
+    
+    geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+    annotate(geom = "rect", xmin=c(56, 71)-0.5,xmax=c(56, 71)+0.5,ymin=-Inf,ymax=Inf, alpha=0.1,fill="green")+
+    geom_text(aes(3, 1, label = label), vjust = -1, hjust = 0, size = 2)+
+    #annotate("text", y= max(plot.data$Value), x =1,label="Custom Title",hjust=1) +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+    scale_fill_manual(values = dataset.colors)+
+    facet_grid(ensg_id ~ Type, scales = "free") 
+  
+  ggsave(paste(result_folder, paste0("changing enriched genes", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
+  
+}
+
+
+
+###################################################################
+## Test to compare blood atlas classification with LIMS
+###################################################################
+
+#read_delim('./data/lims/bloodcells_hpa_regional_category_92.tsv', delim = "\t")
+
+# Atlas
+blood.atlas.LIMS <- read_delim('./data/lims/rna_blood.tsv', delim = "\t")
+
+blood.atlas.R <- 
+  all.atlas %>%
+  filter(method == "Blood") %>%
+  select(ensg_id = lims_id,
+         tissue, 
+         expression,
+         sample_type_id)
+
+for( i in 1:length(blood.atlas.R)) {
+  print(names(blood.atlas.R)[i])
+  print(setdiff(unique(blood.atlas.LIMS[,i][[1]]), unique(blood.atlas.R[,i][[1]])))
+  
+}
+
+blood.atlas %>%
+  select(ensg_id = lims_id,
+         tissue, 
+         expression,
+         sample_type_id) %>%
+  left_join(blood.atlas.LIMS, by = c("ensg_id", "tissue", "sample_type_id")) %T>%
+  {filter(., expression.x != expression.y) %>%
+      print()} %T>%
+  {print(all(.$expression.x == .$expression.y))} %>%
+  ggplot(aes(expression.x, expression.y))+
+  geom_hex(bins = 100) + 
+  scale_x_log10()+
+  scale_y_log10()
+  
+# Atlas max
+blood.atlas.max.LIMS <- 
+  read_delim('./data/lims/consensus_bloodcells_hpa_92.tsv', delim = "\t") 
+  
+blood.atlas.max.R <- 
+  all.atlas %>%
+  filter(method == "Blood") %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
+  select(ensg_id, content_name, limma_gene_dstmm.zero.impute.expression) %>%
+  group_by(ensg_id, content_name) %>% 
+  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T)),
+                      .vars = grep("expression$", colnames(.), value = T)) %>%
+  rename(norm_exp = maxEx)
+
+left_join(blood.atlas.max.LIMS, blood.atlas.max.R, by = c("ensg_id", "content_name")) %>%
+  ggplot(aes(norm_exp.x, norm_exp.y))+
+  geom_hex(bins = 100) + 
+  scale_x_log10()+
+  scale_y_log10()
+
+
+### Try normalization with different ref columns
+tmm_method_normalization_test <- function(expression, method, tissue.method, ensg_id, refcolumn = 1){
+  # TMM: Method normalization
+  methods <- unique(method)
+  tibble(expression, tissue.method, ensg_id) %>%
+    left_join({for(i in 1:length(methods)){
+      # tb <-
+      #   filter(., method == methods[i]) %>%
+      #   spread(key = tissue.method, value = expression) %>%
+      #   column_to_rownames("ensg_id") %>%
+      #   as.matrix() %>%
+      #   NOISeq::tmm() %>%
+      #   {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} 
+      
+      tb <-
+        filter(., method == methods[i]) %>%
+        spread(key = tissue.method, value = expression) %>%
+        column_to_rownames("ensg_id") %>%
+        as.matrix()  
+      
+      
+      tb <- 
+        tb %>%
+        NOISeq::tmm(refColumn = refcolumn) %>%
+        {.[, -1]} %>%
+        {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} 
+      
+      if(i == 1) {
+        MM <- tb
+      } else MM <- full_join(MM, tb, by = "ensg_id")
+    }
+      MM %>%
+        gather(key = "tissue.method", value = "tmm.expression", -ensg_id)}, 
+    by = c("ensg_id", "tissue.method")) %>% 
+    mutate(tmm.expression = ifelse(is.na(tmm.expression), 
+                                   expression, 
+                                   tmm.expression),
+           tmm.expression = ifelse(tmm.expression<0, 0, 
+                                   tmm.expression)) %$%
+    return(tmm.expression)
+}
+
+blood.atlas.refc <- all.atlas.raw
+for(i in 1:18) {
+  blood.atlas.refc_temp <- 
+    all.atlas.raw %>%
+    mutate(
+      # Impute missing values
+      imputed = case_when(is.na(expression) ~ TRUE,
+                          TRUE ~ FALSE),
+      # TMM scaling of data with imputation (set to 0)
+      
+      imputed.zero.expression = ifelse(imputed, 0, expression),
+      dstmm.zero.expression = tmm_method_normalization_test(imputed.zero.expression, method, tissue.method, lims_id, refcolumn = i),
+      
+      # Gene pareto. "Imputed" values are set to NA to not count.
+      gene_dstmm.zero.impute.expression = pareto_scale_method_gene(ifelse(imputed, NA, dstmm.zero.expression), 
+                                                                   method, lims_id))  %>%
+    # Scale so that under limit is 1, scale by 3
+    mutate_at(.funs = funs(. / (under_limit(., expression, method, scale_by = 3))), 
+              .vars = grep(".expression$", colnames(.), value = T)) 
+  
+  blood.atlas.refc <- 
+    blood.atlas.refc %>% 
+    {eval(parse(text = paste0("mutate(., norm.expression", i, " = blood.atlas.refc_temp$gene_dstmm.zero.impute.expression)")))}
+}
+blood.atlas.refc <- 
+  blood.atlas.refc %>%
+  mutate(imputed = case_when(is.na(expression) ~ TRUE,
+                             TRUE ~ FALSE))
+blood.atlas.max.refc.R <-
+  blood.atlas.refc %>%
+  filter(method == "Blood") %>%
+  # Remove genes that are imputed
+  filter(!imputed) %>%
+  group_by(content_name, ensg_id) %>% 
+  mutate(method = as.character(method)) %>%
+  dplyr::summarise_at(.funs = funs(maxEx = max(., na.rm = T)),
+                      .vars = grep("expression", colnames(.), value = T)) 
+
+
+left_join(blood.atlas.max.LIMS, blood.atlas.max.refc.R, by = c("ensg_id", "content_name")) %>%
+  ggplot(aes(norm_exp, norm.expression18_maxEx))+
+  geom_hex(bins = 100) + 
+  scale_x_log10()+
+  scale_y_log10()
+####
+
+
+
+
+
+blood.atlas.category %>%
+  select(ensg_id, 
+         specificity_category = elevated.category,
+         distribution_category = express.category.2,
+         enhanced_score = `tissue/group specific score`,
+         enhanced_tissues = `enriched tissues`) %>%
+  mutate(enhanced_score = round(enhanced_score),
+         distribution_category = gsub("expressed", "detected", distribution_category)) %>%
+  left_join(read_delim('./data/lims/bloodcells_hpa_category_92.tsv', delim = "\t") %>% 
+              mutate(specificity_category = tolower(specificity_category)), by = "ensg_id") %T>%
+  {filter(., specificity_category.x != specificity_category.y) %>%
+      print()} %T>%
+  {filter(., distribution_category.x != distribution_category.y) %>%
+      print()} %T>%
+  {filter(., enhanced_tissues.x != enhanced_tissues.y) %>%
+      print()} 
+
+

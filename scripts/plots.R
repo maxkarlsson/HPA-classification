@@ -4,6 +4,425 @@ library('gridExtra')
 library('ClassDiscovery')
 library('gplots')
 
+#####
+make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, content_hierarchy = NULL, 
+                       content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
+                       subatlas_unit = "celltype",
+                       outpath, prefix) {
+  
+  atlas.max.wide <- generate_wide(atlas.max, 
+                                  ensg_column = 'ensg_id', 
+                                  group_column = content_column, 
+                                  max_column = maxEx_column)
+  
+  atlas.elevated.table <- calc_elevated.table(tb.wide = atlas.max.wide, 
+                                              atlas.categories = atlas.cat)
+  
+  atlas.elevated.summary.table <- calc_elevated.summary.table(atlas.elevated.table)
+  
+  ## ----- Spearman method cluster ------
+  
+  if("spearman dendrogram" %in% plots | "all" %in% plots) {
+    
+    make_spearman_method_dendrogram(all.atlas.tb = atlas, 
+                                    Ex_column = Ex_column, 
+                                    content_column = content_column, 
+                                    named_color_replacement = dataset.colors, 
+                                    outpath = outpath, 
+                                    prefix = paste0(prefix, "_method_color"))
+    
+    make_spearman_method_dendrogram(all.atlas.tb = atlas, 
+                                    Ex_column = Ex_column, 
+                                    content_column = content_column, 
+                                    named_color_replacement = tissue.colors, 
+                                    outpath = outpath, 
+                                    prefix = paste0(prefix, "_tissue_color"))
+  }
+  
+  
+  
+  
+  ## ----- tissue distribution of normalized values -----
+  
+  if("tissue distribution" %in% plots | "all" %in% plots) {
+    make_tissue_distribution_plot(tb.atlas = atlas, 
+                                  expr_column = Ex_column,
+                                  outpath = outpath,
+                                  prefix = prefix)
+  }
+  
+  ## ----- PCA and clustering plots -----
+  if("PCA" %in% plots | "all" %in% plots) {
+    atlas.max.pca.values <- pca.cal(atlas.max.wide)
+    scores <- atlas.max.pca.values[[1]]
+    loadings <- 
+      atlas.max.pca.values[[2]] %>%
+      as.tibble(rownames = "ensg_id") %>%
+      mutate(labels = ensemblanno.table$gene_name[match(ensg_id, ensemblanno.table$ensg_id)])
+    
+    make_PCA_plots(scores = scores,
+                   loadings = loadings,
+                   groups = setNames(rownames(atlas.max.pca.values[[1]]), 
+                                     rownames(atlas.max.pca.values[[1]])),
+                   groups.color = content_colors,
+                   outpath = outpath,
+                   prefix = prefix)
+  }
+  
+  if("cluster" %in% plots | "all" %in% plots) {
+    make_clustering_plot(tb.wide = atlas.max.wide, 
+                         colors = content_colors, 
+                         outpath = outpath,
+                         prefix = prefix)
+  }
+  
+  ## ----- tissue elevated plot -----
+  if("elevated bar" %in% plots | "all" %in% plots) {
+    make_elevated_bar_plot(elevated.summary.table = atlas.elevated.summary.table, 
+                           outpath = outpath,
+                           prefix = prefix)
+  }
+  
+  ## ----- specificity distribution ----
+  if("specificity distribution" %in% plots | "all" %in% plots) {
+    make_specificity_distribution_plot(atlas.cat = atlas.cat, 
+                                     type = "Tissue",
+                                     outpath = outpath,
+                                     prefix = prefix)
+  }
+  
+  ## ----- chord diagrams ----
+  ## chord plot
+  if("class chord" %in% plots | "all" %in% plots) {
+    make_classification_chord_plot(atlas.cat = atlas.cat,
+                                   outpath = outpath,
+                                   prefix = prefix)
+  }
+  
+  
+  # group enriched chord diagram
+  if("group chord" %in% plots | "all" %in% plots) {
+    make_chord_group_enriched(atlas.elevated.table, 
+                              grid.col = content_colors, 
+                              tissue_hierarcy = content_hierarchy,
+                              palet = colorRampPalette(colors = c("yellow", "orangered", "#800026")),
+                              outpath = outpath, 
+                              prefix = prefix)
+  }
+  
+  ## ----- heatmaps ----
+  if("heatmaps" %in% plots | "all" %in% plots) {
+    make_heatmap_group_enriched(atlas.elevated.table, 
+                                outpath = outpath,
+                                prefix = prefix)
+    
+    make_expression_heatmaps(atlas.max.tb = atlas.max, 
+                             atlas.cat = atlas.cat, 
+                             maxEx_column = maxEx_column, 
+                             tissue_column = content_column, 
+                             ensemblanno.table = ensemblanno.table,
+                             proteinclass.table = proteinclass.table, 
+                             proteinclass.table_ensg_id_column = "rna.genes", 
+                             proteinclass.table_class_column = "proteinclass.vec.single", 
+                             outpath = outpath, 
+                             prefix = prefix)
+    
+    make_expression_heatmaps(atlas.max.tb = atlas.max, 
+                             atlas.cat = atlas.cat, 
+                             maxEx_column = maxEx_column, 
+                             tissue_column = content_column, 
+                             ensemblanno.table = ensemblanno.table,
+                             proteinclass.table = proteinclass.table, 
+                             proteinclass.table_ensg_id_column = "rna.genes", 
+                             proteinclass.table_class_column = "proteinclass.vec.single", 
+                             outpath = outpath, 
+                             range_scale_x = T,
+                             prefix = paste(prefix, "range scaled", sep = "_"))
+    
+    
+    
+    # make_heatmap_median_expression_levels(elevated.table = atlas.elevated.table,
+    #                                       all.atlas.max.tb = atlas.max, 
+    #                                       maxEx_column = maxEx_column,
+    #                                       tissue_column = content_column,
+    #                                       enrichment = c(3),
+    #                                       outpath = outpath,
+    #                                       prefix = paste(prefix, "group_enriched", sep = "_"))
+    # 
+    # make_heatmap_median_expression_levels(elevated.table = atlas.elevated.table,
+    #                                       all.atlas.max.tb = atlas.max, 
+    #                                       maxEx_column = maxEx_column,
+    #                                       tissue_column = content_column,
+    #                                       enrichment = c(2, 3, 4),
+    #                                       outpath = outpath,
+    #                                       prefix = paste(prefix, "all_elevated", sep = "_"))
+    
+    # make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
+    #                                all.atlas.max.tb = atlas.max, 
+    #                                maxEx_column = maxEx_column,
+    #                                tissue_column = content_column,
+    #                                enrichment = c(3),
+    #                                outpath = outpath,
+    #                                prefix = paste(prefix, "group_enriched", sep = "_"))
+    # make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
+    #                                all.atlas.max.tb = atlas.max, 
+    #                                maxEx_column = maxEx_column,
+    #                                tissue_column = content_column,
+    #                                enrichment = c(2, 3, 4),
+    #                                outpath = outpath,
+    #                                prefix = paste(prefix, "all_elevated", sep = "_"))
+    # make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
+    #                                all.atlas.max.tb = atlas.max, 
+    #                                maxEx_column = maxEx_column,
+    #                                tissue_column = content_column,
+    #                                enrichment = c(2),
+    #                                outpath = outpath,
+    #                                prefix = paste(prefix, "tissue_enriched", sep = "_"))
+  }
+  
+  ## ----- swarm plots ----
+  ## swarm plot
+  if("swarm expression" %in% plots | "all" %in% plots) {
+    make_swarm_expression_plot(atlas.max = atlas.max, 
+                               atlas.cat = atlas.cat, 
+                               maxEx_column = maxEx_column, 
+                               tissue_column = content_column,
+                               outpath = outpath,
+                               prefix = prefix)
+  }
+  
+  
+  ## ----- bar and pie plots ----
+  # Number of expressed genes
+  if("number detected bar" %in% plots | "all" %in% plots) {
+    make_number_detected_genes_barplot(all.atlas.max.tb = atlas.max, 
+                                       maxEx_column = maxEx_column,
+                                       tissue_column = content_column,
+                                       outpath = outpath,
+                                       prefix = prefix)
+  }
+  
+  # Total elevated expression fraction
+  if("NX fraction bar" %in% plots | "all" %in% plots) {
+    make_elevated_NX_fraction_barplots(atlas.max = atlas.max, 
+                                       atlas.cat = atlas.cat, 
+                                       maxEx_column = maxEx_column,
+                                       tissue_column = content_column,
+                                       outpath = outpath, 
+                                       prefix = prefix)
+  }
+  
+  if("classification pie" %in% plots | "all" %in% plots) {
+    make_classification_pie_chart(atlas.cat = atlas.cat, 
+                                  outpath = outpath, 
+                                  prefix = prefix)
+  }
+  
+  
+  
+  # TPM & NX for 100 random genes
+  if("TPM NX example genes bar" %in% plots | "all" %in% plots) {
+    atlas.max %>%
+      filter(ensg_id %in% unique(ensg_id)[1:100]) %>%
+      make_gene_expression_barplot(maxEx_columns = c("Raw" = "expression_maxEx", 
+                                                     "TMM" = "dstmm.zero.expression_maxEx", 
+                                                     "TMM + Pareto" = "gene_dstmm.zero.impute.expression_maxEx"),
+                                   content_column = content_column, 
+                                   content_color = content_colors)
+  }
+  
+  ## ----- elevated score plots ----
+  if("score plots" %in% plots | "all" %in% plots) {
+    make_score_expression_scatter(atlas.max.tb = atlas.max, 
+                                  atlas.cat = atlas.cat, 
+                                  maxEx_column = maxEx_column, 
+                                  tissue_column = content_column, 
+                                  ensemblanno.table = ensemblanno.table,
+                                  plot.order = plot.order,
+                                  outpath = outpath, 
+                                  prefix = prefix)
+  }
+  
+  
+  
+  # =========== *Subatlas*    ===========
+  if("brain" %in% plot.atlas | "blood" %in% plot.atlas) {
+    
+    if("class comparison chord" %in% plots | "all" %in% plots) {
+      # Categories between blood and all atlas
+      make_class_comparison_chord(cat1 = atlas.cat, 
+                                  cat2 = all.atlas.category,
+                                  outpath = outpath, 
+                                  prefix = prefix)
+    }
+    
+    if("class comparison chord" %in% plots | "all" %in% plots) {
+      #Comparison of elevated genes to tissue atlas
+      make_elevated_organ_total_chord(cat1 = atlas.cat, 
+                                      cat2 = all.atlas.category, 
+                                      grid.col = c(content_colors, tissue.colors), 
+                                      elevated_cats = c(2,3,4), 
+                                      direction = 1, 
+                                      cat1_name = subatlas_unit, 
+                                      cat2_name = "tissues",
+                                      outpath = outpath, 
+                                      prefix = paste(prefix, "_tissue_elevated", sep = "_"))
+      
+      
+      make_elevated_organ_total_chord(cat1 = atlas.cat, 
+                                      cat2 = all.atlas.category, 
+                                      grid.col = c(content_colors, tissue.colors), 
+                                      elevated_cats = c(2), 
+                                      direction = 1, 
+                                      cat1_name = subatlas_unit, 
+                                      cat2_name = "tissues",
+                                      outpath = outpath, 
+                                      prefix = paste(prefix, "_tissue_enriched", sep = "_"))
+      
+    }
+    
+  }
+    
+  
+  # =========== *Brain altas* =========== 
+  
+  if("brain" %in% plot.atlas) {
+    brain.atlas.max.wide_all_regions <- generate_wide(brain.atlas.max_all_regions, ensg_column='ensg_id',
+                                                      group_column='content_name',
+                                                      max_column="limma_gene_dstmm.zero.impute.expression_maxEx")
+    
+    if("spearman dendrogram" %in% plots | "all" %in% plots) {
+      
+      
+      cell.colors <- with(brainregions.table, setNames(subgroup.color, tissue.type))
+      make_clustering_plot(tb.wide = brain.atlas.max.wide_all_regions, 
+                           colors = cell.colors, 
+                           outpath = outpath,
+                           prefix = 'brain_all_cells')
+    }
+  }
+  
+  # =========== *Blood altas* =========== 
+  
+  if("blood" %in% plot.atlas) {
+    
+    if("blood class tissue expression" %in% plots | "all" %in% plots) {
+      
+      make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                               atlas.cat = blood.atlas.category, 
+                               maxEx_column = maxEx_column, 
+                               tissue_column = "consensus_content_name", 
+                               ensemblanno.table = ensemblanno.table,
+                               proteinclass.table = proteinclass.table, 
+                               proteinclass.table_ensg_id_column = "rna.genes", 
+                               proteinclass.table_class_column = "proteinclass.vec.single", 
+                               outpath = outpath, 
+                               prefix = "blood atlas cat on all atlas")
+      
+      make_expression_heatmaps(atlas.max.tb = all.atlas.max, 
+                               atlas.cat = blood.atlas.category, 
+                               maxEx_column = maxEx_column, 
+                               tissue_column = "consensus_content_name", 
+                               ensemblanno.table = ensemblanno.table,
+                               proteinclass.table = proteinclass.table, 
+                               proteinclass.table_ensg_id_column = "rna.genes", 
+                               proteinclass.table_class_column = "proteinclass.vec.single", 
+                               outpath = outpath, 
+                               range_scale_x = T,
+                               prefix = "blood atlas cat on all atlas range scaled")
+      
+      make_immunodeficiency_expression_heatmaps(atlas.max.tb = atlas.max,
+                                                atlas.cat = atlas.cat,
+                                                immunodeficiency.table = immunodeficiency.table,
+                                                maxEx_column = maxEx_column,
+                                                tissue_column = content_column,
+                                                ensemblanno.table = ensemblanno.table,
+                                                proteinclass.table = proteinclass.table,
+                                                proteinclass.table_ensg_id_column = "rna.genes",
+                                                proteinclass.table_class_column = "proteinclass.vec.single",
+                                                outpath = outpath,
+                                                range_scale_x = F,
+                                                prefix = prefix)
+      
+      make_immunodeficiency_expression_heatmaps(atlas.max.tb = atlas.max,
+                                                atlas.cat = atlas.cat,
+                                                immunodeficiency.table = immunodeficiency.table,
+                                                maxEx_column = maxEx_column,
+                                                tissue_column = content_column,
+                                                ensemblanno.table = ensemblanno.table,
+                                                proteinclass.table = proteinclass.table,
+                                                proteinclass.table_ensg_id_column = "rna.genes",
+                                                proteinclass.table_class_column = "proteinclass.vec.single",
+                                                outpath = outpath,
+                                                range_scale_x = F,
+                                                prefix = paste(prefix, "range_scaled"))
+
+      
+    }
+  }
+  
+  
+}
+
+
+#####
+make_gene_expression_barplot <- function(atlas.max.tb, maxEx_columns, content_column, content_color) {
+  
+  plot.data <- 
+    atlas.max.tb %>% 
+    select("content_column" = content_column, ensg_id, maxEx_columns) %>%
+    gather(key = "Type", value = "Expression", -(1:2)) 
+  
+  genes <- unique(plot.data$ensg_id)
+  for(i in seq(1, length(genes), 4)) {
+    j = i + 3
+    if(j > length(genes)) j = length(genes)
+    
+    
+    plot.data %>%
+      filter(ensg_id %in% genes[i:j]) %>%
+      ggplot(aes(content_column, Expression, fill = content_column)) + 
+      geom_hline(yintercept = 1, color = "red", linetype = "dashed")+
+      
+      geom_bar(stat = "identity", show.legend = F, color = "black", position = "dodge")+
+      simple_theme+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8)) +
+      scale_fill_manual(values = content_color)+
+      facet_grid(ensg_id ~ Type, scales = "free") 
+    ggsave(paste(result_folder, paste0(prefix, "gene expression barplot", i, "-", j, ".png"), sep = "/"), width = 20, height = 10)
+  }
+}
+
+make_tissue_distributions_plot <- function(atlas.tb, Ex_column, content_column, und.lim, do.tissues = "all", outpath, prefix) {
+  
+  atlas.tb %>%
+    mutate(tissue = eval(parse(text = content_column)),
+           expression = eval(parse(text = Ex_column))) %>%
+    filter(ifelse(rep(do.tissues[1] == "all", nrow(.)), T, tissue %in% do.tissues) & expression > 0) %>%
+    mutate(tissue = factor(tissue, levels = with({group_by(., tissue) %>% 
+        summarise(methods = paste(unique(method), collapse = " "))},
+        tissue[order(methods)]))) %>%
+        {ggplot(., aes(tissue, expression, fill = method, color = method))+
+            stat_summary(fun.y = "median", fun.args = c("na.rm" = T), geom = "line", aes(group = method), size = 2, alpha = 0.2)+
+            stat_summary(fun.y = "min", geom = "line", aes(tissue, eval(parse(text = Ex_column)), group = 1), inherit.aes = F, size = 1, alpha = 0.1)+
+            stat_summary(fun.y = "max", geom = "line", aes(tissue, eval(parse(text = Ex_column)), group = 1), inherit.aes = F, size = 1, alpha = 0.1)+
+            stat_summary(fun.y = "min", geom = "line", aes(group = method), size = 0.5, alpha = 0.5)+
+            stat_summary(fun.y = "max", geom = "line", aes(group = method), size = 0.5, alpha = 0.5)+
+            
+            
+            geom_violin(draw_quantiles = 0.5, alpha = 0.2, position = "identity")+
+            geom_hline(yintercept = und.lim, linetype = "dashed")+
+            simple_theme+
+            scale_y_log10()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+            theme(axis.title = element_blank())+
+            scale_fill_manual(values = dataset.colors)+
+            scale_color_manual(values = dataset.colors)} 
+  
+  ggsave(filename = paste(outpath, paste0(prefix, " tissue distributions.png"), sep = "/"), width = 10, height = 5, dpi = 300)
+}
+
+
 ### 1. PCA plot
 pca.cal <- function(tb.wide){
   pca <- 
@@ -25,16 +444,12 @@ pca.cal <- function(tb.wide){
 } 
 
 make_PCA_plots <- function(scores, loadings, groups, groups.color, ellipse = T, outpath, prefix) {
-  pdf(file = paste(outpath, paste0(prefix, '_PCA_loadings.pdf'),sep='/'), width=10, height=10, useDingbats = F)
   loadings %>% 
-    {ggplot(., aes(PC1, PC2, label = labels))+
-      geom_text(show.legend = F)+
-      simple_theme+
-      ggtitle("Loadings")} %>%
-    print()
-  dev.off()
-  
-  pdf(file = paste(outpath, paste0(prefix, '_PCA_scores.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+    ggplot(aes(PC1, PC2, label = labels))+
+    geom_text(show.legend = F)+
+    simple_theme+
+    ggtitle("Loadings")
+  ggsave(paste(outpath, paste0(prefix, '_PCA_loadings.pdf'),sep='/'), width=10, height=10)
   
   scores %>%
   {names <- rownames(.); as.tibble(.) %>% mutate(sample = names,
@@ -51,24 +466,9 @@ make_PCA_plots <- function(scores, loadings, groups, groups.color, ellipse = T, 
                                                      geom_segment(aes(xend = mean.PC1, yend = mean.PC2), show.legend = F)+
                                                      simple_theme+
                                                      scale_color_manual(values = groups.color)+
-                                                     ggtitle("Scores")}} %>%
-    print()
-  dev.off()
-    # scores %>%
-    # {names <- rownames(.); as.tibble(.) %>% mutate(sample = names,
-    #                                                groups = groups[match(names, names(groups))])} %>%
-    #                                                {means <- group_by(., groups) %>%
-    #                                                  dplyr::summarise(mean.PC1 = mean(PC1),
-    #                                                                   mean.PC2 = mean(PC2))
-    #                                                left_join(., means, by = "groups") %>%
-    #                                                {ggplot(., aes(PC1, PC2, color = groups, label = groups))+
-    # 
-    #                                                    geom_point(show.legend = F)+
-    #                                                    geom_segment(aes(xend = mean.PC1, yend = mean.PC2), show.legend = F)+
-    #                                                    simple_theme+
-    #                                                    #scale_color_manual(values = groups.color)+
-    #                                                    ggtitle("Scores")}}
-  #grid.arrange(g1, g2, g3, ncol = 3)
+                                                     ggtitle("Scores")}} 
+  
+  ggsave(paste(outpath, paste0(prefix, '_PCA_scores.pdf'),sep='/'), width=10, height=10)
 
 }
 
@@ -142,14 +542,15 @@ make_umap_plot <- function(eset,outpath,prefix){
 
 
 ### 3. elevated bar plot
-make_elevated_bar_plot <- function(elevated.summary.table, outpath, prefix){
-  pdf(file = paste(outpath, paste0(prefix, '_elevated_bar.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+make_elevated_bar_plot <- function(elevated.summary.table, translate_categories = c("Tissue" = "Tissue"), outpath, prefix){
+  pdf(file = paste(outpath, paste0(prefix, '_elevated_bar.pdf'),sep='/'), width=8, height=5, useDingbats = F)
   print(elevated.summary.table %>%
   {names <- rownames(.); as.tibble(.) %>% mutate(tissue = names)} %>%
     gather(key = "Classification", value = "Number of genes", -tissue) %>%
     mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, FUN = function(x) sum(`Number of genes`[tissue == x & Classification %in% c("Tissue enriched","Celltype enriched",
                                                                                                                                                                "Group enriched","Tissue enhanced","Celltype enhanced")])))]))),
-           Classification = factor(Classification, levels = c("Not detected in any tissues","Not detected in any celltypes","Not detected in this tissue","Not detected in this celltype","Mixed in this tissue", "Mixed in this celltype","Expressed in all tissues","Expressed in all celltypes","Tissue enhanced", "Celltype enhanced","Group enriched","Tissue enriched", "Celltype enriched"))) %>%
+           Classification = factor(Classification, levels = c("Not detected in any tissues","Not detected in any celltypes","Not detected in this tissue","Not detected in this celltype","Mixed in this tissue", "Mixed in this celltype","Expressed in all tissues","Expressed in all celltypes","Tissue enhanced", "Celltype enhanced","Group enriched","Tissue enriched", "Celltype enriched")),
+           Classification = gsub(pattern = translate_categories, replacement = names(translate_categories), Classification)) %>%
     filter(Classification %in% c("Tissue enriched","Celltype enriched",
                                  "Group enriched","Tissue enhanced","Celltype enhanced")) %>%
     ggplot(aes(tissue, `Number of genes`, fill = Classification))+
@@ -158,9 +559,57 @@ make_elevated_bar_plot <- function(elevated.summary.table, outpath, prefix){
     simple_theme+
     xlab("")+
     ylab("Number of genes")+
-    theme(axis.text.x = element_text(angle = 90, hjust = 1),
-          legend.position = c(0.6, 0.8)))
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          legend.position = c(0.8, 0.8)))
   dev.off()
+}
+
+make_all_genes_bar_plot <- function(atlas.cat, translate_categories = c("Tissue" = "Tissue"), outpath, prefix){
+  
+  tissues <- 
+    atlas.cat$`tissues over lim` %>%
+    unique() %>%
+    paste(collapse = ", ") %>%
+    strsplit(split = ", ") %>%
+    {.[[1]]} %>%
+    unique() %>%
+    {.[.[] != ""]}
+  
+  atlas.cat %>%
+    {tibble(tissue = tissues, 
+            `not expressed in any tissue` = filter(., `tissues over lim` == "") %>% nrow(),
+            `not expressed in this tissue` = sapply(tissues, FUN = function(x) filter(., !grepl(x, `tissues over lim`)) %>% nrow()),
+            `tissue enhanced` = sapply(tissues, 
+                                       FUN = function(x) filter(., grepl(x, `enriched tissues`) & elevated.category == "tissue enhanced") %>% nrow()),
+            `low tissue specificity` = sapply(tissues, 
+                                              FUN = function(x) filter(., grepl(x, `tissues over lim`) & elevated.category == "low tissue specificity") %>% nrow()),
+            `group enriched` = sapply(tissues, 
+                                      FUN = function(x) filter(., grepl(x, `enriched tissues`) & elevated.category == "group enriched") %>% nrow()),
+            `tissue enriched` = sapply(tissues, 
+                                       FUN = function(x) filter(., grepl(x, `enriched tissues`) & elevated.category == "tissue enriched") %>% nrow()))} %>%
+    mutate(`not expressed in this tissue` = `not expressed in this tissue` - `not expressed in any tissue`) %>%
+    gather(key = "Classification", value = "Number of genes", -tissue) %>%
+    mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, FUN = function(x) sum(`Number of genes`[tissue == x & Classification %in% c("tissue enriched","celltype enriched",
+                                                                                                                                                               "group enriched","tissue enhanced",
+                                                                                                                                                               "celltype enhanced")])))]))),
+           Classification = gsub(pattern = translate_categories, replacement = names(translate_categories), Classification),
+           Classification = factor(Classification, levels = c("not expressed in any tissue","not expressed in any celltype",
+                                                              "not expressed in this tissue","not expressed in this celltype",
+                                                              "low tissue specificity","tissue enhanced", "celltype enhanced",
+                                                              "group enriched","tissue enriched", "celltype enriched"))) %>%
+    ggplot(aes(tissue, `Number of genes`, fill = Classification))+
+    geom_bar(stat = "identity") +
+    scale_fill_manual(name = "",values = c(elevated.cat.cols, 
+                                           "not expressed in any tissue" = "gray",
+                                           "not expressed in any celltype" = "gray",
+                                           "not expressed in this tissue" = "lightgray",
+                                           "not expressed in this celltype" = "lightgray"))+
+    simple_theme+
+    xlab("")+
+    ylab("Number of genes")+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          legend.position = c(0.8, 0.8))
+  ggsave(paste(outpath, paste0(prefix, '_all_genes_bar.pdf'),sep='/'), width=8, height=5)
 }
 
 ### 4. tissue distribution
@@ -319,48 +768,574 @@ make_classification_chord_plot <- function(atlas.cat, outpath, prefix) {
 }
 
 ## 7. swarm plot
-make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
-  plot.data <- 
+# make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+#   plot.data <- 
+#     atlas.max %>%
+#     ungroup() %>%
+#     mutate(expression = eval(parse(text = maxEx_column)),
+#            Grouping = eval(parse(text = tissue_column))) %>%
+#     dplyr::select(Grouping, ensg_id, expression) %>%
+#     #Plot 1 % highest
+#     filter(expression >= quantile(expression, probs = 0.99)) %>%
+#     group_by(Grouping) %>%
+#     # Write gene name if highest 0.5 % per tissue and/or highest 1 % in total
+#     mutate(highest = expression >= quantile(expression, probs = 0.995) | rank(expression) >= (length(expression) - 8)) %>%
+#     ungroup() %>%
+#     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
+#     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+#     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+#     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+#     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+# 
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = elevated.category)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = elevated.cat.cols)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_score_jitter_2.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data <- 
+#     atlas.max %>%
+#     ungroup() %>%
+#     mutate(expression = eval(parse(text = maxEx_column)),
+#            Grouping = eval(parse(text = tissue_column))) %>%
+#     dplyr::select(Grouping, ensg_id, expression) %>%
+#     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+#     mutate(score = as.numeric(`tissue/group specific score`)) %>%
+#     # tissue enriched
+#     filter(elevated.category == "tissue enriched" & Grouping == `enriched tissues`) %>%
+#     group_by(Grouping) %>%
+#     # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+#     mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
+#            highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
+#     ungroup() %>%
+#     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+#            highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
+#     
+#     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+#     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+# 
+#     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_tissue_enriched_jitter.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest_score,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_score_enriched_jitter.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data <- 
+#     atlas.max %>%
+#     ungroup() %>%
+#     mutate(expression = eval(parse(text = maxEx_column)),
+#            Grouping = eval(parse(text = tissue_column))) %>%
+#     dplyr::select(Grouping, ensg_id, expression) %>%
+#     left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+#     mutate(score = as.numeric(`tissue/group specific score`)) %>%
+#     # tissue enriched
+#     filter(elevated.category %in% c("tissue enriched", "tissue enhanced", "group enriched")) %>%
+#     filter(expression >= quantile(expression, probs = 0.99)) %>%
+#     group_by(Grouping) %>%
+#     #Plot 1 % highest
+#     #filter(expression >= quantile(expression, probs = 0.9)) %>%
+#     # Write gene name if highest 2 % per tissue and/or highest 1 % in total
+#     mutate(highest = expression >= quantile(expression, probs = 0.99) | rank(expression) >= (length(expression) - 10),
+#            highest_score = score >= quantile(score, probs = 0.99) | rank(score) >= (length(score) - 10)) %>%
+#     ungroup() %>%
+#     mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98)),
+#            highest_score = ifelse(highest_score, T, score >= quantile(score, probs = 0.98))) %>%
+#     
+#     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
+#     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
+#     
+#     mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single)) 
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_tissue_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+#   
+#   plot.data %>%
+#   {ggplot(., aes(Grouping, score, label = gene_name, color = gene_class)) +
+#       geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
+#       geom_text_repel(data = .[.$highest_score,], size = 2)+
+#       simple_theme+
+#       scale_color_manual(values = protein.class.palette)+
+#       scale_y_log10()+
+#       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))}
+#   ggsave(paste(outpath, paste0(prefix, '_high_score_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+# }
+
+swarm_circle_plot <- function(plot.df, color_palette, color_column, legend_name, y_column) {
+  plot.df <- 
+    plot.df %>%
+    rename(y = y_column)
+  
+  sectors <- levels(plot.df$Grouping)
+  n_sectors <- length(sectors)
+  text_angle <- 
+    seq(360 - 360 / (n_sectors * 2), by = - 360 / n_sectors, length.out = n_sectors) 
+  text_angle_nice_flip <- 
+    text_angle %>%
+    {ifelse(. > 90 & . < 270, . + 180, .)}
+  
+  ymax <- max(plot.df$y)
+  ymin <- min(plot.df$y)
+  
+  
+  magnitude <- round(log10(c(ymin, ymax)))
+  
+  break_n <- 4
+  breaks <- 
+    10^seq(log10(ceiling(ymin / (10^magnitude[1])) * (10^magnitude[1])), 
+           log10(ceiling(ymax / (10^magnitude[2])) * (10^magnitude[2])), length.out = break_n) %>%
+    round(-floor(log10(.)))
+  
+  xaxis_y <- 1.5*max(breaks) - min(breaks)
+  inner_y <- breaks[1]/2
+    
+    
+  segment_color <- "gray45"
+  
+  plot.df %>% 
+    {ggplot(., aes(sector_index_swarm, y, label = gene_name, color = eval(parse(text = color_column)))) +
+        # Dividers
+        annotate(geom = "segment", 
+                 x = 0:n_sectors + 0.5, 
+                 xend = 0:n_sectors + 0.5,
+                 y = inner_y, 
+                 yend = xaxis_y, 
+                 color = segment_color)+
+        # y-axis breaks
+        annotate(geom = "segment", 
+                 x = rep(0:n_sectors + 0.5, each = break_n) - c(rep(0, break_n), 0.03 * rep(break_n:1, n_sectors)),
+                 xend = rep(0:n_sectors + 0.5, each = break_n) + c(0.03 * rep(break_n:1, n_sectors), rep(0, break_n)),
+                 y = rep(breaks, n_sectors + 1), 
+                 yend = rep(breaks, n_sectors + 1), 
+                 color = segment_color)+
+        # Inner circle
+        annotate(geom = "segment", 
+                 x = seq(0.5, n_sectors - 1 + 0.5), 
+                 xend = seq(1.5, n_sectors + 0.5),
+                 y = inner_y, 
+                 yend = inner_y, 
+                 color = segment_color)+
+        # Outer circle
+        annotate(geom = "segment", 
+                 x = seq(0.5, n_sectors - 1 + 0.5), 
+                 xend = seq(1.5, n_sectors + 0.5),
+                 y = xaxis_y, 
+                 yend = xaxis_y,
+                 color = segment_color)+
+        
+        geom_text(aes(size = range_scale(y, span = c(1, 4))), alpha = 0.8)+
+        
+        scale_color_manual(values = color_palette, name = legend_name)+
+        scale_y_log10(expand = c(0.1, 0), breaks = breaks)+
+        scale_x_continuous(limits = c(0.5, n_sectors + 0.5), expand = c(0,0)) + 
+        scale_size_continuous(guide = F)+
+        ylab(y_column) + 
+        
+        coord_polar()+
+        
+        annotate(geom = "text", 
+                 x = 1:n_sectors, 
+                 y = xaxis_y, 
+                 label = levels(.$Grouping),
+                 angle = text_angle_nice_flip,
+                 vjust = ifelse(text_angle > 90 & text_angle < 270, 1.5, -1),
+                 size = 4)+
+        
+        theme(axis.text.x = element_blank(), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line())}
+}
+
+make_swarm_expression_circle_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, outpath, prefix) {
+  plot.data.unfilt <- 
     atlas.max %>%
     ungroup() %>%
     mutate(expression = eval(parse(text = maxEx_column)),
-           Grouping = eval(parse(text = tissue_column))) %>%
+           Grouping = eval(parse(text = tissue_column)))
+  if(is.null(plot.order)) {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = as.factor(Grouping))
+  } else {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = factor(Grouping, levels = plot.order))
+  }
+  
+  plot.data.unfilt <- 
+    plot.data.unfilt %>%
     dplyr::select(Grouping, ensg_id, expression) %>%
-    #Plot 1 % highest
-    filter(expression >= quantile(expression, probs = 0.99)) %>%
-    group_by(Grouping) %>%
-    # Write gene name if highest 2 % per tissue and/or highest 1 % in total
-    mutate(highest = expression >= quantile(expression, probs = 0.99)) %>%
-    ungroup() %>%
-    mutate(highest = ifelse(highest, T, expression >= quantile(expression, probs = 0.98))) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category), by = "ensg_id") %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
     left_join(dplyr::select(ensemblanno.table, ensg_id, gene_name, gene_description, ncbi_gene_summary, chr_name) , by = "ensg_id") %>%
     left_join(dplyr::select(proteinclass.table, rna.genes, proteinclass.vec.single), by = c("ensg_id"="rna.genes")) %>%
-    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
-
-  pdf(file = paste(outpath, paste0(prefix, '_high_abundance_jitter_1.pdf'),sep='/'), width=15, height=10, useDingbats = F)
-  print(
-  plot.data %>%
-  {ggplot(., aes(Grouping, expression, label = gene_name, color = elevated.category)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 1.5)+
-      simple_theme+
-      scale_color_manual(values = elevated.cat.cols)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
-  dev.off()
+    mutate(score = `tissue/group specific score`) 
   
-  pdf(file = paste(outpath, paste0(prefix, '_high_abundance_jitter_2.pdf'),sep='/'), width=15, height=10, useDingbats = F)
-  print(
+  
+  #---- Elevated genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+             mapply(paste0("(^|, )", Grouping, "(, |$)"), 
+                    `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  sectors <- levels(plot.data$Grouping)
+  
+  plot.data <- 
+    plot.data %>%
+    mutate(sector_index = match(Grouping, sectors),
+           sector_index_swarm = sector_index + runif(length(sector_index), min=-0.35, max=0.35)) 
+  
+  # --All elevated genes
+  # Expression
   plot.data %>%
-  {ggplot(., aes(Grouping, expression, label = gene_name, color = gene_class)) +
-      geom_jitter(alpha = 0.4, size = 1, width = 0.1)+
-      geom_text_repel(data = .[.$highest,], size = 1.5)+
-      simple_theme+
-      scale_color_manual(values = protein.class.palette)+
-      scale_y_log10()+
-      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))})
-  dev.off()
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # --Top 20 % elevated genes
+  
+  plot.data <- 
+    plot.data %>%
+    group_by(Grouping) %>%
+    filter(expression >= quantile(expression, probs = 0.8)) %>%
+    ungroup()
+  
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_top_elevated_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_top_elevated_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  #---- Tissue enriched genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched") &
+             Grouping == `enriched tissues`) %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  sectors <- levels(plot.data$Grouping)
+  
+  plot.data <- 
+    plot.data %>%
+    mutate(sector_index = match(Grouping, sectors),
+           sector_index_swarm = sector_index + runif(length(sector_index), min=-0.35, max=0.35)) 
+  
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  
+  #---- All genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    mutate(gene_class = ifelse(is.na(proteinclass.vec.single), "other", proteinclass.vec.single))
+  
+  sectors <- levels(plot.data$Grouping)
+  
+  plot.data <- 
+    plot.data %>%
+    mutate(sector_index = match(Grouping, sectors),
+           sector_index_swarm = sector_index + runif(length(sector_index), min=-0.35, max=0.35)) 
+  
+  
+  # --Top 1 % genes
+  
+  plot.data <- 
+    plot.data %>%
+    group_by(Grouping) %>%
+    filter(expression >= quantile(expression, probs = 0.99)) %>%
+    ungroup()
+  
+  # Expression
+  plot.data %>%
+    swarm_circle_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_circle_plot(color_palette = protein.class.palette, 
+                      color_column = "gene_class",
+                      legend_name = "Protein class", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_category_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+}
+
+swarm_plot <- function(plot.df, color_palette, color_column, legend_name, y_column) {
+  plot.df %>%
+    rename(y = y_column) %>%
+    {ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
+    #geom_text_repel(direction = "x", segment.color = NA)+
+    geom_text(data = subset(., eval(parse(text = color_column)) != ""), fontface = "bold")+
+    ggbeeswarm::geom_beeswarm(data = subset(., eval(parse(text = color_column)) == ""), color = "black") + 
+        
+    scale_color_manual(values = color_palette, name = legend_name)+
+    scale_y_log10()+
+    ylab(y_column)+
+    scale_size_continuous(guide = F)+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+          axis.title.x = element_blank(), 
+          panel.grid = element_blank(), 
+          panel.background = element_blank(), 
+          axis.line.y = element_line(),
+          axis.line.x = element_line())}
+}
+
+make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, outpath, prefix) {
+  plot.data.unfilt <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(expression = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = tissue_column)))
+  if(is.null(plot.order)) {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = as.factor(Grouping))
+  } else {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = factor(Grouping, levels = plot.order))
+  }
+  
+  plot.data.unfilt <- 
+    plot.data.unfilt %>%
+    dplyr::select(Grouping, ensg_id, expression) %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    left_join(proteinlocalization.table, by = "ensg_id") %>%
+    mutate(score = `tissue/group specific score`,
+           predicted_localization_class_simple = case_when(predicted_localization_class == "intracellular" ~ "",
+                                                           predicted_localization_class == "intracellular and membrane isoforms" ~ "membrane",
+                                                           predicted_localization_class == "intracellular and secreted isoforms" ~ "secreted",
+                                                           predicted_localization_class == "intracellular, membrane, secreted isoforms" ~ "membrane and secreted isoforms",
+                                                           T ~ predicted_localization_class))
+  
+  
+  #---- Elevated genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+             mapply(paste0("(^|, )", Grouping, "(, |$)"), 
+                    `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+    {.[order(.$expression, decreasing = T),][1:1000,]}
+  #####################################
+  
+  # --All elevated genes
+  # Expression
+  plot.data %>%
+    swarm_plot(color_palette = elevated.cat.cols, 
+               color_column = "elevated.category",
+               legend_name = "Elevated category", 
+               y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+               color_column = "predicted_localization_class_simple",
+               legend_name = "Protein location", 
+               y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_all_elevated_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class_simple",
+                      legend_name = "Protein location", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_all_elevated_category_jitter.pdf'),sep='/'), width=15, height=10)
+
+  
+  #---- Tissue enriched genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched") &
+             Grouping == `enriched tissues`) 
+  
+  # Expression
+  plot.data %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class_simple",
+                      legend_name = "Protein location", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_tissue_enriched_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  # Score
+  plot.data %>%
+    filter(score != "") %>%
+    mutate(score = as.numeric(score)) %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class_simple",
+                      legend_name = "Protein location", 
+                      y_column = "score")
+  ggsave(paste(outpath, paste0(prefix, '_score_tissue_enriched_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  
+  #---- All genes
+
+  # --Top 1000 genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    {.[order(.$expression, decreasing = T),][1:1000,]}
+  
+  # Expression
+  plot.data %>%
+    swarm_plot(color_palette = elevated.cat.cols, 
+                      color_column = "elevated.category",
+                      legend_name = "Elevated category", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_jitter_circle.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    swarm_plot(color_palette = protein.localization.palette, 
+                      color_column = "predicted_localization_class_simple",
+                      legend_name = "Protein location", 
+                      y_column = "expression")
+  ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_category_jitter.pdf'),sep='/'), width=15, height=10)
+  
 }
 
 ## 8. Bland-Altman plot
@@ -502,6 +1477,61 @@ make_chord_group_enriched <- function(elevated.table, grid.col, tissue_hierarcy,
   
 }
 
+chord_vertical_text <- function(from, to, sizes, grid.col, plot.group, plot.order){
+  
+  require(circlize) 
+  
+  factors.from <- unique(from)
+  factors.to <- unique(to)
+  factors <- c(factors.from, factors.to)
+  
+  
+  tb <- 
+    tibble(from, to, sizes)
+  
+  #groups <- groups[plot.order]
+  gap.after.par <- c()
+  for(i in 1:(length(plot.group)-1)) {
+    if(plot.group[i] == plot.group[i+1]) {
+      gap.after.par <- c(gap.after.par, 2)
+    } else {
+      gap.after.par <- c(gap.after.par, 15)
+    }
+  }
+  
+  if(plot.group[length(plot.group)] == plot.group[1]) {
+    gap.after.par <- c(gap.after.par, 2)
+  } else {
+    gap.after.par <- c(gap.after.par, 15)
+  }
+  
+  circos.par(gap.after = gap.after.par, canvas.xlim = c(-1.3, 1.3), canvas.ylim = c(-1.3, 1.3))
+  
+  chord <-
+    tb %>% 
+    chordDiagram(grid.col = grid.col,
+                 directional = 0,
+                 annotationTrack="grid",
+                 annotationTrackHeight = 0.05, 
+                 preAllocateTracks = 1, order = plot.order)
+  
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim <- get.cell.meta.data("xlim")
+    ylim <- get.cell.meta.data("ylim")
+    sector.name <- get.cell.meta.data("sector.index")
+    sector.index <- get.cell.meta.data("sector.numeric.index")
+    
+    
+    
+    
+    circos.text(mean(xlim), min(ylim), sector.name, adj = 0, niceFacing = TRUE, facing = "clockwise", cex = 0.9)
+    
+  }, bg.border = NA)
+  
+  circos.clear()
+  
+}
+
 
 # ------ classification comparison plot
 
@@ -537,7 +1567,7 @@ chord_classification_clockwise <- function(from, to, sizes, grid.col, plot.group
   
   chord <-
     tb %>% 
-    chordDiagram(grid.col = chord_col,
+    chordDiagram(grid.col = grid.col,
                  directional = 0,
                  annotationTrack="grid",
                  annotationTrackHeight = 0.05, 
@@ -644,6 +1674,19 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
            to = gsub("e(x|l)cat(1|2)$", "", to)) %>%
     filter(!grepl("rev$", transfer))
   
+  
+  
+  plot.color <- setNames(c(expressed.cat.cols,
+                           rev(expressed.cat.cols),               
+                           elevated.cat.cols[!grepl("celltype", names(elevated.cat.cols))],               
+                           rev(elevated.cat.cols[!grepl("tissue", names(elevated.cat.cols))])),
+                         plot.order)
+  
+  plot.group <- c(rep(1, length(expressed.cat.cols)),
+                  rep(2, length(expressed.cat.cols)),
+                  rep(3, length(elevated.cat.cols[!grepl("celltype", names(elevated.cat.cols))])),
+                  rep(4, length(elevated.cat.cols[!grepl("tissue", names(elevated.cat.cols))])))
+  
   for(filt in c("excat elcat", "exel within 1 exel within 2", "exel without")) {
     pdf(paste(outpath, paste0(prefix, " classification comparison ", filt, ".pdf"), sep = "/"), 
         width = 10, height = 10, useDingbats = F)
@@ -653,11 +1696,80 @@ make_class_comparison_chord <- function(cat1, cat2, line_expansion = 10000,
     dev.off()
   }
   
+  for(filt in c("excat", "elcat")) {
+    pdf(paste(outpath, paste0(prefix, " classification ", filt, ".pdf"), sep = "/"), 
+        width = 10, height = 10, useDingbats = F)
+    df %>%
+      filter(sapply(transfer, FUN = function(x) grepl(x, filt))) %$%
+      chord_classification_clockwise(from, to, sizes, chord_col, plot.group[1:(length(plot.group)/2)], plot.order, line_expansion = 10000)
+    dev.off()
+  }
+  
 }
 
 
 
 
+
+##
+make_elevated_organ_total_chord <- function(cat1, cat2, line_expansion = 10000, 
+                                            grid.col, elevated_cats = c(2,3,4), 
+                                            direction = 1, cat1_name, cat2_name,
+                                            outpath, prefix) {
+  joined_cats <-
+    left_join(cat1, cat2, by = "ensg_id") %>%
+    filter(case_when(direction == 1 ~ category.x %in% elevated_cats, 
+                     direction == 2 ~ category.y %in% elevated_cats)) %>%
+    select(`enriched tissues.x`, `enriched tissues.y`, express.category.2.x, express.category.2.y, elevated.category.x, elevated.category.y)
+
+  cat1_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.x`, collapse = ", "), split = ", ")[[1]])
+  cat2_tissues <- unique(strsplit(paste(joined_cats$`enriched tissues.y`, collapse = ", "), split = ", ")[[1]])
+
+  plot.data <- 
+    crossing(cat1_tissues, cat2_tissues) %>%
+    mutate(sizes = mapply(cat1_tissues, cat2_tissues, FUN = function(a, b) {
+      filter(joined_cats, `enriched tissues.x` == a & `enriched tissues.y` == b) %>%
+        nrow()
+    })) %>%
+    filter(sizes > 0) %>%
+    mutate(cat2_tissues = ifelse(cat2_tissues == "", ifelse(direction == 1, 
+                                                            paste("Not tissue elevated in", cat2_name), 
+                                                            paste("Not tissue elevated in", cat1_name)), cat2_tissues),
+           cat1_tissues = ifelse(cat1_tissues == "", ifelse(direction == 1, 
+                                                            paste("Not tissue elevated in", cat2_name), 
+                                                            paste("Not tissue elevated in", cat1_name)), cat1_tissues))
+  
+    
+  cat1_factors <- unique(plot.data$cat1_tissues)
+  cat2_factors <- unique(plot.data$cat2_tissues)
+  
+  
+  number_cat1 <- 
+    plot.data %>%
+    group_by(cat1_tissues) %>%
+    summarise(n = sum(sizes)) %>%
+    filter(n > 0)
+  
+  number_cat2 <- 
+    plot.data %>%
+    group_by(cat2_tissues) %>%
+    summarise(n = sum(sizes)) %>%
+    filter(n > 0) 
+  
+  grid.col.cat1.name <- paste("Not tissue elevated in", cat1_name)
+  grid.col.cat2.name <- paste("Not tissue elevated in", cat2_name)
+  
+  pdf(paste(outpath, paste0(prefix, " Elevated genes comparison local global.pdf"), sep = "/"), 
+      width = 10, height = 10, useDingbats = F)
+  plot.data %$%
+    chord_vertical_text(from = cat1_tissues, to = cat2_tissues, sizes = sizes, c(grid.col, 
+                                                                                 setNames(c("black", "black"), 
+                                                                                          c(grid.col.cat1.name, grid.col.cat2.name))), 
+                         plot.group = c(rep(1, length(cat1_factors)), rep(2, length(cat2_factors))), 
+                         plot.order = c(number_cat1$cat1_tissues[order(number_cat1$n)], number_cat2$cat2_tissues[order(number_cat2$n)]))
+  dev.off()
+}
+##
 # Plot group enrich chord but as a heatmap
 
 make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {
@@ -721,108 +1833,1653 @@ make_heatmap_group_enriched <- function(elevated.table, outpath, prefix) {
 
 # Plot group enrich chord but as a heatmap
 
-make_heatmap_group_enriched_circle <- function(elevated.table, outpath, prefix) {
+# make_heatmap_group_enriched_circle <- function(elevated.table, outpath, prefix) {
+#   
+#   group_enriched_number <- 
+#     elevated.table %>%
+#     as_tibble(., rownames = "ensg_id") %>%
+#     gather(key = "content", "classification", -ensg_id) %>%
+#     # Only include group enriched
+#     filter(classification %in% c(3)) %>%
+#     {mapply(unique(.$content), 
+#             FUN = function(cell1) mapply(unique(.$content), 
+#                                          FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+#                                                                                 filter(., content == cell2)$ensg_id))))} %>%
+#     as_tibble(., rownames = "from") %>%
+#     gather(key = "to", value = "number of genes", -from) %>%
+#     left_join(ungroup(.) %>%
+#                 group_by(from) %>%
+#                 summarise(total = sum(`number of genes`),
+#                           Min = min(`number of genes`),
+#                           Max = max(`number of genes`)),
+#               by = "from") %>%
+#     left_join(ungroup(.) %>%
+#                 group_by(to) %>%
+#                 summarise(total = sum(`number of genes`),
+#                           Min = min(`number of genes`),
+#                           Max = max(`number of genes`)),
+#               by = "to") %>%
+#     mutate(Min = mapply(Min.x, Min.y, FUN = function(a, b) min(c(a, b))),
+#            Max = mapply(Max.x, Max.y, FUN = function(a, b) max(c(a, b))),
+#            n = (`number of genes` - Min)/ (Max - Min),
+#            from.sum = filter(., to == from)$`number of genes`[match(from, filter(., to == from)$from)],
+#            to.sum = filter(., to == from)$`number of genes`[match(to, filter(., to == from)$from)],
+#            frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) 
+#   
+#   GEN_dendrogram <- 
+#     group_enriched_number %>%
+#     select(from, to, frac.max) %>%
+#     spread(key = to, value = frac.max) %>%
+#     column_to_rownames("from") %>%
+#     as.matrix() %>%
+#     cor(method="spearman", use="pairwise.complete.obs")  %>%
+#     {1 - .} %>%
+#     as.dist() %>%
+#     hclust("average")  %>%
+#     as.dendrogram()
+#   
+#   dend_segments <- 
+#     ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#   group_enriched_number %>%
+#     mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
+#            to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#     {nfactors  <- length(levels(.$from));
+#     n_sectors <- nfactors + 3
+#     text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
+#     ggplot(.) +
+#         geom_tile(aes(from, to, fill = frac.max), alpha = 0.8) + 
+#         geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
+#         annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
+#                  angle = text_angle(1:nfactors),
+#                  size = 3)+
+#         annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
+#                  size = 3)+
+#         annotate("point", x = -2.5, y = n_sectors, color = NA)+
+#         #coord_fixed() +
+#         coord_polar()+
+#         #simple_theme + 
+#         theme_minimal()+
+#         theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#         scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#   
+#   ggsave(paste(outpath, paste0(prefix, '_group_enriched_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+# }
+
+
+
+# make_heatmap_group_and_enhanced_expression_levels_circle <- 
+#   function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix) {
+#     
+#     group_enriched_genes <- 
+#       elevated.table %>%
+#       as_tibble(., rownames = "ensg_id") %>%
+#       gather(key = "content", "classification", -ensg_id) %>%
+#       # Only include group enriched
+#       filter(classification %in% c(3, 4))
+#     
+#     group_enriched_expression <- 
+#       group_enriched_genes %>%
+#       {mapply(unique(.$content), 
+#               FUN = function(cell1) mapply(unique(.$content), 
+#                                            FUN = function(cell2) {
+#                                              genes <- 
+#                                                filter(., content == cell1)$ensg_id
+#                                              all.atlas.max.tb %>%
+#                                                filter(eval(parse(text = tissue_column)) == cell2 & 
+#                                                         ensg_id %in% genes) %$%
+#                                                median(eval(parse(text = maxEx_column)), na.rm = T)
+#                                            }))} %>%
+#       as_tibble(., rownames = "from") %>%
+#       gather(key = "to", value = "median expression", -from) 
+#     
+#     GEN_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, `median expression`) %>%
+#       spread(key = to, value = `median expression`) %>%
+#       column_to_rownames("from") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     
+#     dend_segments <- 
+#       ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#     group_enriched_expression %>%
+#       mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
+#              to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#              {nfactors  <- length(levels(.$from));
+#              n_sectors <- nfactors + 3
+#              text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
+#              ggplot(.) +
+#                geom_tile(aes(from, to, fill = `median expression`), alpha = 0.8) + 
+#                geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
+#                annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
+#                         angle = text_angle(1:nfactors),
+#                         size = 3)+
+#                annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
+#                         size = 3)+
+#                annotate("point", x = -2.5, y = n_sectors, color = NA)+
+#                #coord_fixed() +
+#                coord_polar()+
+#                #simple_theme + 
+#                theme_minimal()+
+#                theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#                scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#     
+#     ggsave(paste(outpath, paste0(prefix, '_group_and_enhanced_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+#   }
+
+# make_heatmap_group_enriched_expression_levels_circle <- 
+#   function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix, y_dendrogram = F) {
+#     
+#     group_enriched_genes <- 
+#       elevated.table %>%
+#       as_tibble(., rownames = "ensg_id") %>%
+#       gather(key = "content", "classification", -ensg_id) %>%
+#       # Only include group enriched
+#       filter(classification %in% c(3))
+#     
+#     group_enriched_expression <- 
+#       group_enriched_genes %>%
+#       right_join(filter(all.atlas.max.tb, ensg_id %in% group_enriched_genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
+#       tibble(from = ensg_id,
+#              to = content,
+#              expression = log10(eval(parse(text = maxEx_column)) + 1)) 
+#       
+#     
+#     GEN_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, expression) %>%
+#       spread(key = to, value = expression) %>%
+#       column_to_rownames("from") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     
+#     
+#     
+#     dend_segments <- 
+#       ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#     
+#     
+#     if(y_dendrogram) {
+#       Genes_dendrogram <- 
+#         group_enriched_expression %>%
+#         select(from, to, expression) %>%
+#         spread(key = from, value = expression) %>%
+#         column_to_rownames("to") %>%
+#         as.matrix() %>%
+#         cor(method="spearman", use="pairwise.complete.obs")  %>%
+#         {1 - .} %>%
+#         as.dist() %>%
+#         hclust("average")  %>%
+#         as.dendrogram()
+#       genes_dend_segments <- 
+#         ggdendro::dendro_data(Genes_dendrogram)$segments
+#     }
+#     
+#     x_margin = 2.5
+#     
+#     g <-
+#       group_enriched_expression %>%
+#       #filter(from %in% .$from[1:100]) %>%
+#       mutate(from = factor(from, levels = unique(from)[order.dendrogram(Genes_dendrogram)]),
+#              to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#              {nfactors  <- length(levels(.$to));
+#              n_sectors <- round((1 + 1/6)*nfactors)
+#              y_sectors <- length(levels(.$from))
+#              
+# 
+#              text_angle <- function(x) - (round((x + (1/6)*nfactors)) * 360/n_sectors - 360/(n_sectors*2))
+#              ggplot(.) +
+#                geom_tile(aes(to, from, fill = expression), alpha = 0.8) + 
+#                geom_segment(data = dend_segments, aes(x = x, y = -0.5*y_sectors*yend, 
+#                                                       xend = xend, yend = -0.5*y_sectors*y))+
+#                
+#                annotate(geom = "text", x = 1:nfactors, y = 1.15*y_sectors, label = levels(.$to),
+#                         angle = text_angle(1:nfactors),
+#                         size = 3)+
+#                annotate("point", x = -x_margin, y = n_sectors, color = NA)+
+#                #coord_fixed() +
+#                coord_polar()+
+#                #simple_theme + 
+#                theme_minimal()+
+#                theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#                scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#     
+#     if(y_dendrogram){
+#       genes_dend_segments_scaled <-
+#       {max_y = max(c(genes_dend_segments$y,
+#                      genes_dend_segments$yend))
+#       min_y = min(c(genes_dend_segments$y,
+#                     genes_dend_segments$yend))
+#       genes_dend_segments %>%
+#         mutate(y = ((y - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin),
+#                yend = ((yend - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin))
+#       }
+#       g <- 
+#         g + 
+#         geom_segment(data = genes_dend_segments_scaled, aes(x = y, y = x,
+#                                                             xend = yend, yend = xend))
+#       
+#     }
+#     
+#     
+#     ggsave(plot = g, paste(outpath, paste0(prefix, '_group_enriched_gene_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+#   }
+
+# make_heatmap_all_elevated_expression_levels_circle <- 
+#   function(elevated.table, all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix, y_dendrogram = F) {
+#     
+#     group_enriched_genes <- 
+#       elevated.table %>%
+#       as_tibble(., rownames = "ensg_id") %>%
+#       gather(key = "content", "classification", -ensg_id) %>%
+#       # Only include group enriched
+#       filter(classification %in% c(2, 3, 4))
+#     
+#     group_enriched_expression <- 
+#       group_enriched_genes %>%
+#       right_join(filter(all.atlas.max.tb, ensg_id %in% group_enriched_genes$ensg_id), by = c("ensg_id", "content" = tissue_column)) %$%
+#       tibble(from = ensg_id,
+#              to = content,
+#              expression = log10(eval(parse(text = maxEx_column)) + 1)) 
+#     
+#     
+#     GEN_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, expression) %>%
+#       spread(key = to, value = expression) %>%
+#       column_to_rownames("from") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     
+#     
+#     
+#     dend_segments <- 
+#       ggdendro::dendro_data(GEN_dendrogram)$segments
+#     
+#     
+#     
+#     Genes_dendrogram <- 
+#       group_enriched_expression %>%
+#       select(from, to, expression) %>%
+#       spread(key = from, value = expression) %>%
+#       column_to_rownames("to") %>%
+#       as.matrix() %>%
+#       cor(method="spearman", use="pairwise.complete.obs")  %>%
+#       {1 - .} %>%
+#       as.dist() %>%
+#       hclust("average")  %>%
+#       as.dendrogram()
+#     genes_dend_segments <- 
+#       ggdendro::dendro_data(Genes_dendrogram)$segments
+#     
+#     
+#     x_margin = 2.5
+#     
+#     g <-
+#       group_enriched_expression %>%
+#       #filter(from %in% .$from[1:100]) %>%
+#       mutate(from = factor(from, levels = unique(from)[order.dendrogram(Genes_dendrogram)]),
+#              to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
+#              {nfactors  <- length(levels(.$to));
+#              n_sectors <- round((1 + 1/6)*nfactors)
+#              y_sectors <- length(levels(.$from))
+#              
+#              
+#              text_angle <- function(x) - (round((x + (1/6)*nfactors)) * 360/n_sectors - 360/(n_sectors*2))
+#              ggplot(.) +
+#                geom_tile(aes(to, from, fill = expression), alpha = 0.8) + 
+#                geom_segment(data = dend_segments, aes(x = x, y = -0.5*y_sectors*yend, 
+#                                                       xend = xend, yend = -0.5*y_sectors*y))+
+#                
+#                annotate(geom = "text", x = 1:nfactors, y = 1.15*y_sectors, label = levels(.$to),
+#                         angle = text_angle(1:nfactors),
+#                         size = 3)+
+#                annotate("point", x = -x_margin, y = n_sectors, color = NA)+
+#                #coord_fixed() +
+#                coord_polar()+
+#                #simple_theme + 
+#                theme_minimal()+
+#                theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
+#                scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+#     
+#     if(y_dendrogram){
+#       genes_dend_segments_scaled <-
+#       {max_y = max(c(genes_dend_segments$y,
+#                      genes_dend_segments$yend))
+#       min_y = min(c(genes_dend_segments$y,
+#                     genes_dend_segments$yend))
+#       genes_dend_segments %>%
+#         mutate(y = ((y - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin),
+#                yend = ((yend - min_y)/(max_y - min_y))*(0 - (-x_margin)) + (-x_margin))
+#       }
+#       g <- 
+#         g + 
+#         geom_segment(data = genes_dend_segments_scaled, aes(x = y, y = x,
+#                                                             xend = yend, yend = xend))
+#       
+#     }
+#     
+#     
+#     ggsave(plot = g, paste(outpath, paste0(prefix, '_all_elevated_gene_expression_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+#   }
+
+make_dendrogram <- function(var1, var2, value, method = "spearman"){
+  if(method == "spearman") {
+    data.frame(var1, var2, value) %>%
+      spread(key = var1, value = value) %>%
+      column_to_rownames("var2") %>% 
+      as.matrix() %>%
+      cor(method="spearman", use="pairwise.complete.obs")  %>%
+      {1 - .} %>%
+      as.dist() %>%
+      hclust("average")  %>%
+      as.dendrogram() 
+  } else if(method == "euclidean") {
+    data.frame(var1, var2, value) %>%
+      spread(key = var1, value = value) %>%
+      column_to_rownames("var2") %>% 
+      as.matrix() %>% 
+      t() %>% 
+      na.omit() %>%
+      dist() %>%
+      hclust("average")  %>%
+      as.dendrogram() 
+  }
   
-  group_enriched_number <- 
-    elevated.table %>%
-    as_tibble(., rownames = "ensg_id") %>%
-    gather(key = "content", "classification", -ensg_id) %>%
-    # Only include group enriched
-    filter(classification %in% c(3)) %>%
-    {mapply(unique(.$content), 
-            FUN = function(cell1) mapply(unique(.$content), 
-                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
-                                                                                filter(., content == cell2)$ensg_id))))} %>%
-    as_tibble(., rownames = "from") %>%
-    gather(key = "to", value = "number of genes", -from) %>%
-    left_join(ungroup(.) %>%
-                group_by(from) %>%
-                summarise(total = sum(`number of genes`),
-                          Min = min(`number of genes`),
-                          Max = max(`number of genes`)),
-              by = "from") %>%
-    left_join(ungroup(.) %>%
-                group_by(to) %>%
-                summarise(total = sum(`number of genes`),
-                          Min = min(`number of genes`),
-                          Max = max(`number of genes`)),
-              by = "to") %>%
-    mutate(Min = mapply(Min.x, Min.y, FUN = function(a, b) min(c(a, b))),
-           Max = mapply(Max.x, Max.y, FUN = function(a, b) max(c(a, b))),
-           n = (`number of genes` - Min)/ (Max - Min),
-           from.sum = filter(., to == from)$`number of genes`[match(from, filter(., to == from)$from)],
-           to.sum = filter(., to == from)$`number of genes`[match(to, filter(., to == from)$from)],
-           frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) 
+}
+
+get_dendrogram_segments <- function(dendrogram) {
+  dendrogram %>%
+    ggdendro::dendro_data() %$%
+    left_join(segments, labels, by = c("xend" = "x", "yend" = "y"))
+}
+
+range_scale_manual <- function(x, xmax, xmin, span, dodge = 0) { 
+  ((x - xmin)/(xmax - xmin))*
+    (span[2] - span[1]) + span[1] + 
+    dodge
+}
+range_scale <- function(x, span) { 
+  xmin = min(x)
+  xmax = max(x)
+  ((x - xmin)/(xmax - xmin))*
+    (span[2] - span[1]) + span[1]
+}
+ggdendroheat <- function(x, y, value, fill_factor = NA, show.legend = T, xdendrogram = T, ydendrogram = T,
+                         x_margin = 0.2, y_margin = 0.2, xaxis_order = NULL, yaxis_order = NULL, 
+                         xdendrogram_color = NULL, ydendrogram_color = NULL,
+                         range_scale_x = F, range_scale_y = F, x_clustering_method = "spearman", y_clustering_method = "spearman",
+                         under_lim_tile_color = NA, under_lim = 1){
   
-  GEN_dendrogram <- 
-    group_enriched_number %>%
-    select(from, to, frac.max) %>%
-    spread(key = to, value = frac.max) %>%
-    column_to_rownames("from") %>%
-    as.matrix() %>%
-    cor(method="spearman", use="pairwise.complete.obs")  %>%
-    {1 - .} %>%
-    as.dist() %>%
-    hclust("average")  %>%
-    as.dendrogram()
+  x_dendrogram <- 
+    make_dendrogram(x, y, value, method = x_clustering_method)
+  x_dendrogram_segments <- get_dendrogram_segments(x_dendrogram)
   
-  dend_segments <- 
-    ggdendro::dendro_data(GEN_dendrogram)$segments
+  y_dendrogram <- 
+    make_dendrogram(y, x, value, method = y_clustering_method)
+  y_dendrogram_segments <- get_dendrogram_segments(y_dendrogram)
+  
+  g <- 
+    tibble(x, y, value, 
+           under_limit = value < under_lim,
+           fill_factor = fill_factor) 
+  
+  if(range_scale_x){
+    g <- g %>%
+      group_by(x) %>%
+      mutate(value = range_scale(value, c(0,1))) %>%
+      ungroup()
+  }
+  
+  if(range_scale_y){
+    g <- g %>%
+      group_by(y) %>%
+      mutate(value = range_scale(value, c(0,1))) %>%
+      ungroup()
+  }
+  
+  if(is.null(xaxis_order)){ 
+    g <- g %>%
+      mutate(x = factor(x, levels = labels(x_dendrogram))) 
+  } else {
+    if(xdendrogram) warning("displaying dendrogram and giving explicit axis order is not recommended! Axis and dendrogram will show conflicting order.")
+    g <- g %>%
+      mutate(x = factor(x, levels = xaxis_order)) 
+  }
+  
+  if(is.null(yaxis_order)){ 
+    g <- g %>%
+      mutate(y = factor(y, levels = labels(y_dendrogram))) 
+  } else {
+    if(ydendrogram) warning("displaying dendrogram and giving explicit axis order is not recommended! Axis and dendrogram will show conflicting order.")
+    g <- g %>%
+      mutate(y = factor(y, levels = yaxis_order)) 
+  }
+  
     
-  group_enriched_number %>%
-    mutate(from = factor(from, levels = unique(from)[order.dendrogram(GEN_dendrogram)]),
-           to = factor(to, levels = unique(to)[order.dendrogram(GEN_dendrogram)])) %>%
-    {nfactors  <- length(levels(.$from));
-    n_sectors <- nfactors + 3
-    text_angle <- function(x) - ((x + 3) * 360/n_sectors - 360/(n_sectors*2))
-    ggplot(.) +
-        geom_tile(aes(from, to, fill = frac.max), alpha = 0.8) + 
-        geom_segment(data = dend_segments, aes(x = x, y = -10*yend, xend = xend, yend = -10*y))+
-        annotate(geom = "text", x = 1:nfactors, y = n_sectors, label = levels(.$from), 
-                 angle = text_angle(1:nfactors),
-                 size = 3)+
-        annotate(geom = "text", x = -2.5, y =1:nfactors, label = levels(.$from), hjust = 0,
-                 size = 3)+
-        annotate("point", x = -2.5, y = n_sectors, color = NA)+
-        #coord_fixed() +
-        coord_polar()+
-        #simple_theme + 
-        theme_minimal()+
-        theme(axis.text = element_blank(), axis.title = element_blank(), panel.grid = element_blank()) + 
-        scale_fill_gradientn(colors = c("yellow", "orangered", "#800026"))} 
+  if(is.na(fill_factor[1])) {
+    g <- g %>%
+      ggplot() +
+      geom_tile(aes(x, y, fill = value), show.legend = show.legend) + 
+      geom_tile(data = filter(g, under_limit), aes(x, y), fill = under_lim_tile_color, show.legend = F)
+  } else {
+    g <- g %>%
+      ggplot() +
+      geom_tile(aes(x, y, fill = fill_factor), show.legend = show.legend) + 
+      geom_tile(data = filter(g, under_limit), aes(x, y), fill = under_lim_tile_color, show.legend = F)
+  }
   
-  ggsave(paste(outpath, paste0(prefix, '_group_enriched_heatmap_circle.pdf'),sep='/'), width=15, height=10)
+  
+  xp <- 0
+  yp <- 0
+  
+  
+  x_factors <- length(labels(x_dendrogram))
+  y_factors <- length(labels(y_dendrogram))
+  
+  if(xdendrogram) {
+    
+    if(!is.null(xdendrogram_color)) {
+      g <- g + 
+        geom_segment(data = x_dendrogram_segments %>%
+                       mutate(label = xdendrogram_color[match(x_dendrogram_segments$label, names(xdendrogram_color))]), 
+                     aes(x = x, 
+                         xend = xend,
+                         y = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                dodge = 0.5), 
+                         yend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                   dodge = 0.5),
+                         color = label))
+    } else{
+      g <- g + 
+        geom_segment(data = x_dendrogram_segments, 
+                     aes(x = x, 
+                         xend = xend,
+                         y = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                dodge = 0.5), 
+                         yend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(y_factors, y_factors/(1 - y_margin)), 
+                                                   dodge = 0.5)))
+    }
+    
+    
+    xp <- c(x_factors + x_margin)
+  } 
+  
+  if(ydendrogram) {
+    if(!is.null(ydendrogram_color)) {
+      g <- g + 
+        geom_segment(data = y_dendrogram_segments %>%
+                       mutate(label = ydendrogram_color[match(y_dendrogram_segments$label, names(ydendrogram_color))]), 
+                     aes(x = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                dodge = 0.5), 
+                         xend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                   dodge = 0.5),
+                         y = x, 
+                         yend = xend,
+                         color = label))
+    } else{
+      g <- g + 
+        geom_segment(data = y_dendrogram_segments, 
+                     aes(x = range_scale_manual(yend, max(y, yend), min(y, yend), 
+                                                span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                dodge = 0.5), 
+                         xend = range_scale_manual(y, max(y, yend), min(y, yend), 
+                                                   span = c(x_factors, x_factors/(1 - x_margin)), 
+                                                   dodge = 0.5),
+                         y = x, 
+                         yend = xend))
+      
+    }
+    
+    
+    
+    yp <- c(y_factors + y_margin)
+  }
+  
+  g + 
+    annotate("point", x = xp, y = yp, color = NA) + 
+    theme_minimal() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8), 
+          panel.grid = element_blank())
+  
+  
 }
 
 
-# For enriched genes NX between tissues 
 
-# atlas_max <- all.atlas.max
-# cats <- all.atlas.category
-# elevated.table <- all.atlas.elevated.table
-# 
-# left_join(atlas_max, cats, by = "ensg_id") %>%
-#   select(ensg_id, elevated.category, limma_gene_dstmm.zero.impute.expression_maxEx, consensus_content_name, `enriched tissues`) %>%
-#   filter(elevated.category %in% c("group enriched", "tissue enriched")) %>%
-#   mutate(NX = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
-#   filter(!is.na(NX)) %>%
-#   mutate(content = ifelse(is.na(content), `enriched tissues`, content)) %>%
-#   left_join({group_by(., content) %>%
-#       summarise(mean_NX = mean(NX, na.rm = T),
-#                 sd_NX = sd(NX))}, by = c("content")) %>%
-#   mutate(scaled_NX = (NX - mean_NX) / sd_NX) %>%
-#   # left_join({ungroup(.) %>%
-#   #     group_by(`enriched tissues`) %>%
-#   #     summarise(mean_NX_tiss = mean(NX),
-#   #               sd_NX_tiss = sd(NX))}, by = c("enriched tissues")) %>%
-#   # mutate(scaled_NX = (scaled_NX - mean_NX_tiss) / sd_NX_tiss) %>%
-#   ungroup() %>%
-#   group_by(., consensus_content_name, content) %>%
-#   summarise(number = length(content),
-#             mean_scaled_NX = mean(scaled_NX, na.rm = T)) %>%
-#   ggplot(aes(consensus_content_name, content, fill = number)) +
-#   geom_tile() + 
-#   simple_theme + 
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) + 
-#   scale_fill_viridis_c()
 
+
+make_number_detected_genes_barplot <- function(all.atlas.max.tb, maxEx_column, tissue_column, outpath, prefix) {
+  all.atlas.max.tb %>%
+    filter(eval(parse(text = maxEx_column)) >= 1) %>%
+    mutate(content = eval(parse(text = tissue_column))) %>%
+    group_by(content) %>%
+    summarise(`number expressed` = length(ensg_id)) %>%  
+    mutate(content = factor(content, levels = content[order(`number expressed`, decreasing = T)])) %>%
+    ggplot(aes(content, `number expressed`)) +
+    geom_bar(stat = "identity", fill = "gray80", color = "black") +
+    
+    simple_theme+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.8), 
+          axis.title.x = element_blank())+
+    ylab("Number of expressed genes")
+  
+  ggsave(paste(outpath, paste0(prefix, '__number_detected_genes_barplot.pdf'),sep='/'), width=6, height=4)
+}
+
+# Plot method spearman cluster
+
+make_spearman_method_dendrogram <- function(all.atlas.tb, Ex_column, content_column, named_color_replacement, outpath, prefix) {
+  
+  
+  dendr <- 
+    all.atlas.tb %>%
+    mutate(content_method = paste(eval(parse(text = content_column)), method),
+           ex = eval(parse(text = Ex_column)),
+           ex = log(ex + 1)) %$%
+    make_dendrogram(content_method, ensg_id, ex)
+  
+  dendr %>%
+    get_dendrogram_segments() %>%
+    {ggplot(., aes(x, y, xend = xend, yend = yend)) +
+        geom_segment() +
+        geom_text(data = filter(., yend == 0), aes(y = yend - 0.002, 
+                                                   label = labels(dendr), 
+                                                   color = trimws(str_extract(labels(dendr), paste(names(named_color_replacement), collapse = "|")))), 
+                  angle = 90, hjust = 1, vjust = 0.3, size = 3, show.legend = F) + 
+        scale_y_continuous(expand = c(0.05,0.2)) +
+        scale_color_manual(values = named_color_replacement) +
+        theme_minimal() + 
+        theme(axis.text = element_blank(), axis.title = element_blank(), 
+              panel.grid = element_blank())}
+    
+  
+   ggsave(paste(outpath, paste0(prefix, '_spearman_method_cluster.pdf'),sep='/'), width=16, height=8)
+}
+
+
+
+
+make_expression_heatmaps <- function(atlas.max.tb, atlas.cat, maxEx_column, tissue_column, 
+                                     ensemblanno.table, proteinclass.table = NULL, proteinclass.table_ensg_id_column = "", 
+                                     proteinclass.table_class_column = "", outpath, prefix, range_scale_x = F) {
+  genes <- 
+    atlas.max.tb %>%
+    rename("content" = tissue_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+  
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+                                                  unique(gene_name)},
+           gene_name_2 = ifelse(nonunique_gene_name, 
+                                paste(gene_name, gene_name_occurence),
+                                gene_name),
+           
+           ###
+           
+           from = gene_name_2,
+           to = content)
+  
+    
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = proteinclass.table_ensg_id_column, 
+                       protein_class = proteinclass.table_class_column), by = "ensg_id")
+  }
+  
+  
+  genes_median_expression <- 
+    genes %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) {
+                                           genes <- 
+                                             filter(., content == cell1)$ensg_id
+                                           atlas.max.tb %>%
+                                             filter(eval(parse(text = tissue_column)) == cell2 & 
+                                                      ensg_id %in% genes) %$%
+                                             median(eval(parse(text = maxEx_column)), na.rm = T)
+                                         }))} %>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "median expression", -from)
+  #-----------------------------------------------------------------
+  # Tissue enriched genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category == "tissue enriched") 
+  
+  ## 1
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__tissue_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## 2
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1),
+                 xdendrogram = F, 
+                 xaxis_order = unique(from[order(`enriched tissues`)]))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__tissue_enriched_expression_dendroheatmap2.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  ## Group enriched genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category == "group enriched")
+  ## 1
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 1), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Group enriched genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__group_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  ## All elevated genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced"))
+  ## 1
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1))+
+    scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## categories
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1), 
+                 fill_factor = elevated.category)+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
+    ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  ## potential CD marker genes
+  if(!is.null(proteinclass.table)) {
+    plot.data <- 
+      genes %>%
+      filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+               protein_class == "membrane")
+    ## All elevated
+    plot.data %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 4), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Potential CD markers: All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_pot_CD_all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Group enriched
+    plot.data %>%
+      filter(elevated.category == "group enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Potential CD markers: Group enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_pot_CD_group_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Tissue enriched
+    plot.data %>%
+      filter(elevated.category == "tissue enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Potential CD markers: Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_pot_CD_tissue_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  }
+  #-----------------------------------------------------------------
+  ## Known CD marker genes
+  if(!is.null(proteinclass.table)) {
+    plot.data <- 
+      genes %>%
+      filter(protein_class == "cd_marker")
+    ## All elevated
+    plot.data %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 4), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Known CD markers: All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_known_CD_all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Group enriched
+    plot.data %>%
+      filter(elevated.category == "group enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Known CD markers: Group enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_known_CD_group_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+    
+    ## Tissue enriched
+    plot.data %>%
+      filter(elevated.category == "tissue enriched") %$%
+      {ggdendroheat(from, to, expression, 
+                   x_clustering_method = "euclidean", 
+                   range_scale_x = range_scale_x, 
+                   under_lim_tile_color = "white", 
+                   under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7), axis.title.y = element_blank()) + 
+      ggtitle(paste0("Known CD markers: Tissue enriched genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+    ggsave(paste(outpath, paste0(prefix, '_known_CD_tissue_enriched_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  }
+  
+  ## categories
+  plot.data %$%
+    {ggdendroheat(from, to, expression, 
+                 x_clustering_method = "euclidean", 
+                 range_scale_x = range_scale_x, 
+                 under_lim_tile_color = "white", 
+                 under_lim = log10(1 + 1), 
+                 fill_factor = elevated.category)+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 4), axis.title.y = element_blank()) + 
+    ggtitle(paste0("Known CD markers: Categories (n = ", length(unique(from)), ")")) + 
+    xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '_known_CD_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  
+  
+}
+
+make_immunodeficiency_expression_heatmaps <- function(atlas.max.tb, atlas.cat, immunodeficiency.table, maxEx_column, tissue_column, 
+                                     ensemblanno.table, proteinclass.table = NULL, proteinclass.table_ensg_id_column = "", 
+                                     proteinclass.table_class_column = "", outpath, prefix, range_scale_x = F) {
+  genes <- 
+    atlas.max.tb %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = tissue_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+    
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
+  
+  
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = proteinclass.table_ensg_id_column, 
+                       protein_class = proteinclass.table_class_column), by = "ensg_id")
+  }
+  
+  
+  
+  
+  #-----------------------------------------------------------------
+  ## All elevated genes
+  plot.data <- 
+    genes %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced"))
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## categories
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1), 
+                fill_factor = elevated.category)+
+      scale_fill_manual(values = elevated.cat.cols) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_elevated_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  #-----------------------------------------------------------------
+  ## All genes
+  plot.data <- 
+    genes 
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_genes_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  ## categories
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "white", 
+                under_lim = log10(1 + 1), 
+                fill_factor = elevated.category)+
+      scale_fill_manual(values = elevated.cat.cols) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_genes_category_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  #-----------------------------------------------------------------
+  
+}
+
+make_score_expression_scatter <- function(atlas.max.tb, atlas.cat, maxEx_column, tissue_column, ensemblanno.table, plot.order = NULL, outpath, prefix) {
+  plot.data <- 
+    atlas.max.tb %>%
+    ungroup() %>%
+    rename(tissue_column = tissue_column,
+           maxEx_column = maxEx_column) %>%
+    left_join(atlas.cat, by = "ensg_id") %>%
+    left_join(select(ensemblanno.table, ensg_id, gene_name) , by = "ensg_id") %>%
+    
+    # Filter so that elevated genes are only kept for the tissues they are elevated in
+    filter(mapply(paste0("(^|, )", tissue_column, "(, |$)"), 
+                  `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+    mutate(score = as.numeric(`tissue/group specific score`)) %>%
+    filter(!is.na(score)) 
+  
+  if(!is.null(plot.order)){
+    plot.data <- 
+      plot.data %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.order))
+  }
+  
+  plot.data %>%
+    ggplot(aes(maxEx_column, score, color = elevated.category)) +
+    geom_point() +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("expression") +
+    ylab("score") + 
+    scale_x_log10() + 
+    scale_y_log10() + 
+    scale_color_manual(values = elevated.cat.cols) +
+    simple_theme
+  
+  ggsave(paste(outpath, paste0(prefix, '_score_expression_scatter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    group_by(tissue_column) %>%
+    mutate(label_size = range_scale(range_scale(score, 1:2) * 
+                                      range_scale(maxEx_column, 1:2), 
+                                    span = c(1,4))) %>%
+    ggplot(aes(maxEx_column, score, color = elevated.category, label = gene_name, size = label_size)) +
+    geom_text() +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("expression") +
+    ylab("score") + 
+    scale_x_log10() + 
+    scale_y_log10() + 
+    scale_color_manual(values = elevated.cat.cols) +
+    simple_theme
+  
+  ggsave(paste(outpath, paste0(prefix, '_score_expression_labels.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    ggplot(aes(maxEx_column, fill = elevated.category)) +
+    geom_density(alpha = 0.5) +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("expression") +
+    scale_x_log10() + 
+    scale_fill_manual(values = elevated.cat.cols) +
+    simple_theme
+  ggsave(paste(outpath, paste0(prefix, '_expression_density.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    ggplot(aes(score, fill = elevated.category)) +
+    geom_density(alpha = 0.5) +
+    facet_wrap(tissue_column ~ .) + 
+    xlab("score") +
+    scale_x_log10() + 
+    scale_fill_manual(values = elevated.cat.cols) +
+    simple_theme
+  ggsave(paste(outpath, paste0(prefix, '_score_density.pdf'),sep='/'), width=15, height=10)
+  
+
+}
+
+elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+  atlas.max_temp <- 
+    atlas.max %>% 
+    rename(maxEx_column = maxEx_column,
+           tissue_column = tissue_column)
+  
+  calculate_elevated_sum_NX <- function(tissue) {
+    atlas.cat %>%
+      filter(grepl(paste0("(^|, )", unique(tissue), "(, |$)"), `enriched tissues`)) %>%
+      {filter(atlas.max_temp, ensg_id %in% .$ensg_id & tissue_column == unique(tissue))} %$%
+      sum(maxEx_column)
+  }
+  
+  plot.data <- 
+    atlas.max_temp %>%
+    group_by(tissue_column) %>% 
+    summarise(total_NX = sum(maxEx_column),
+              elevated_NX = calculate_elevated_sum_NX(tissue_column), 
+              fraction = elevated_NX / total_NX) 
+  
+  plot.data %>%
+    mutate(., tissue_column = factor(tissue_column, levels = tissue_column[order(total_NX)])) %>%
+    ggplot(aes(tissue_column, total_NX))+
+    geom_bar(stat = "identity", fill = "white", color = "darkgray") + 
+    geom_bar(aes(tissue_column, elevated_NX), stat = "identity", fill = "red") + 
+    geom_text(aes(tissue_column, elevated_NX, label = paste0(round(fraction*100, digits = 1), "%")), hjust = -0.1)+
+    simple_theme + 
+    coord_flip()
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_barplot1.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    mutate(., tissue_column = factor(tissue_column, levels = tissue_column[order(elevated_NX)])) %>%
+    ggplot(aes(tissue_column, total_NX))+
+    geom_bar(stat = "identity", fill = "white", color = "darkgray") + 
+    geom_bar(aes(tissue_column, elevated_NX), stat = "identity", fill = "red") + 
+    geom_text(aes(tissue_column, elevated_NX, label = paste0(round(fraction*100, digits = 1), "%")), hjust = -0.1)+
+    simple_theme + 
+    coord_flip()
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_barplot2.pdf'),sep='/'), width=15, height=10)
+
+}
+make_elevated_NX_fraction_barplots <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix) {
+  elevated_NX_fraction_barplots(atlas.max, atlas.cat, maxEx_column, tissue_column, outpath, prefix)
+  
+  #### intrecellular proteins
+  proteinlocalization.table %>% 
+    filter(predicted_intracellular) %>%
+    left_join(atlas.max, by = "ensg_id") %>%
+    elevated_NX_fraction_barplots(atlas.cat, maxEx_column, tissue_column, outpath, prefix = paste0(prefix, "_intracellular"))
+  
+  #### secreted proteins
+  proteinlocalization.table %>% 
+    filter(predicted_secreted) %>%
+    left_join(atlas.max, by = "ensg_id") %>%
+    elevated_NX_fraction_barplots(atlas.cat, maxEx_column, tissue_column, outpath, prefix = paste0(prefix, "_secreted"))
+  
+  #### membrane proteins
+  proteinlocalization.table %>% 
+    filter(predicted_membrane) %>%
+    left_join(atlas.max, by = "ensg_id") %>%
+    elevated_NX_fraction_barplots(atlas.cat, maxEx_column, tissue_column, outpath, prefix = paste0(prefix, "_membrane"))
+  
+  #######
+    
+  atlas.max_temp <- 
+    atlas.max %>% 
+    rename(maxEx_column = maxEx_column,
+           tissue_column = tissue_column)
+  
+  calculate_elevated_sum_NX <- function(tissue) {
+    atlas.cat %>%
+      filter(grepl(paste0("(^|, )", unique(tissue), "(, |$)"), `enriched tissues`)) %>%
+      {filter(atlas.max_temp, ensg_id %in% .$ensg_id & tissue_column == unique(tissue))} %$%
+      sum(maxEx_column)
+  }
+  
+  plot.data <- 
+    atlas.max_temp %>%
+    left_join(proteinlocalization.table %>%
+                mutate(location = case_when(!predicted_localization_class %in% c("membrane", "secreted", "intracellular") ~ "multiple locations",
+                                            predicted_secreted ~ "secreted",
+                                            predicted_membrane ~ "membrane",
+                                            predicted_intracellular ~ "intracellular",
+                                            T ~ "")),
+              by = "ensg_id") %>%
+    group_by(tissue_column, location) %>% 
+    summarise(total_NX = sum(maxEx_column)) %>%
+    left_join(group_by(., tissue_column) %>% summarise(sum_total_NX = sum(total_NX)), by = "tissue_column") %>%
+    mutate(fraction = total_NX / sum_total_NX )
+  
+  write_delim(plot.data, paste(outpath, paste0(prefix, '_sum_abundance_location.txt'),sep='/'), delim = "\t")
+  
+  
+  plot.data_order <- 
+    plot.data %>%
+    group_by(tissue_column) %>%
+    summarise(total_NX = sum(total_NX)) %$% 
+    tissue_column[order(total_NX)]
+  
+  plot.data %>%
+    ungroup() %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+           location = factor(location, levels = c("multiple locations", "intracellular", "membrane", "secreted"))) %>%
+    ggplot(aes(tissue_column, total_NX, fill = location))+
+    geom_bar(stat = "identity", color = "darkgray") + 
+    simple_theme + 
+    coord_flip() +
+    scale_fill_manual(values = protein.localization.palette)
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_location.pdf'),sep='/'), width=15, height=10)
+  
+  # Classification elevated
+  plot.data <- 
+    atlas.max_temp %>%
+    left_join(atlas.cat,
+              by = "ensg_id") %>%
+    group_by(tissue_column, elevated.category) %>% 
+    summarise(total_NX = sum(maxEx_column)) %>%
+    left_join(group_by(., tissue_column) %>% summarise(sum_total_NX = sum(total_NX)), by = "tissue_column") %>%
+    mutate(fraction = total_NX / sum_total_NX )
+  
+  write_delim(plot.data, paste(outpath, paste0(prefix, '_sum_abundance_elevated_category.txt'),sep='/'), delim = "\t")
+  
+  plot.data_order <- 
+    plot.data %>%
+    group_by(tissue_column) %>%
+    summarise(total_NX = sum(total_NX)) %$% 
+    tissue_column[order(total_NX)]
+  
+  plot.data %>%
+    ungroup() %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+           elevated.category = factor(elevated.category, levels = c("not detected", "low tissue specificity", 
+                                                                    "tissue enhanced", "group enriched", "tissue enriched"))) %>%
+    ggplot(aes(tissue_column, total_NX, fill = elevated.category))+
+    geom_bar(stat = "identity", color = "darkgray") + 
+    simple_theme + 
+    coord_flip() +
+    scale_fill_manual(values = elevated.cat.cols)
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_elevation.pdf'),sep='/'), width=15, height=10)
+  
+  # Classification distribution
+  plot.data <- 
+    atlas.max_temp %>%
+    left_join(atlas.cat,
+              by = "ensg_id") %>%
+    group_by(tissue_column, express.category.2) %>% 
+    summarise(total_NX = sum(maxEx_column)) %>%
+    left_join(group_by(., tissue_column) %>% summarise(sum_total_NX = sum(total_NX)), by = "tissue_column") %>%
+    mutate(fraction = total_NX / sum_total_NX )
+  
+  write_delim(plot.data, paste(outpath, paste0(prefix, '_sum_abundance_distribution_category.txt'),sep='/'), delim = "\t")
+  
+  plot.data_order <- 
+    plot.data %>%
+    group_by(tissue_column) %>%
+    summarise(total_NX = sum(total_NX)) %$% 
+    tissue_column[order(total_NX)]
+  
+  plot.data %>%
+    ungroup() %>%
+    mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+           express.category.2 = factor(express.category.2, levels = c("not expressed", "expressed in all", "expressed in many",
+                                                                      "expressed in some", "expressed in single"))) %>%
+    ggplot(aes(tissue_column, total_NX, fill = express.category.2))+
+    geom_bar(stat = "identity", color = "darkgray") + 
+    simple_theme + 
+    coord_flip() +
+    scale_fill_manual(values = expressed.cat.cols)
+  
+  ggsave(paste(outpath, paste0(prefix, '_total_NX_distribution.pdf'),sep='/'), width=15, height=10)
+  
+}
+
+make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, outpath, prefix) {
+  atlas_temp <- 
+    atlas %>%
+    rename(method_column = method_column, 
+           tissue_column = tissue_column) %>%
+    left_join(group_by(., method_column, tissue) %>%
+                summarise(total_tpm = sum(expression, na.rm = T)),
+              by = c("method_column", "tissue")) %>%
+    mutate(expression = expression/(total_tpm / 1e6))
+  
+  for(method in unique(atlas_temp$method_column)) {
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(atlas.cat, by = "ensg_id") %>%
+      group_by(tissue_column, elevated.category) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(elevated.category == "tissue enriched") %>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+      
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+             elevated.category = factor(elevated.category, levels = c("not detected", "low tissue specificity", 
+                                                                      "tissue enhanced", "group enriched", "tissue enriched"))) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = elevated.category))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = elevated.cat.cols) + 
+      ggtitle(method)
+      
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_elevation.pdf'),sep='/'), width=15, height=10)
+    
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(atlas.cat, by = "ensg_id") %>%
+      group_by(tissue_column, express.category.2) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(express.category.2 == "expressed in single") %>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+             express.category.2 = factor(express.category.2, levels = c("not expressed", "expressed in all", "expressed in many",
+                                                                        "expressed in some", "expressed in single"))) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = express.category.2))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = expressed.cat.cols)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_distribution.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization 
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(!predicted_localization_class %in% c("membrane", "secreted", "intracellular") ~ "multiple locations",
+                                              predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+      group_by(tissue_column, location) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(location == "secreted")%>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order),
+             location = factor(location, levels = c("multiple locations", "intracellular", "membrane", "secreted"))) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = location))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = protein.localization.palette)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization 2
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table,
+                by = "ensg_id") %>%
+      mutate(location = predicted_localization_class) %>%
+      group_by(tissue_column, location) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(location == "secreted")%>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = location))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = protein.localization.palette)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location_all.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization hierarchy
+    plot.data <- 
+      atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+      group_by(tissue_column, location) %>%
+      summarise(sum_TPM = sum(expression, na.rm = T))
+    
+    plot.data_order <- 
+      plot.data %>%
+      filter(location == "secreted")%>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
+    
+    plot.data %>%
+      ungroup() %>%
+      mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+      ggplot(aes(tissue_column, sum_TPM, fill = location))+
+      geom_bar(stat = "identity", color = "darkgray") + 
+      simple_theme + 
+      coord_flip() +
+      scale_fill_manual(values = protein.localization.palette)+ 
+      ggtitle(method)
+    
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location_hierarchy.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization hierarchy
+    # atlas_temp %>%
+    #   filter(method_column == method) %>% 
+    #   left_join(atlas.cat %>%
+    #               filter(elevated.category %in% c("tissue enhanced", "group enriched", "tissue enriched")), by = "ensg_id") %>%
+    #   # Remove genes that are not elevated or expressed
+    #   filter(!is.na(elevated.category) & expression > 0) %>%
+    #   filter(mapply(paste0("(^|, )", tissue_column, "(, |$)"), 
+    #                 `enriched tissues`, FUN = function(x,y) grepl(x, y))) -> A
+    # A %>%
+    #   left_join(proteinlocalization.table %>%
+    #               mutate(location = case_when(predicted_secreted ~ "secreted",
+    #                                           predicted_membrane ~ "membrane",
+    #                                           predicted_intracellular ~ "intracellular",
+    #                                           T ~ "")),
+    #             by = "ensg_id") %>%
+    #   mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+    #   ggplot(aes(tissue_column, expression, fill = location, color = location))+
+    #   geom_boxplot(alpha = 0.5)+
+    #   simple_theme + 
+    #   coord_flip() +
+    #   scale_fill_manual(values = protein.localization.palette)+ 
+    #   scale_color_manual(values = protein.localization.palette)+ 
+    #   ggtitle(method) 
+    # 
+    # atlas_temp %>%
+    #   filter(method_column == method) %>% 
+    #   left_join(proteinlocalization.table %>%
+    #               mutate(location = case_when(predicted_secreted ~ "secreted",
+    #                                           predicted_membrane ~ "membrane",
+    #                                           predicted_intracellular ~ "intracellular",
+    #                                           T ~ "")),
+    #             by = "ensg_id") %>%
+    #             {.[order(.$expression),]} %>%
+    #   #filter(tissue_column == "pancreas") %>%
+    #   group_by(tissue_column, location) %>%
+    #   mutate(cum_expression = cumsum(expression)) %>%
+    #   ggplot(aes(cum_expression, expression, fill = location, color = location))+
+    #   #geom_boxplot(alpha = 0.5)+
+    #   geom_line()+
+    #   facet_wrap(. ~ tissue_column)+
+    #   simple_theme + 
+    #   coord_flip() +
+    #   scale_fill_manual(values = protein.localization.palette)+ 
+    #   scale_color_manual(values = protein.localization.palette)+ 
+    #   ggtitle(method) 
+    
+    atlas_temp %>%
+      filter(method_column == method) %>% 
+      
+      filter(expression > 0) %>%
+      
+      
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+                {.[order(.$expression),]} %>%
+      
+      group_by(tissue_column, location) %>%
+      mutate(cum_expression = cumsum(expression)) %>%
+      {ggplot(., aes(expression, cum_expression, fill = location, color = location))+
+          #geom_boxplot(alpha = 0.5)+
+          #geom_line()+
+          geom_area(alpha = 0.3, position = "identity")+
+          #geom_boxplot(aes(-100, cum_expression))+
+          # geom_bar(data = group_by(., tissue_column, location) %>% 
+          #            summarise(expression = sum(expression, na.rm = T)),
+          #          aes(-100, expression, fill = location),
+          #          stat = "identity", width = 1000)+
+          #geom_text(aes(label = display_name)) +
+          facet_wrap(. ~ tissue_column)+
+          simple_theme + 
+          #scale_x_continuous(limits = c(0,100))+
+          #scale_y_continuous(limits = c(0,10000))+
+          #coord_flip() +
+          scale_fill_manual(values = protein.localization.palette)+ 
+          scale_color_manual(values = protein.localization.palette)+ 
+          ggtitle(method)}
+    
+    ####
+    
+    
+    
+    atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+                {.[order(.$location, .$expression),]} %>% 
+      group_by(tissue_column) %>%
+      mutate(gene_order = 1:length(unique(ensg_id))) %>%
+      group_by(tissue_column, location) %>%
+      mutate(cum_expression = cumsum(expression)) %>%
+      #filter(location == "intracellular") %>%
+    {ggplot(., aes(gene_order, cum_expression, fill = location, color = location))+
+        #geom_line()+
+        #geom_ribbon()+
+        geom_area(alpha = 0.3, position = "identity")+
+        facet_wrap(. ~ tissue_column)+
+        simple_theme + 
+        scale_fill_manual(values = protein.localization.palette)+ 
+        scale_color_manual(values = protein.localization.palette)+ 
+        ggtitle(method)}
+    
+    ####
+    atlas_temp %>%
+      filter(method_column == method) %>% 
+      
+      filter(expression > 0) %>%
+      filter(tissue_column == "pancreas") %>%
+      
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+      mutate(display = expression > 5000,
+             display_label = expression > 15000,
+             label = ifelse(display_label, display_name, NA)) %>%
+             {rbind(.[.$display,] %>%
+                      select(tissue_column, location, expression, label) %>%
+                      mutate(stacked = "2"),
+                    .[!.$display,] %>%
+                      group_by(tissue_column, location) %>%
+                      summarise(expression = sum(expression, na.rm = T),
+                                label = paste0(length(ensg_id), " genes")) %>%
+                      ungroup() %>%
+                      mutate(stacked = "1"))} %>%
+      {.[order(.$stacked, .$expression),]} %>%
+      
+    {ggplot(., aes(tissue_column, expression, fill = location, color = location, label = label))+
+        geom_bar(stat = "identity", alpha = 0.5)+
+        geom_text(position = position_stack(vjust = 0.5),
+                  color = "black", 
+                  alpha = 1)+
+        simple_theme + 
+        scale_alpha_manual(values = c("1" = 1, "2" = 0.5))+
+        scale_fill_manual(values = protein.localization.palette)+ 
+        scale_color_manual(values = protein.localization.palette)+ 
+        ggtitle(method)}
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_TPM_bar_abundant_genes.pdf'),sep='/'), width=45, height=10)
+  }
+    
+}
+
+make_classification_pie_chart <- function(atlas.cat, outpath, prefix) {
+  atlas.cat %>%
+    group_by(elevated.category) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("tissue enriched",
+               "group enriched",
+               "tissue enhanced",
+               "low tissue specificity",
+               "not detected"),
+             .$elevated.category), ]} %>%
+    mutate(elevated.category = factor(elevated.category, levels = rev(c("tissue enriched",
+                                                                        "group enriched",
+                                                                        "tissue enhanced",
+                                                                        "low tissue specificity",
+                                                                        "not detected"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = elevated.category)) +
+    geom_bar(stat = "identity", show.legend = T, color = "white", size = 1)+
+    #geom_text(aes(x = 1.8, y = label_y, label = elevated.category))+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme_void() + 
+    theme(legend.key = element_rect(colour = NA),
+          legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.key.size= unit(0.5, "cm"),
+          legend.title = element_text(face="italic"))
+  ggsave(paste(outpath, paste0(prefix, '_elevated_pie1.pdf'),sep='/'), width=8, height=8)
+  
+  atlas.cat %>%
+    group_by(elevated.category) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("tissue enriched",
+               "group enriched",
+               "tissue enhanced",
+               "low tissue specificity",
+               "not detected"),
+             .$elevated.category), ]} %>%
+    mutate(elevated.category = factor(elevated.category, levels = rev(c("tissue enriched",
+                                                                        "group enriched",
+                                                                        "tissue enhanced",
+                                                                        "low tissue specificity",
+                                                                        "not detected"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = elevated.category)) +
+    geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+    geom_text(aes(x = 1.8, 
+                  y = label_y, 
+                  label = elevated.category),
+              size = 4)+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = elevated.cat.cols) + 
+    theme_void() 
+  ggsave(paste(outpath, paste0(prefix, '_elevated_pie2.pdf'),sep='/'), width=8, height=8)
+  
+  
+  ### Distribution
+  
+  atlas.cat %>%
+    group_by(express.category.2) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("expressed in single",
+               "expressed in some",
+               "expressed in many",
+               "expressed in all",
+               "not expressed"),
+             .$express.category.2), ]} %>%
+    filter(!is.na(number)) %>%
+    mutate(express.category.2 = factor(express.category.2, levels = rev(c("expressed in single",
+                                                                        "expressed in some",
+                                                                        "expressed in many",
+                                                                        "expressed in all",
+                                                                        "not expressed"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = express.category.2)) +
+    geom_bar(stat = "identity", show.legend = T, color = "white", size = 1)+
+    #geom_text(aes(x = 1.8, y = label_y, label = elevated.category))+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = expressed.cat.cols) + 
+    theme_void() + 
+    theme(legend.key = element_rect(colour = NA),
+          legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.key.size= unit(0.5, "cm"),
+          legend.title = element_text(face="italic"))
+  ggsave(paste(outpath, paste0(prefix, '_distribution_pie1.pdf'),sep='/'), width=8, height=8)
+  
+  atlas.cat %>%
+    group_by(express.category.2) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("expressed in single",
+               "expressed in some",
+               "expressed in many",
+               "expressed in all",
+               "not expressed"),
+             .$express.category.2), ]} %>%
+    filter(!is.na(number)) %>%
+    mutate(express.category.2 = factor(express.category.2, levels = rev(c("expressed in single",
+                                                                          "expressed in some",
+                                                                          "expressed in many",
+                                                                          "expressed in all",
+                                                                          "not expressed"))),
+           label_y = cumsum(number) - number / 2) %>%
+    ggplot(aes("", number, fill = express.category.2)) +
+    geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+    geom_text(aes(x = 1.8, 
+                  y = label_y, 
+                  label = express.category.2),
+              size = 4)+
+    geom_text(aes(x = 1.3, 
+                  y = label_y, 
+                  label = paste0(number, "\n", 
+                                 "(", round(100 * number / sum(number), digits = 1), "%)")), 
+              color = "black",
+              size = 4)+
+    coord_polar("y")+
+    scale_fill_manual(values = expressed.cat.cols) + 
+    theme_void() 
+  ggsave(paste(outpath, paste0(prefix, '_distribution_pie2.pdf'),sep='/'), width=8, height=8)
+}
