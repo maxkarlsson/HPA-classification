@@ -1,0 +1,37 @@
+tissue	content	content_l1
+amygdala	amygdala	Forebrain
+caudate	basal ganglia	Forebrain
+caudate putamen	basal ganglia	Forebrain
+putamen	basal ganglia	Forebrain
+septum	basal ganglia	Forebrain
+ventral forebrain	basal ganglia	Forebrain
+ventral pallidum	basal ganglia	Forebrain
+cerebellum	cerebellum	Cerebellum
+cingulate cortex	cerebral cortex	Forebrain
+insular cortex	cerebral cortex	Forebrain
+motor cortex	cerebral cortex	Forebrain
+occipital cortex	cerebral cortex	Forebrain
+prefrontal cortex	cerebral cortex	Forebrain
+retrosplenial cortex	cerebral cortex	Forebrain
+somatosensory cortex	cerebral cortex	Forebrain
+temporal cortex	cerebral cortex	Forebrain
+visual cortex	cerebral cortex	Forebrain
+corpus callosum	corpus callosum	Forebrain
+dorsal hippocampus 	hippocampal formation	Forebrain
+entorhinal cortex	hippocampal formation	Forebrain
+entrorhinal cortex	hippocampal formation	Forebrain
+hippocampal formation	hippocampal formation	Forebrain
+subiculum	hippocampal formation	Forebrain
+ventral hippocampus 	hippocampal formation	Forebrain
+hypothalamus	hypothalamus	Interbrain
+midbrain	midbrain	Midbrain
+periaqueductal gray	midbrain	Midbrain
+substantia nigra	midbrain	Midbrain
+olfactory bulb	olfactory region	Forebrain
+Medulla	pons and medulla	PonsMedulla
+pons	pons and medulla	PonsMedulla
+pons and medulla	pons and medulla	PonsMedulla
+dorsal spinal cord	spinal cord	Spinal cord
+spinal cord	spinal cord	Spinal cord
+ventral spinal cord	spinal cord	Spinal cord
+thalamus	thalamus	Interbrain

@@ -1,0 +1,13 @@
+content	content_l1	content_l2
+amygdala	Forebrain	Forebrain
+basal ganglia	Forebrain	Forebrain
+cerebral cortex	Forebrain	Forebrain
+corpus callosum	Forebrain	Forebrain
+hippocampal formation	Forebrain	Forebrain
+olfactory region	Forebrain	Forebrain
+cerebellum	Cerebellum	Hindbrain
+pons and medulla	PonsMedulla	Hindbrain
+hypothalamus	Interbrain	Interbrain
+thalamus	Interbrain	Interbrain
+midbrain	Midbrain	Midbrain
+spinal cord	Spinal cord	Spinal cord

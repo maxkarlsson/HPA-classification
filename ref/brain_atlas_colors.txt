@@ -1,0 +1,51 @@
+organ_name	color
+amygdala	#82B579
+basal ganglia	#53C2EA
+basal ganglia	#53C2EA
+basal ganglia	#53C2EA
+basal ganglia	#53C2EA
+basal ganglia	#53C2EA
+basal ganglia	#53C2EA
+cerebellum	#FDCA43
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+cerebral cortex	#53977F
+choroid plexus	#A8DFF4
+corpus callosum	#878786
+dura mater	#DD6A7E
+Eye	#FFEF78
+Eye	#FFEF78
+hippocampal formation	#B4CE52
+hippocampal formation	#B4CE52
+hippocampal formation	#B4CE52
+hippocampal formation	#B4CE52
+hippocampal formation	#B4CE52
+hippocampal formation	#B4CE52
+hypothalamus	#E6351D
+midbrain	#B67AB3
+midbrain	#B67AB3
+midbrain	#B67AB3
+olfactory region	#99D0C1
+pineal gland	#A96A59
+pitutiary	#6B548B
+pons and medulla	#EA5699
+pons and medulla	#EA5699
+pons and medulla	#EA5699
+retina	#F9F19A
+spinal cord	#008BCC
+spinal cord	#008BCC
+spinal cord	#008BCC
+thalamus	#EA9586
+Forebrain	#6F6F6E
+Interbrain	#d64c4c
+Midbrain	#775678
+PonsMedulla	#B1507B
+Spinal cord	#2a6794
+Cerebellum	#Ba9947
+Hindbrain	#947b39
