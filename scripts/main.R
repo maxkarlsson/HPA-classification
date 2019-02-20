@@ -656,6 +656,48 @@ plot.data %>%
 ggsave(paste(outpath,'total_detected_genes_bar.pdf',sep='/'), width=8, height=8)
 
 
+
+###
+plot.data <- 
+  all.atlas.max %>%
+  select(ensg_id, 
+         consensus_content_name, 
+         norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+  filter(!consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+  mutate(atlas = "single tissues") %>%
+  ungroup() %>%
+  rbind(all.atlas.max %>%
+          select(ensg_id, 
+                 consensus_content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+          filter(consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+          mutate(atlas = "multiple tissues") %>%
+          ungroup()) %>%
+  rbind(blood.atlas.max %>%
+          select(ensg_id, 
+                 consensus_content_name = content_name, 
+                 norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+          mutate(atlas = "single blood cells") %>%
+          ungroup()) %>% 
+  ungroup() %>%
+  rbind(select(cell.lines.atlas, 1:3) %>%
+          rename(consensus_content_name = celline_name) %>%
+          mutate(atlas = "cell line")) %>%
+  filter(norm_exp >= 1) %>%
+  group_by(consensus_content_name, atlas) %>%
+  summarise(n_detected_genes = length(unique(ensg_id))) %>% 
+  ungroup()
+
+plot.data %>%
+  mutate(atlas = factor(atlas, levels = c("single blood cells", "cell line", "single tissues", "multiple tissues"))) %>%
+  {ggplot(., aes(atlas, n_detected_genes, fill = atlas, color = atlas)) +
+      geom_boxplot(alpha = 0.2) + 
+      ggbeeswarm::geom_beeswarm() +
+      simple_theme + 
+      geom_text(data = subset(., atlas == "multiple tissues" | consensus_content_name == "testis"), 
+                aes(atlas, n_detected_genes, color = atlas, label = consensus_content_name), hjust = 1, nudge_x = -0.1)}
+ggsave(paste(outpath,'detected_genes_separate_boxplot2.pdf',sep='/'), width=8, height=8)
+
 # =========== *All altas =========== 
 
 
@@ -665,6 +707,27 @@ ggsave(paste(outpath,'total_detected_genes_bar.pdf',sep='/'), width=8, height=8)
 
 
 # =========== *Blood altas* =========== 
+plots <- c("",
+           # "spearman dendrogram",
+           # "tissue distribution",
+           # "PCA",
+           # "cluster",
+           # "elevated bar",
+           # "specificity distribution",
+           # "class chord",
+           # "group chord",
+           # "heatmaps",
+           # "swarm expression",
+           # "number detected bar",
+           # "NX fraction bar",
+           # "classification pie",
+           # "TPM NX example genes bar",
+           # "score plots",
+           "class comparison chord",
+           "class comparison chord",
+           "spearman dendrogram",
+           "blood class tissue expression")
+
 make_plots(atlas = blood.atlas, 
            atlas.max = blood.atlas.max, 
            atlas.cat = blood.atlas.category, 
@@ -673,7 +736,7 @@ make_plots(atlas = blood.atlas,
            content_column = "content_name", 
            content_hierarchy = blood_atlas_hierarchy, 
            content_colors = with(blood_atlas_colors, setNames(color, content)), 
-           plots = "all", 
+           plots = plots, 
            plot.atlas = "blood", 
            plot.order = blood_atlas_hierarchy %>%
              filter(!content %in% c("blood", "Total PBMCs")) %$% 

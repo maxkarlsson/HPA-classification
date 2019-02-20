@@ -117,7 +117,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                 prefix = prefix)
     
     make_expression_heatmaps(atlas.max.tb = atlas.max, 
-                             atlas.cat = all.atlas.category, 
+                             atlas.cat = atlas.cat, 
                              maxEx_column = maxEx_column, 
                              tissue_column = content_column, 
                              ensemblanno.table = ensemblanno.table,
@@ -128,7 +128,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                              prefix = prefix)
     
     make_expression_heatmaps(atlas.max.tb = atlas.max, 
-                             atlas.cat = all.atlas.category, 
+                             atlas.cat = atlas.cat, 
                              maxEx_column = maxEx_column, 
                              tissue_column = content_column, 
                              ensemblanno.table = ensemblanno.table,
@@ -141,50 +141,50 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     
     
     
-    make_heatmap_median_expression_levels(elevated.table = atlas.elevated.table,
-                                          all.atlas.max.tb = atlas.max, 
-                                          maxEx_column = maxEx_column,
-                                          tissue_column = content_column,
-                                          enrichment = c(3),
-                                          outpath = outpath,
-                                          prefix = paste(prefix, "group_enriched", sep = "_"))
+    # make_heatmap_median_expression_levels(elevated.table = atlas.elevated.table,
+    #                                       all.atlas.max.tb = atlas.max, 
+    #                                       maxEx_column = maxEx_column,
+    #                                       tissue_column = content_column,
+    #                                       enrichment = c(3),
+    #                                       outpath = outpath,
+    #                                       prefix = paste(prefix, "group_enriched", sep = "_"))
+    # 
+    # make_heatmap_median_expression_levels(elevated.table = atlas.elevated.table,
+    #                                       all.atlas.max.tb = atlas.max, 
+    #                                       maxEx_column = maxEx_column,
+    #                                       tissue_column = content_column,
+    #                                       enrichment = c(2, 3, 4),
+    #                                       outpath = outpath,
+    #                                       prefix = paste(prefix, "all_elevated", sep = "_"))
     
-    make_heatmap_median_expression_levels(elevated.table = atlas.elevated.table,
-                                          all.atlas.max.tb = atlas.max, 
-                                          maxEx_column = maxEx_column,
-                                          tissue_column = content_column,
-                                          enrichment = c(2, 3, 4),
-                                          outpath = outpath,
-                                          prefix = paste(prefix, "all_elevated", sep = "_"))
-    
-    make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
-                                   all.atlas.max.tb = atlas.max, 
-                                   maxEx_column = maxEx_column,
-                                   tissue_column = content_column,
-                                   enrichment = c(3),
-                                   outpath = outpath,
-                                   prefix = paste(prefix, "group_enriched", sep = "_"))
-    make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
-                                   all.atlas.max.tb = atlas.max, 
-                                   maxEx_column = maxEx_column,
-                                   tissue_column = content_column,
-                                   enrichment = c(2, 3, 4),
-                                   outpath = outpath,
-                                   prefix = paste(prefix, "all_elevated", sep = "_"))
-    make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
-                                   all.atlas.max.tb = atlas.max, 
-                                   maxEx_column = maxEx_column,
-                                   tissue_column = content_column,
-                                   enrichment = c(2),
-                                   outpath = outpath,
-                                   prefix = paste(prefix, "tissue_enriched", sep = "_"))
+    # make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
+    #                                all.atlas.max.tb = atlas.max, 
+    #                                maxEx_column = maxEx_column,
+    #                                tissue_column = content_column,
+    #                                enrichment = c(3),
+    #                                outpath = outpath,
+    #                                prefix = paste(prefix, "group_enriched", sep = "_"))
+    # make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
+    #                                all.atlas.max.tb = atlas.max, 
+    #                                maxEx_column = maxEx_column,
+    #                                tissue_column = content_column,
+    #                                enrichment = c(2, 3, 4),
+    #                                outpath = outpath,
+    #                                prefix = paste(prefix, "all_elevated", sep = "_"))
+    # make_heatmap_expression_levels(elevated.table = atlas.elevated.table,
+    #                                all.atlas.max.tb = atlas.max, 
+    #                                maxEx_column = maxEx_column,
+    #                                tissue_column = content_column,
+    #                                enrichment = c(2),
+    #                                outpath = outpath,
+    #                                prefix = paste(prefix, "tissue_enriched", sep = "_"))
   }
   
   ## ----- swarm plots ----
   ## swarm plot
   if("swarm expression" %in% plots | "all" %in% plots) {
     make_swarm_expression_plot(atlas.max = atlas.max, 
-                               atlas.cat = atlas.category, 
+                               atlas.cat = atlas.cat, 
                                maxEx_column = maxEx_column, 
                                tissue_column = content_column,
                                outpath = outpath,
@@ -205,7 +205,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   # Total elevated expression fraction
   if("NX fraction bar" %in% plots | "all" %in% plots) {
     make_elevated_NX_fraction_barplots(atlas.max = atlas.max, 
-                                       atlas.cat = atlas.category, 
+                                       atlas.cat = atlas.cat, 
                                        maxEx_column = maxEx_column,
                                        tissue_column = content_column,
                                        outpath = outpath, 
@@ -213,7 +213,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   }
   
   if("classification pie" %in% plots | "all" %in% plots) {
-    make_classification_pie_chart(atlas.cat = atlas.category, 
+    make_classification_pie_chart(atlas.cat = atlas.cat, 
                                   outpath = outpath, 
                                   prefix = prefix)
   }
@@ -234,7 +234,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   ## ----- elevated score plots ----
   if("score plots" %in% plots | "all" %in% plots) {
     make_score_expression_scatter(atlas.max.tb = atlas.max, 
-                                  atlas.cat = atlas.category, 
+                                  atlas.cat = atlas.cat, 
                                   maxEx_column = maxEx_column, 
                                   tissue_column = content_column, 
                                   ensemblanno.table = ensemblanno.table,
@@ -250,7 +250,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     
     if("class comparison chord" %in% plots | "all" %in% plots) {
       # Categories between blood and all atlas
-      make_class_comparison_chord(cat1 = atlas.category, 
+      make_class_comparison_chord(cat1 = atlas.cat, 
                                   cat2 = all.atlas.category,
                                   outpath = outpath, 
                                   prefix = prefix)
@@ -258,9 +258,9 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     
     if("class comparison chord" %in% plots | "all" %in% plots) {
       #Comparison of elevated genes to tissue atlas
-      make_elevated_organ_total_chord(cat1 = atlas.category, 
+      make_elevated_organ_total_chord(cat1 = atlas.cat, 
                                       cat2 = all.atlas.category, 
-                                      grid.col = content_colors, 
+                                      grid.col = c(content_colors, tissue.colors), 
                                       elevated_cats = c(2,3,4), 
                                       direction = 1, 
                                       cat1_name = subatlas_unit, 
@@ -269,12 +269,12 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                       prefix = paste(prefix, "_tissue_elevated", sep = "_"))
       
       
-      make_elevated_organ_total_chord(cat1 = atlas.category, 
-                                      cat2 = atlas.category, 
-                                      grid.col = content_colors, 
+      make_elevated_organ_total_chord(cat1 = atlas.cat, 
+                                      cat2 = all.atlas.category, 
+                                      grid.col = c(content_colors, tissue.colors), 
                                       elevated_cats = c(2), 
                                       direction = 1, 
-                                      cat1_name = "celltypes", 
+                                      cat1_name = subatlas_unit, 
                                       cat2_name = "tissues",
                                       outpath = outpath, 
                                       prefix = paste(prefix, "_tissue_enriched", sep = "_"))
@@ -332,7 +332,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                prefix = "blood atlas cat on all atlas range scaled")
       
       make_immunodeficiency_expression_heatmaps(atlas.max.tb = atlas.max,
-                                                atlas.cat = atlas.category,
+                                                atlas.cat = atlas.cat,
                                                 immunodeficiency.table = immunodeficiency.table,
                                                 maxEx_column = maxEx_column,
                                                 tissue_column = content_column,
@@ -345,7 +345,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                                 prefix = prefix)
       
       make_immunodeficiency_expression_heatmaps(atlas.max.tb = atlas.max,
-                                                atlas.cat = atlas.category,
+                                                atlas.cat = atlas.cat,
                                                 immunodeficiency.table = immunodeficiency.table,
                                                 maxEx_column = maxEx_column,
                                                 tissue_column = content_column,
@@ -2474,7 +2474,7 @@ make_expression_heatmaps <- function(atlas.max.tb, atlas.cat, maxEx_column, tiss
   # Tissue enriched genes
   plot.data <- 
     genes %>%
-    filter(elevated.category == "tissue enriched")
+    filter(elevated.category == "tissue enriched") 
   
   ## 1
   plot.data %$%
@@ -2497,7 +2497,7 @@ make_expression_heatmaps <- function(atlas.max.tb, atlas.cat, maxEx_column, tiss
                  under_lim_tile_color = "white", 
                  under_lim = log10(1 + 1),
                  xdendrogram = F, 
-                 xaxis_order = unique(ensg_id[order(`enriched tissues`)]))+
+                 xaxis_order = unique(from[order(`enriched tissues`)]))+
     scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
     theme(axis.text.x = element_blank(), axis.title.y = element_blank()) + 
     ggtitle(paste0("Tissue enriched genes (n = ", length(unique(from)), ")")) + 
@@ -3191,6 +3191,156 @@ make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, ou
       ggtitle(method)
     
     ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location_hierarchy.pdf'),sep='/'), width=15, height=10)
+    
+    
+    # Localization hierarchy
+    # atlas_temp %>%
+    #   filter(method_column == method) %>% 
+    #   left_join(atlas.cat %>%
+    #               filter(elevated.category %in% c("tissue enhanced", "group enriched", "tissue enriched")), by = "ensg_id") %>%
+    #   # Remove genes that are not elevated or expressed
+    #   filter(!is.na(elevated.category) & expression > 0) %>%
+    #   filter(mapply(paste0("(^|, )", tissue_column, "(, |$)"), 
+    #                 `enriched tissues`, FUN = function(x,y) grepl(x, y))) -> A
+    # A %>%
+    #   left_join(proteinlocalization.table %>%
+    #               mutate(location = case_when(predicted_secreted ~ "secreted",
+    #                                           predicted_membrane ~ "membrane",
+    #                                           predicted_intracellular ~ "intracellular",
+    #                                           T ~ "")),
+    #             by = "ensg_id") %>%
+    #   mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
+    #   ggplot(aes(tissue_column, expression, fill = location, color = location))+
+    #   geom_boxplot(alpha = 0.5)+
+    #   simple_theme + 
+    #   coord_flip() +
+    #   scale_fill_manual(values = protein.localization.palette)+ 
+    #   scale_color_manual(values = protein.localization.palette)+ 
+    #   ggtitle(method) 
+    # 
+    # atlas_temp %>%
+    #   filter(method_column == method) %>% 
+    #   left_join(proteinlocalization.table %>%
+    #               mutate(location = case_when(predicted_secreted ~ "secreted",
+    #                                           predicted_membrane ~ "membrane",
+    #                                           predicted_intracellular ~ "intracellular",
+    #                                           T ~ "")),
+    #             by = "ensg_id") %>%
+    #             {.[order(.$expression),]} %>%
+    #   #filter(tissue_column == "pancreas") %>%
+    #   group_by(tissue_column, location) %>%
+    #   mutate(cum_expression = cumsum(expression)) %>%
+    #   ggplot(aes(cum_expression, expression, fill = location, color = location))+
+    #   #geom_boxplot(alpha = 0.5)+
+    #   geom_line()+
+    #   facet_wrap(. ~ tissue_column)+
+    #   simple_theme + 
+    #   coord_flip() +
+    #   scale_fill_manual(values = protein.localization.palette)+ 
+    #   scale_color_manual(values = protein.localization.palette)+ 
+    #   ggtitle(method) 
+    
+    atlas_temp %>%
+      filter(method_column == method) %>% 
+      
+      filter(expression > 0) %>%
+      
+      
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+                {.[order(.$expression),]} %>%
+      
+      group_by(tissue_column, location) %>%
+      mutate(cum_expression = cumsum(expression)) %>%
+      {ggplot(., aes(expression, cum_expression, fill = location, color = location))+
+          #geom_boxplot(alpha = 0.5)+
+          #geom_line()+
+          geom_area(alpha = 0.3, position = "identity")+
+          #geom_boxplot(aes(-100, cum_expression))+
+          # geom_bar(data = group_by(., tissue_column, location) %>% 
+          #            summarise(expression = sum(expression, na.rm = T)),
+          #          aes(-100, expression, fill = location),
+          #          stat = "identity", width = 1000)+
+          #geom_text(aes(label = display_name)) +
+          facet_wrap(. ~ tissue_column)+
+          simple_theme + 
+          #scale_x_continuous(limits = c(0,100))+
+          #scale_y_continuous(limits = c(0,10000))+
+          #coord_flip() +
+          scale_fill_manual(values = protein.localization.palette)+ 
+          scale_color_manual(values = protein.localization.palette)+ 
+          ggtitle(method)}
+    
+    ####
+    
+    
+    
+    atlas_temp %>%
+      filter(method_column == method) %>% 
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+                {.[order(.$location, .$expression),]} %>% 
+      group_by(tissue_column) %>%
+      mutate(gene_order = 1:length(unique(ensg_id))) %>%
+      group_by(tissue_column, location) %>%
+      mutate(cum_expression = cumsum(expression)) %>%
+      #filter(location == "intracellular") %>%
+    {ggplot(., aes(gene_order, cum_expression, fill = location, color = location))+
+        #geom_line()+
+        #geom_ribbon()+
+        geom_area(alpha = 0.3, position = "identity")+
+        facet_wrap(. ~ tissue_column)+
+        simple_theme + 
+        scale_fill_manual(values = protein.localization.palette)+ 
+        scale_color_manual(values = protein.localization.palette)+ 
+        ggtitle(method)}
+    
+    ####
+    atlas_temp %>%
+      filter(method_column == method) %>% 
+      
+      filter(expression > 0) %>%
+      filter(tissue_column == "pancreas") %>%
+      
+      left_join(proteinlocalization.table %>%
+                  mutate(location = case_when(predicted_secreted ~ "secreted",
+                                              predicted_membrane ~ "membrane",
+                                              predicted_intracellular ~ "intracellular",
+                                              T ~ "")),
+                by = "ensg_id") %>%
+      mutate(display = expression > 5000,
+             display_label = expression > 15000,
+             label = ifelse(display_label, display_name, NA)) %>%
+             {rbind(.[.$display,] %>%
+                      select(tissue_column, location, expression, label) %>%
+                      mutate(stacked = "2"),
+                    .[!.$display,] %>%
+                      group_by(tissue_column, location) %>%
+                      summarise(expression = sum(expression, na.rm = T),
+                                label = paste0(length(ensg_id), " genes")) %>%
+                      ungroup() %>%
+                      mutate(stacked = "1"))} %>%
+      {.[order(.$stacked, .$expression),]} %>%
+      
+    {ggplot(., aes(tissue_column, expression, fill = location, color = location, label = label))+
+        geom_bar(stat = "identity", alpha = 0.5)+
+        geom_text(position = position_stack(vjust = 0.5),
+                  color = "black", 
+                  alpha = 1)+
+        simple_theme + 
+        scale_alpha_manual(values = c("1" = 1, "2" = 0.5))+
+        scale_fill_manual(values = protein.localization.palette)+ 
+        scale_color_manual(values = protein.localization.palette)+ 
+        ggtitle(method)}
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_TPM_bar_abundant_genes.pdf'),sep='/'), width=45, height=10)
   }
     
 }
