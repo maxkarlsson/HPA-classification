@@ -1,0 +1,38 @@
+l	l1	colors
+adipose tissue	Adipose	#A7DACD
+gallbladder	Bladders	#D1CBE5
+urinary bladder	Bladders	#D1CBE5
+blood	Blood	#b30000
+bone marrow	Bone marrow	#A1A8AA
+Brain	Brain	#6BA792
+Adrenal gland	Endocrine glands	#7F6A9C
+Parathyroid gland	Endocrine glands	#7F6A9C
+Thyroid gland	Endocrine glands	#7F6A9C
+breast	Female tissues	#F8BDD7
+cervix, uterine	Female tissues	#F8BDD7
+endometrium	Female tissues	#F8BDD7
+fallopian tube	Female tissues	#F8BDD7
+ovary	Female tissues	#F8BDD7
+placenta	Female tissues	#F8BDD7
+vagina	Female tissues	#F8BDD7
+intestine	Gastrointestinal tract	#1280C4
+stomach	Gastrointestinal tract	#1280C4
+kidney	Kidney	#F9A266
+liver	Liver	#D1CBE5
+lung	Lung	#FFD480
+lymphoid system	Lymphoid tissue	#A1A8AA
+ductus deferens	Male tissues	#95D4F5
+epididymis	Male tissues	#95D4F5
+prostate	Male tissues	#95D4F5
+seminal vesicle	Male tissues	#95D4F5
+testis	Male tissues	#95D4F5
+esophagus	Mouth	#FBDAD9
+salivary gland	Mouth	#FBDAD9
+tongue	Mouth	#FBDAD9
+heart muscle	Muscle tissues	#DE6C7D
+Skeletal muscle	Muscle tissues	#DE6C7D
+smooth muscle	Muscle tissues	#DE6C7D
+pancreas	Pancreas	#96C08E
+Pituitary gland	Pituitary gland	#6BA792
+Retina	Retina	#FFEF78
+skin	Skin	#FCCAB3
