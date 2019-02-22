@@ -189,6 +189,23 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                tissue_column = content_column,
                                outpath = outpath,
                                prefix = prefix)
+    
+    make_swarm_expression_plot(atlas.max = atlas.max, 
+                               atlas.cat = atlas.cat, 
+                               maxEx_column = maxEx_column, 
+                               tissue_column = content_column, 
+                               func = swarm_plot_points,
+                               outpath = outpath,
+                               prefix = paste0(prefix, "_points"))
+    
+    make_swarm_expression_plot(atlas.max = atlas.max, 
+                               atlas.cat = atlas.cat, 
+                               maxEx_column = maxEx_column, 
+                               tissue_column = content_column, 
+                               func = swarm_plot_points_top5,
+                               outpath = outpath,
+                               prefix = paste0(prefix, "_points_top5"))
+    
   }
   
   
@@ -243,7 +260,21 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                   prefix = prefix)
   }
   
-  
+  ## ----- Sum TPM and similar plots -----
+  if("sum TPM" %in% plots | "all" %in% plots) {
+    make_sum_TPM_plot(atlas = atlas, 
+                      atlas.cat = atlas.cat, 
+                      tissue_column = tissue_column, 
+                      method_column = method_column, 
+                      outpath = outpath, 
+                      prefix = prefix)
+    make_sum_TPM_gene_bar_plot(atlas = atlas, 
+                               atlas.cat = atlas.cat, 
+                               tissue_column = tissue_column, 
+                               method_column = method_column, 
+                               outpath = outpath, 
+                               prefix = prefix)
+  }
   
   # =========== *Subatlas*    ===========
   if("brain" %in% plot.atlas | "blood" %in% plot.atlas) {
@@ -256,7 +287,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                   prefix = prefix)
     }
     
-    if("class comparison chord" %in% plots | "all" %in% plots) {
+    if("class organ chord" %in% plots | "all" %in% plots) {
       #Comparison of elevated genes to tissue atlas
       make_elevated_organ_total_chord(cat1 = atlas.cat, 
                                       cat2 = all.atlas.category, 
@@ -1197,8 +1228,9 @@ swarm_plot <- function(plot.df, color_palette, color_column, legend_name, y_colu
     rename(y = y_column) %>%
     {ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
     #geom_text_repel(direction = "x", segment.color = NA)+
-    geom_text(data = subset(., eval(parse(text = color_column)) != ""), fontface = "bold")+
+        
     ggbeeswarm::geom_beeswarm(data = subset(., eval(parse(text = color_column)) == ""), color = "black") + 
+    geom_text(data = subset(., eval(parse(text = color_column)) != ""), fontface = "bold")+
         
     scale_color_manual(values = color_palette, name = legend_name)+
     scale_y_log10()+
@@ -1212,7 +1244,61 @@ swarm_plot <- function(plot.df, color_palette, color_column, legend_name, y_colu
           axis.line.x = element_line())}
 }
 
-make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, outpath, prefix) {
+swarm_plot_points <- function(plot.df, color_palette, color_column, legend_name, y_column) {
+  plot.df %>%
+    rename(y = y_column) %>%
+    {ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
+        ggbeeswarm::geom_beeswarm(cex = 0.5)+
+        ggrepel::geom_text_repel(data = {
+          
+          genes <- 
+            group_by(., Grouping) %>%
+            mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
+            filter(rank <= 5) %$%
+            display_name
+          
+          filter(., display_name %in% genes)},
+          
+                                 fontface = "bold")+
+        
+        scale_color_manual(values = color_palette, name = legend_name)+
+        scale_y_log10()+
+        ylab(y_column)+
+        scale_size_continuous(guide = F)+
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line(),
+              axis.line.x = element_line())}
+}
+
+
+swarm_plot_points_top5 <- function(plot.df, color_palette, color_column, legend_name, y_column) {
+  plot.df %>%
+    rename(y = y_column) %>%
+    {ggplot(., aes(Grouping, y, label = display_name, color = eval(parse(text = color_column)))) +
+        ggbeeswarm::geom_beeswarm(cex = 0.5)+
+        ggrepel::geom_text_repel(data = {
+          
+          group_by(., Grouping) %>%
+            mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
+            filter(rank <= 5) },
+          
+          fontface = "bold")+
+        
+        scale_color_manual(values = color_palette, name = legend_name)+
+        scale_y_log10()+
+        ylab(y_column)+
+        scale_size_continuous(guide = F)+
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line(),
+              axis.line.x = element_line())}
+}
+make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissue_column, plot.order = NULL, func = swarm_plot, outpath, prefix) {
   plot.data.unfilt <- 
     atlas.max %>%
     ungroup() %>%
@@ -1238,7 +1324,11 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
                                                            predicted_localization_class == "intracellular and membrane isoforms" ~ "membrane",
                                                            predicted_localization_class == "intracellular and secreted isoforms" ~ "secreted",
                                                            predicted_localization_class == "intracellular, membrane, secreted isoforms" ~ "membrane and secreted isoforms",
-                                                           T ~ predicted_localization_class))
+                                                           T ~ predicted_localization_class),
+           predicted_localization_class_simple = case_when(predicted_secreted ~ "secreted",
+                                                           predicted_membrane ~ "membrane",
+                                                           predicted_intracellular ~ "intracellular",
+                                                           T ~ ""))
   
   
   #---- Elevated genes
@@ -1254,14 +1344,14 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   # --All elevated genes
   # Expression
   plot.data %>%
-    swarm_plot(color_palette = elevated.cat.cols, 
+    func(color_palette = elevated.cat.cols, 
                color_column = "elevated.category",
                legend_name = "Elevated category", 
                y_column = "expression")
   ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
   
   plot.data %>%
-    swarm_plot(color_palette = protein.localization.palette, 
+    func(color_palette = protein.localization.palette, 
                color_column = "predicted_localization_class_simple",
                legend_name = "Protein location", 
                y_column = "expression")
@@ -1271,7 +1361,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   plot.data %>%
     filter(score != "") %>%
     mutate(score = as.numeric(score)) %>%
-    swarm_plot(color_palette = elevated.cat.cols, 
+    func(color_palette = elevated.cat.cols, 
                       color_column = "elevated.category",
                       legend_name = "Elevated category", 
                       y_column = "score")
@@ -1280,7 +1370,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   plot.data %>%
     filter(score != "") %>%
     mutate(score = as.numeric(score)) %>%
-    swarm_plot(color_palette = protein.localization.palette, 
+    func(color_palette = protein.localization.palette, 
                       color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "score")
@@ -1296,7 +1386,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   
   # Expression
   plot.data %>%
-    swarm_plot(color_palette = protein.localization.palette, 
+    func(color_palette = protein.localization.palette, 
                       color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "expression")
@@ -1306,7 +1396,7 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   plot.data %>%
     filter(score != "") %>%
     mutate(score = as.numeric(score)) %>%
-    swarm_plot(color_palette = protein.localization.palette, 
+    func(color_palette = protein.localization.palette, 
                       color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "score")
@@ -1323,14 +1413,14 @@ make_swarm_expression_plot <- function(atlas.max, atlas.cat, maxEx_column, tissu
   
   # Expression
   plot.data %>%
-    swarm_plot(color_palette = elevated.cat.cols, 
+    func(color_palette = elevated.cat.cols, 
                       color_column = "elevated.category",
                       legend_name = "Elevated category", 
                       y_column = "expression")
   ggsave(paste(outpath, paste0(prefix, '_high_top_all_genes_jitter_circle.pdf'),sep='/'), width=15, height=10)
   
   plot.data %>%
-    swarm_plot(color_palette = protein.localization.palette, 
+    func(color_palette = protein.localization.palette, 
                       color_column = "predicted_localization_class_simple",
                       legend_name = "Protein location", 
                       y_column = "expression")
@@ -2755,9 +2845,21 @@ make_immunodeficiency_expression_heatmaps <- function(atlas.max.tb, atlas.cat, i
                 under_lim = log10(1 + 1))+
       scale_fill_gradientn(colors = c("white", "yellow", "orangered", "#800026")) + 
       theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
-      ggtitle(paste0("All elevated genes (n = ", length(unique(from)), ")")) + 
+      ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
       xlab("genes")}
   ggsave(paste(outpath, paste0(prefix, '__all_genes_expression_dendroheatmap.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = range_scale_x, 
+                under_lim_tile_color = "black", 
+                under_lim = log10(1 + 1))+
+      scale_fill_gradientn(colors = viridis::magma(4)) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, paste0(prefix, '__all_genes_expression_dendroheatmap_magma.pdf'),sep='/'), width=15, height=10)
   
   ## categories
   plot.data %$%
@@ -3193,91 +3295,37 @@ make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, ou
     ggsave(paste(outpath, paste0(prefix, "_", method, '_total_TPM_location_hierarchy.pdf'),sep='/'), width=15, height=10)
     
     
-    # Localization hierarchy
-    # atlas_temp %>%
-    #   filter(method_column == method) %>% 
-    #   left_join(atlas.cat %>%
-    #               filter(elevated.category %in% c("tissue enhanced", "group enriched", "tissue enriched")), by = "ensg_id") %>%
-    #   # Remove genes that are not elevated or expressed
-    #   filter(!is.na(elevated.category) & expression > 0) %>%
-    #   filter(mapply(paste0("(^|, )", tissue_column, "(, |$)"), 
-    #                 `enriched tissues`, FUN = function(x,y) grepl(x, y))) -> A
-    # A %>%
-    #   left_join(proteinlocalization.table %>%
-    #               mutate(location = case_when(predicted_secreted ~ "secreted",
-    #                                           predicted_membrane ~ "membrane",
-    #                                           predicted_intracellular ~ "intracellular",
-    #                                           T ~ "")),
-    #             by = "ensg_id") %>%
-    #   mutate(tissue_column = factor(tissue_column, levels = plot.data_order)) %>%
-    #   ggplot(aes(tissue_column, expression, fill = location, color = location))+
-    #   geom_boxplot(alpha = 0.5)+
-    #   simple_theme + 
-    #   coord_flip() +
-    #   scale_fill_manual(values = protein.localization.palette)+ 
-    #   scale_color_manual(values = protein.localization.palette)+ 
-    #   ggtitle(method) 
-    # 
-    # atlas_temp %>%
-    #   filter(method_column == method) %>% 
-    #   left_join(proteinlocalization.table %>%
-    #               mutate(location = case_when(predicted_secreted ~ "secreted",
-    #                                           predicted_membrane ~ "membrane",
-    #                                           predicted_intracellular ~ "intracellular",
-    #                                           T ~ "")),
-    #             by = "ensg_id") %>%
-    #             {.[order(.$expression),]} %>%
-    #   #filter(tissue_column == "pancreas") %>%
-    #   group_by(tissue_column, location) %>%
-    #   mutate(cum_expression = cumsum(expression)) %>%
-    #   ggplot(aes(cum_expression, expression, fill = location, color = location))+
-    #   #geom_boxplot(alpha = 0.5)+
-    #   geom_line()+
-    #   facet_wrap(. ~ tissue_column)+
-    #   simple_theme + 
-    #   coord_flip() +
-    #   scale_fill_manual(values = protein.localization.palette)+ 
-    #   scale_color_manual(values = protein.localization.palette)+ 
-    #   ggtitle(method) 
+  }
     
-    atlas_temp %>%
+}
+####
+
+make_sum_TPM_gene_bar_plot <- function(atlas, atlas.cat, tissue_column, method_column, outpath, prefix) {
+  atlas_temp <- 
+    atlas %>%
+    rename(method_column = method_column, 
+           tissue_column = tissue_column) %>%
+    left_join(group_by(., method_column, tissue) %>%
+                summarise(total_tpm = sum(expression, na.rm = T)),
+              by = c("method_column", "tissue")) %>%
+    mutate(expression = expression/(total_tpm / 1e6))
+  
+  for(method in unique(atlas_temp$method_column)) {
+    plot.data_order <- 
+      atlas_temp %>%
       filter(method_column == method) %>% 
-      
-      filter(expression > 0) %>%
-      
-      
       left_join(proteinlocalization.table %>%
                   mutate(location = case_when(predicted_secreted ~ "secreted",
                                               predicted_membrane ~ "membrane",
                                               predicted_intracellular ~ "intracellular",
                                               T ~ "")),
                 by = "ensg_id") %>%
-                {.[order(.$expression),]} %>%
-      
       group_by(tissue_column, location) %>%
-      mutate(cum_expression = cumsum(expression)) %>%
-      {ggplot(., aes(expression, cum_expression, fill = location, color = location))+
-          #geom_boxplot(alpha = 0.5)+
-          #geom_line()+
-          geom_area(alpha = 0.3, position = "identity")+
-          #geom_boxplot(aes(-100, cum_expression))+
-          # geom_bar(data = group_by(., tissue_column, location) %>% 
-          #            summarise(expression = sum(expression, na.rm = T)),
-          #          aes(-100, expression, fill = location),
-          #          stat = "identity", width = 1000)+
-          #geom_text(aes(label = display_name)) +
-          facet_wrap(. ~ tissue_column)+
-          simple_theme + 
-          #scale_x_continuous(limits = c(0,100))+
-          #scale_y_continuous(limits = c(0,10000))+
-          #coord_flip() +
-          scale_fill_manual(values = protein.localization.palette)+ 
-          scale_color_manual(values = protein.localization.palette)+ 
-          ggtitle(method)}
-    
-    ####
-    
-    
+      summarise(sum_TPM = sum(expression, na.rm = T)) %>%
+      filter(location == "secreted") %>%
+      group_by(tissue_column) %>%
+      summarise(sum_TPM = sum(sum_TPM)) %$% 
+      tissue_column[order(sum_TPM)]
     
     atlas_temp %>%
       filter(method_column == method) %>% 
@@ -3293,22 +3341,22 @@ make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, ou
       group_by(tissue_column, location) %>%
       mutate(cum_expression = cumsum(expression)) %>%
       #filter(location == "intracellular") %>%
-    {ggplot(., aes(gene_order, cum_expression, fill = location, color = location))+
-        #geom_line()+
-        #geom_ribbon()+
-        geom_area(alpha = 0.3, position = "identity")+
-        facet_wrap(. ~ tissue_column)+
-        simple_theme + 
-        scale_fill_manual(values = protein.localization.palette)+ 
-        scale_color_manual(values = protein.localization.palette)+ 
-        ggtitle(method)}
+      {ggplot(., aes(gene_order, cum_expression, fill = location, color = location))+
+          #geom_line()+
+          #geom_ribbon()+
+          geom_area(alpha = 0.3, position = "identity")+
+          facet_wrap(. ~ tissue_column)+
+          simple_theme + 
+          scale_fill_manual(values = protein.localization.palette)+ 
+          scale_color_manual(values = protein.localization.palette)+ 
+          ggtitle(method)}
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_TPM_location_cumsum_flagplot.pdf'),sep='/'), width=15, height=10)
     
     ####
     atlas_temp %>%
       filter(method_column == method) %>% 
       
-      filter(expression > 0) %>%
-      filter(tissue_column == "pancreas") %>%
+      #filter(tissue_column == "pancreas") %>%
       
       left_join(proteinlocalization.table %>%
                   mutate(location = case_when(predicted_secreted ~ "secreted",
@@ -3317,34 +3365,53 @@ make_sum_TPM_plot <- function(atlas, atlas.cat, tissue_column, method_column, ou
                                               T ~ "")),
                 by = "ensg_id") %>%
       mutate(display = expression > 5000,
-             display_label = expression > 15000,
+             display_label = expression > 10000,
              label = ifelse(display_label, display_name, NA)) %>%
              {rbind(.[.$display,] %>%
                       select(tissue_column, location, expression, label) %>%
-                      mutate(stacked = "2"),
+                      mutate(stacked = "1"),
                     .[!.$display,] %>%
                       group_by(tissue_column, location) %>%
                       summarise(expression = sum(expression, na.rm = T),
-                                label = paste0(length(ensg_id), " genes")) %>%
+                                label = paste0("n = ", length(ensg_id))) %>%
                       ungroup() %>%
-                      mutate(stacked = "1"))} %>%
-      {.[order(.$stacked, .$expression),]} %>%
-      
-    {ggplot(., aes(tissue_column, expression, fill = location, color = location, label = label))+
-        geom_bar(stat = "identity", alpha = 0.5)+
-        geom_text(position = position_stack(vjust = 0.5),
-                  color = "black", 
-                  alpha = 1)+
-        simple_theme + 
-        scale_alpha_manual(values = c("1" = 1, "2" = 0.5))+
-        scale_fill_manual(values = protein.localization.palette)+ 
-        scale_color_manual(values = protein.localization.palette)+ 
-        ggtitle(method)}
-    ggsave(paste(outpath, paste0(prefix, "_", method, '_TPM_bar_abundant_genes.pdf'),sep='/'), width=45, height=10)
+                      mutate(stacked = "2"))} %>%
+      mutate(label_size = ifelse(expression > 50000, 50000, expression)) %>%
+                      {.[order(.$stacked, .$expression),]} %>%
+      mutate(label = factor(label, levels = unique(label[order(location, stacked)])), 
+             tissue_column = factor(tissue_column, levels = rev(plot.data_order))) %>%
+             {ggplot(., aes(tissue_column, expression, fill = paste(location, stacked), color = paste(location, stacked)))+
+                 geom_bar(stat = "identity", color = "white")+
+                 geom_text(aes(label = label, size = label_size),
+                           position = position_stack(vjust = 0.5), color = "white", fontface = "bold")+
+                 simple_theme + 
+                 
+                 scale_size_continuous(range = c(0.25, 4))+
+                 scale_fill_manual(values = c(setNames(protein.localization.palette,
+                                                       # sapply(protein.localization.palette, 
+                                                       #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+                                                       paste(names(protein.localization.palette),
+                                                             "2")), 
+                                              setNames(sapply(protein.localization.palette, 
+                                                              FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+                                                       paste(names(protein.localization.palette),
+                                                             "1"))))+ 
+                 # scale_color_manual(values = c(setNames(protein.localization.palette,
+                 #                                        paste(names(protein.localization.palette),
+                 #                                              "1")), 
+                 #                               setNames(sapply(protein.localization.palette, 
+                 #                                               FUN = function(x) colorRampPalette(c(x, "white"))(3)[2]),
+                 #                                        paste(names(protein.localization.palette),
+                 #                                              "2"))))+ 
+                 
+                 ggtitle(method)}
+    ggsave(paste(outpath, paste0(prefix, "_", method, '_TPM_bar_abundant_genes.pdf'),sep='/'), width=40, height=10)
   }
-    
+  
 }
 
+
+####
 make_classification_pie_chart <- function(atlas.cat, outpath, prefix) {
   atlas.cat %>%
     group_by(elevated.category) %>%

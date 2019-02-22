@@ -723,9 +723,10 @@ plots <- c("",
            # "classification pie",
            # "TPM NX example genes bar",
            # "score plots",
-           "class comparison chord",
-           "class comparison chord",
-           "spearman dendrogram",
+           "sum TPM",
+           # "class comparison chord",
+           # "class comparison chord",
+           # "spearman dendrogram",
            "blood class tissue expression")
 
 make_plots(atlas = blood.atlas, 
