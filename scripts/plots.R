@@ -5,7 +5,7 @@ library('ClassDiscovery')
 library('gplots')
 
 #####
-make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, content_hierarchy = NULL, 
+make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, consensus_content_column, content_hierarchy = NULL, 
                        content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
                        subatlas_unit = "celltype",
                        outpath, prefix) {
@@ -119,7 +119,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_expression_heatmaps(atlas.max.tb = atlas.max, 
                              atlas.cat = atlas.cat, 
                              maxEx_column = maxEx_column, 
-                             tissue_column = content_column, 
+                             tissue_column = consensus_content_column, 
                              ensemblanno.table = ensemblanno.table,
                              proteinclass.table = proteinclass.table, 
                              proteinclass.table_ensg_id_column = "rna.genes", 
@@ -130,7 +130,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_expression_heatmaps(atlas.max.tb = atlas.max, 
                              atlas.cat = atlas.cat, 
                              maxEx_column = maxEx_column, 
-                             tissue_column = content_column, 
+                             tissue_column = consensus_content_column, 
                              ensemblanno.table = ensemblanno.table,
                              proteinclass.table = proteinclass.table, 
                              proteinclass.table_ensg_id_column = "rna.genes", 
@@ -186,14 +186,14 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_swarm_expression_plot(atlas.max = atlas.max, 
                                atlas.cat = atlas.cat, 
                                maxEx_column = maxEx_column, 
-                               tissue_column = content_column,
+                               tissue_column = consensus_content_column,
                                outpath = outpath,
                                prefix = prefix)
     
     make_swarm_expression_plot(atlas.max = atlas.max, 
                                atlas.cat = atlas.cat, 
                                maxEx_column = maxEx_column, 
-                               tissue_column = content_column, 
+                               tissue_column = consensus_content_column, 
                                func = swarm_plot_points,
                                outpath = outpath,
                                prefix = paste0(prefix, "_points"))
@@ -201,7 +201,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_swarm_expression_plot(atlas.max = atlas.max, 
                                atlas.cat = atlas.cat, 
                                maxEx_column = maxEx_column, 
-                               tissue_column = content_column, 
+                               tissue_column = consensus_content_column, 
                                func = swarm_plot_points_top5,
                                outpath = outpath,
                                prefix = paste0(prefix, "_points_top5"))
@@ -214,7 +214,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   if("number detected bar" %in% plots | "all" %in% plots) {
     make_number_detected_genes_barplot(all.atlas.max.tb = atlas.max, 
                                        maxEx_column = maxEx_column,
-                                       tissue_column = content_column,
+                                       tissue_column = consensus_content_column,
                                        outpath = outpath,
                                        prefix = prefix)
   }
@@ -224,7 +224,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_elevated_NX_fraction_barplots(atlas.max = atlas.max, 
                                        atlas.cat = atlas.cat, 
                                        maxEx_column = maxEx_column,
-                                       tissue_column = content_column,
+                                       tissue_column = consensus_content_column,
                                        outpath = outpath, 
                                        prefix = prefix)
   }
@@ -244,7 +244,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
       make_gene_expression_barplot(maxEx_columns = c("Raw" = "expression_maxEx", 
                                                      "TMM" = "dstmm.zero.expression_maxEx", 
                                                      "TMM + Pareto" = "gene_dstmm.zero.impute.expression_maxEx"),
-                                   content_column = content_column, 
+                                   content_column = consensus_content_column, 
                                    content_color = content_colors)
   }
   
@@ -253,7 +253,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     make_score_expression_scatter(atlas.max.tb = atlas.max, 
                                   atlas.cat = atlas.cat, 
                                   maxEx_column = maxEx_column, 
-                                  tissue_column = content_column, 
+                                  tissue_column = consensus_content_column, 
                                   ensemblanno.table = ensemblanno.table,
                                   plot.order = plot.order,
                                   outpath = outpath, 
