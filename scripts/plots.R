@@ -4,6 +4,179 @@ library('gridExtra')
 library('ClassDiscovery')
 library('gplots')
 
+
+make_general_environment_plots <- function(outpath) {
+  
+  plot.data <- 
+    all.atlas.max %>%
+    select(ensg_id, 
+           consensus_content_name, 
+           norm_exp = max_norm_exp) %>%
+    mutate(atlas = "tissue") %>%
+    # rbind(all.atlas.max %>%
+    #         select(ensg_id, 
+    #                consensus_content_name, 
+    #                norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+    #         mutate(atlas = "tissue"),
+    #       brain.atlas.max %>%
+    #         select(ensg_id, 
+    #                consensus_content_name = subgroup, 
+    #                norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+    #         mutate(atlas = "brain")) %>%
+    rbind(blood.atlas.max %>%
+            select(ensg_id, 
+                   consensus_content_name, 
+                   norm_exp = max_norm_exp) %>%
+            mutate(atlas = "blood cells")) %>% 
+    ungroup() %>%
+    rbind(select(cell.lines.atlas, 1:3) %>%
+            rename(consensus_content_name = celline_name) %>%
+            mutate(atlas = "celline")) %>%
+    filter(norm_exp >= 1) %>%
+    group_by(consensus_content_name, atlas) %>%
+    summarise(n_detected_genes = length(ensg_id)) %>% 
+    ungroup() %>%
+    mutate(consensus_content_name = factor(consensus_content_name, levels = unique(consensus_content_name[order(atlas, n_detected_genes)]))) 
+  
+  plot.data %>%
+    ggplot(aes(consensus_content_name, n_detected_genes, fill = atlas)) +
+    geom_bar(stat = "identity") +
+    simple_theme + 
+    theme(axis.text.x = element_blank())
+  ggsave(paste(outpath,'detected_genes_bar.pdf',sep='/'), width=8, height=8)
+  
+  plot.data %>%
+    ggplot(aes(atlas, n_detected_genes, fill = atlas, color = atlas)) +
+    geom_boxplot(alpha = 0.2) + 
+    ggbeeswarm::geom_beeswarm() +
+    simple_theme
+  ggsave(paste(outpath,'detected_genes_boxplot.pdf',sep='/'), width=8, height=8)
+  
+  plot.data <- 
+    all.atlas.max %>%
+    select(ensg_id, 
+           consensus_content_name, 
+           norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+    filter(!consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+    mutate(atlas = "tissues") %>%
+    ungroup() %>%
+    rbind(all.atlas %>%
+            select(ensg_id, 
+                   content_name,
+                   consensus_content_name, 
+                   norm_exp = limma_gene_dstmm.zero.impute.expression) %>%
+            filter(consensus_content_name %in% c("brain", "intestine", "lymphoid system")) %>%
+            mutate(atlas = consensus_content_name) %>%
+            select(ensg_id,
+                   consensus_content_name = content_name,
+                   norm_exp,
+                   atlas)) %>%
+    rbind(blood.atlas.max %>%
+            select(ensg_id, 
+                   consensus_content_name = content_name, 
+                   norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+            mutate(atlas = "blood cells") %>%
+            ungroup()) %>% 
+    ungroup() %>%
+    rbind(select(cell.lines.atlas, 1:3) %>%
+            rename(consensus_content_name = celline_name) %>%
+            mutate(atlas = "celline")) %>%
+    filter(norm_exp >= 1) %>%
+    group_by(consensus_content_name, atlas) %>%
+    summarise(n_detected_genes = length(unique(ensg_id))) %>% 
+    ungroup()
+  
+  plot.data %>%
+    ggplot(aes(atlas, n_detected_genes, fill = atlas, color = atlas)) +
+    geom_boxplot(alpha = 0.2) + 
+    ggbeeswarm::geom_beeswarm() +
+    simple_theme
+  ggsave(paste(outpath,'detected_genes_separate_boxplot.pdf',sep='/'), width=8, height=8)
+  
+  
+  plot.data <- 
+    all.atlas.max %>%
+    select(ensg_id, 
+           consensus_content_name, 
+           norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+    filter(!consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+    mutate(atlas = "tissues") %>%
+    ungroup() %>%
+    rbind(all.atlas %>%
+            select(ensg_id, 
+                   content_name,
+                   consensus_content_name, 
+                   norm_exp = limma_gene_dstmm.zero.impute.expression) %>%
+            filter(consensus_content_name %in% c("brain", "intestine", "lymphoid system")) %>%
+            mutate(atlas = consensus_content_name) %>%
+            select(ensg_id,
+                   consensus_content_name = content_name,
+                   norm_exp,
+                   atlas)) %>%
+    rbind(blood.atlas.max %>%
+            select(ensg_id, 
+                   consensus_content_name = content_name, 
+                   norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+            mutate(atlas = "blood cells") %>%
+            ungroup()) %>% 
+    ungroup() %>%
+    rbind(select(cell.lines.atlas, 1:3) %>%
+            rename(consensus_content_name = celline_name) %>%
+            mutate(atlas = "celline")) %>%
+    filter(norm_exp >= 1) %>%
+    group_by(atlas) %>%
+    summarise(total_detected_genes = length(unique(ensg_id))) %>% 
+    ungroup()
+  
+  plot.data %>%
+    ggplot(aes(atlas, total_detected_genes, fill = atlas, color = atlas)) +
+    geom_bar(stat = "identity") + 
+    simple_theme
+  ggsave(paste(outpath,'total_detected_genes_bar.pdf',sep='/'), width=8, height=8)
+  
+  
+  
+  ###
+  plot.data <- 
+    all.atlas.max %>%
+    select(ensg_id, 
+           consensus_content_name, 
+           norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+    filter(!consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+    mutate(atlas = "single tissues") %>%
+    ungroup() %>%
+    rbind(all.atlas.max %>%
+            select(ensg_id, 
+                   consensus_content_name, 
+                   norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+            filter(consensus_content_name %in% c("brain", "blood", "intestine", "lymphoid system")) %>%
+            mutate(atlas = "multiple tissues") %>%
+            ungroup()) %>%
+    rbind(blood.atlas.max %>%
+            select(ensg_id, 
+                   consensus_content_name = content_name, 
+                   norm_exp = limma_gene_dstmm.zero.impute.expression_maxEx) %>%
+            mutate(atlas = "single blood cells") %>%
+            ungroup()) %>% 
+    ungroup() %>%
+    rbind(select(cell.lines.atlas, 1:3) %>%
+            rename(consensus_content_name = celline_name) %>%
+            mutate(atlas = "cell line")) %>%
+    filter(norm_exp >= 1) %>%
+    group_by(consensus_content_name, atlas) %>%
+    summarise(n_detected_genes = length(unique(ensg_id))) %>% 
+    ungroup()
+  
+  plot.data %>%
+    mutate(atlas = factor(atlas, levels = c("single blood cells", "cell line", "single tissues", "multiple tissues"))) %>%
+    {ggplot(., aes(atlas, n_detected_genes, fill = atlas, color = atlas)) +
+        geom_boxplot(alpha = 0.2) + 
+        ggbeeswarm::geom_beeswarm() +
+        simple_theme + 
+        geom_text(data = subset(., atlas == "multiple tissues" | consensus_content_name == "testis"), 
+                  aes(atlas, n_detected_genes, color = atlas, label = consensus_content_name), hjust = 1, nudge_x = -0.1)}
+  ggsave(paste(outpath,'detected_genes_separate_boxplot2.pdf',sep='/'), width=8, height=8)
+}
 #####
 make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, consensus_content_column, content_hierarchy = NULL, 
                        content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
@@ -331,6 +504,28 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                            outpath = outpath,
                            prefix = 'brain_all_cells')
     }
+    
+    if("double donut chord" %in% plots | "all" %in% plots) {
+      
+      
+      make_double_donut_chord(cat1 = all.atlas.category, 
+                              cat2 = brain.atlas.category, 
+                              regional_class_dictionary = c("low regional specificity",
+                                                            "not detected in brain regions",
+                                                            "regionally elevated"), 
+                              grid.col = c("brain elevated" = "seagreen1", 
+                                           "elevated in other tissue" = "skyblue3", 
+                                           "low tissue specificity" = "grey40", 
+                                           "low regional specificity" = "grey40", 
+                                           "regionally elevated" = "seagreen1", 
+                                           "not detected in brain regions" = "gray"), 
+                              global_name = "brain", 
+                              prefix = prefix, 
+                              outpath = outpath)
+      
+    }
+    
+    
   }
   
   # =========== *Blood altas* =========== 
@@ -390,7 +585,28 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
 
       
     }
+    if("double donut chord" %in% plots | "all" %in% plots) {
+      
+      
+      make_double_donut_chord(cat1 = all.atlas.category, 
+                              cat2 = blood.atlas.category, 
+                              regional_class_dictionary = c("low blood cell specificity",
+                                                            "not detected in blood cells",
+                                                            "blood cell elevated"), 
+                              grid.col = c("blood elevated" = "dark red", 
+                                           "elevated in other tissue" = "skyblue3", 
+                                           "low tissue specificity" = "grey40", 
+                                           "low blood cell specificity" = "grey40", 
+                                           "blood cell elevated" = "darkred", 
+                                           "not detected in blood cells" = "gray"), 
+                              global_name = "blood", 
+                              prefix = prefix, 
+                              outpath = outpath)
+      
+    }
   }
+  
+  
   
   
 }
@@ -3411,7 +3627,6 @@ make_sum_TPM_gene_bar_plot <- function(atlas, atlas.cat, tissue_column, method_c
 }
 
 
-####
 make_classification_pie_chart <- function(atlas.cat, outpath, prefix) {
   atlas.cat %>%
     group_by(elevated.category) %>%
@@ -3550,3 +3765,52 @@ make_classification_pie_chart <- function(atlas.cat, outpath, prefix) {
     theme_void() 
   ggsave(paste(outpath, paste0(prefix, '_distribution_pie2.pdf'),sep='/'), width=8, height=8)
 }
+
+
+
+
+  
+
+
+
+make_double_donut_chord <- function(cat1, cat2, regional_class_dictionary, grid.col, global_name, prefix, outpath) {
+  
+  elevated_name <- paste(global_name, "elevated")
+  
+  global_local_elevation <- 
+    left_join(cat1 %>%
+                select(ensg_id, `enriched tissues`, elevated.category), 
+              cat2 %>%
+                select(ensg_id, `enriched tissues`, elevated.category),
+              by = "ensg_id") %>%
+    filter(elevated.category.x != "not detected") %>%
+    mutate(global_elevation = case_when(elevated.category.x == "low tissue specificity" ~ "low tissue specificity",
+                                        grepl(global_name, `enriched tissues.x`) ~ elevated_name,
+                                        elevated.category.x %in% c("tissue enhanced",
+                                                                   "tissue enriched",
+                                                                   "group enriched") ~ "elevated in other tissue"),
+           local_elevation = case_when(elevated.category.y == "low tissue specificity" ~ regional_class_dictionary[1],
+                                       elevated.category.y == "not detected" ~ regional_class_dictionary[2],
+                                       elevated.category.y %in% c("tissue enhanced",
+                                                                  "tissue enriched",
+                                                                  "group enriched") ~ regional_class_dictionary[3])) 
+  
+  global_local_elevation_summary <- 
+    global_local_elevation %>%
+    group_by(global_elevation, local_elevation) %>%
+    summarise(number = length(ensg_id))
+  
+  pdf(file = paste(outpath, paste0(prefix, '_double_donut_chord.pdf'),sep='/'), width=10, height=10, useDingbats = F)
+  global_local_elevation_summary %$%
+    chord_classification(from = global_elevation, 
+                         to = local_elevation, 
+                         sizes = number, 
+                         groups = c(1, 1, 1, 2, 2, 2), 
+                         grid.col = grid.col,
+                         plot.order = c(elevated_name, "elevated in other tissue", "low tissue specificity", 
+                                        regional_class_dictionary[2], regional_class_dictionary[1], regional_class_dictionary[3]), 
+                         size_labels = T)
+  dev.off()
+  
+}
+
