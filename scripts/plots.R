@@ -177,10 +177,13 @@ make_general_environment_plots <- function(outpath) {
                   aes(atlas, n_detected_genes, color = atlas, label = consensus_content_name), hjust = 1, nudge_x = -0.1)}
   ggsave(paste(outpath,'detected_genes_separate_boxplot2.pdf',sep='/'), width=8, height=8)
 }
+
+
 #####
+
 make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, consensus_content_column, content_hierarchy = NULL, 
                        content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
-                       subatlas_unit = "celltype",
+                       subatlas_unit = "celltype", global.atlas.category = NULL, 
                        outpath, prefix) {
   
   atlas.max.wide <- generate_wide(atlas.max, 
@@ -486,7 +489,14 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
     }
     
   }
+  
+  if("umap tsne" %in% plots | "all" %in% plots) {
     
+    # make_umap_plot(eset,outpath,prefix)
+    
+  }
+  
+  
   
   # =========== *Brain altas* =========== 
   

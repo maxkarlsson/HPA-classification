@@ -55,17 +55,19 @@ mouse_path <- './data/lims/rna_mousebrain_mouse_92.tsv'
 pig_path <- './data/lims/rna_pigbrain_pig_92.tsv'
 
 ### normalized
-hpa_norm_path <- "data/lims/Normalized/consensus_hpa_92.tsv"
-gtex_norm_path <- "data/lims/Normalized/consensus_gtex_92.tsv"
-fantom_norm_path <- "data/lims/Normalized/consensus_fantom_92.tsv"
-blood_norm_path <- "data/lims/Normalized/consensus_bloodcells_hpa_92.tsv"
+hpa_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/conconsensus_hpa_92.tsv"
+gtex_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_gtex_92.tsv"
+fantom_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_fantom_92.tsv"
+blood_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_bloodcells_hpa_92.tsv"
 
+# Load in Brain atlas
+#pig_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/cons"
 
 ### Consensus
-consensus_path <- "data/lims/Normalized/consensus_max_of_all_groups_92.tsv"
-consensus_blood_path <- "data/lims/Normalized/consensus_bloodcells_hpa_92.tsv"
+consensus_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_max_of_all_groups_92.tsv"
+consensus_blood_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_bloodcells_hpa_92.tsv"
 ### category
-category_path <- "data/lims/Normalized/consensus_all_category_92.tsv"
+category_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_all_category_92.tsv"
 
 #
 # ----------- Step 1. data wrangling ----------- 
@@ -278,7 +280,7 @@ all.atlas <-
             blood.atlas)
 
 
-
+ # Load brain data
 
 
 
@@ -296,7 +298,7 @@ blood.atlas.max <-
   rename(consensus_content_name = 2, 
          max_norm_exp = 3)
   
-
+# Load brain data
 
 #
 # ----------- Step 4. Category ----------- 
@@ -319,6 +321,9 @@ blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
                                                           group.num = 11)
 readr::write_delim(blood.atlas.category, path = paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'), delim = "\t")
 
+# calculate brain categories
+
+# Add a test function: Compare LIMS and our classification
 
 
 # print number of different categories of genes
