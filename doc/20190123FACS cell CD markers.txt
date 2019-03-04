@@ -1,0 +1,21 @@
+celltype	class	CCR4	CD3	CD4	CD8	CD11c	CD14	CD15	CD16	CD19	CD20	CD25	CD27	CD38	CD45	CD45RA	CD56	CD123	CD127	CD161	CD193	CD203	gdTCR	HLA-DR	TCR Va7.2
+Basophils	Granulocytes		-	-	-	-	-	-	-	-	-			+	+		-	+			+	+		-	
+Classical monocytes	Monocytes		-	-	-		high		-	-	-						-								
+Eosinophils	Granulocytes			-	-		-	low	-	-	-			low	+		-	low			+	+		low	
+gdTCR	Lymphocytes		+	-	-		-			-										low			+		-
+Intermediate monocytes	Monocytes		-	-	-		high		high	-	-						-								
+MAIT T-cells	Lymphocytes		+	-	-		-			-										high			-		+
+Myeloid DCs	dendritic		-	-	-	+	low		-	-	-						-	-						high	
+Memory B-cells	Lymphocytes		-	-	-		-		-	+	+		+				-								
+Memory CD4 T-cells	Lymphocytes		+	+	-		-		-	-	-					-									
+Memory CD8 T-cells	Lymphocytes		+	-	+		-		-	-	-					-									
+Naive B-cells	Lymphocytes		-	-	-		-		-	+	+		-				-								
+Naive CD4 T-cells	Lymphocytes		+	+	-		-		-	-	-					+									
+Naive CD8 T-cells	Lymphocytes		+	-	+		-		-	-	-					+									
+Neutrophils	Granulocytes			-	-		-	+	+	-	-			low	+		-	-			low	low		low	
+NK-cells	Lymphocytes		-	-	-		-			-	-		either				+								
+Non-classical monocytes	Monocytes		-	-	-		low		high	-	-						-								
+Plasmacytoid DCs	dendritic		-	-	-	-	-			-	-						-	+						+	
+T-regs	Lymphocytes	+	+	+								+							low						
+																							gd are two different chains (genes or isoforms?)		
+								should be neutrophil specific - it isnt																	

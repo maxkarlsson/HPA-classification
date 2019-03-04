@@ -38,11 +38,12 @@ brainregions_path <- './data/anno/brain_regions.txt' ## brain_regions_anno
 proteinclass_path <- './data/anno/gene.classes.txt' ## protein classification
 proteinlocalization_path <- './data/anno/new_proteinclass_all_19670.txt' ## protein localization classification
 tissuehierarchy_path <- './ref/colors_92.tsv' # tissue colors and hierarchy
-celllines_path <- './data/lims/Normalized/consensus_celline_hpa_92.tsv'
 immunodeficiency_genes <- './ref/PID_genes_Petter_190202.txt'
+
 
 blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", delim = "\t")
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
+blood_atlas_FACS_markers <- readr::read_delim("ref/20190123FACS cell CD markers long.txt", delim = "\t")
 
 
 
@@ -54,11 +55,16 @@ blood_path <- './data/lims/rna_blood.tsv'
 mouse_path <- './data/lims/rna_mousebrain_mouse_92.tsv'
 pig_path <- './data/lims/rna_pigbrain_pig_92.tsv'
 
+### Sample data
+hpa_sample_path <- './data/lims/Sample TPM data/rna_all_tissue_sample_92.tsv'
+blood_sample_path <- './data/lims/Sample TPM data/rna_bloodcell_sample_92.tsv'
+
 ### normalized
-hpa_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/conconsensus_hpa_92.tsv"
+hpa_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_hpa_92.tsv"
 gtex_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_gtex_92.tsv"
 fantom_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_fantom_92.tsv"
 blood_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_bloodcells_hpa_92.tsv"
+celllines_path <- './data/lims/Normalisation pTPM,NX and RNA Categories/proteinatlas_celline_hpa_92.tsv'
 
 # Load in Brain atlas
 #pig_norm_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/cons"
@@ -161,6 +167,18 @@ contenthierarchy.table <-
 contenthierarchy.table.tissue <- contenthierarchy.table %>% filter(type=='tissue')
 tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, color), 
                                                               c(tissue_name, organ_name, paste(tissue_name, 1))))
+
+
+
+## sample datasets
+
+blood.samples <-
+  blood_sample_path %>%
+  readr::read_delim(delim = "\t")
+
+
+
+
 
 ## input datasets
 hpa.atlas <-
@@ -283,7 +301,12 @@ all.atlas <-
  # Load brain data
 
 
-
+# TMM Normalize sample data
+blood.samples.norm <- 
+  blood.samples %>% 
+  mutate(tissue_sample = paste(tissue, sample),
+         tmm = tmm_method_normalization(ptpm, sample_type, tissue_sample, ensg_id))
+  
 #
 # ----------- Step 3. Consensus ----------- 
 #
@@ -306,7 +329,7 @@ blood.atlas.max <-
 
   
 all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
-                                                        max_column = "max_norm_exp",
+                                                        max_column = "max_nx",
                                                         cat_column = "consensus_content_name",
                                                         enrich.fold = 4,
                                                         under.lim = 1,
@@ -314,7 +337,7 @@ all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
 readr::write_delim(all.atlas.category, path = paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'), delim = "\t")
 
 blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
-                                                          max_column = "max_norm_exp", 
+                                                          max_column = "nx", 
                                                           cat_column = "consensus_content_name",
                                                           enrich.fold = 4, 
                                                           under.lim = 1, 
@@ -483,9 +506,10 @@ plots <- c("",
 make_plots(atlas = all.atlas, 
            atlas.max = all.atlas.max, 
            atlas.cat = all.atlas.category, 
-           Ex_column = "limma_gene_dstmm.zero.impute.expression", 
-           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",  
-           content_column = "consensus_content_name", 
+           Ex_column = "nx", 
+           maxEx_column = "max_nx",  
+           content_column = "content_name", 
+           consensus_content_column = "consensus_content_name", 
            content_hierarchy = contenthierarchy.table.tissue %>% 
              select(1:2) %>% 
              rename(content = tissue_name, content_l1 = organ_name),  
@@ -498,20 +522,22 @@ make_plots(atlas = all.atlas,
            prefix = "tissue")
 
 #####
-atlas = all.atlas
-atlas.max = all.atlas.max
-atlas.cat = all.atlas.category
-Ex_column = "limma_gene_dstmm.zero.impute.expression"
-maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx"
-content_column = "content_name"
-consensus_content_column = "consensus_content_name"
-content_hierarchy = NULL
-content_colors = tissue.colors
-plots = plots
-plot.atlas = "tissue"
+atlas = all.atlas 
+atlas.max = all.atlas.max 
+atlas.cat = all.atlas.category 
+Ex_column = "nx" 
+maxEx_column = "max_nx"  
+content_column = "content_name" 
+consensus_content_column = "consensus_content_name" 
+content_hierarchy = contenthierarchy.table.tissue %>% 
+  select(1:2) %>% 
+  rename(content = tissue_name, content_l1 = organ_name)  
+content_colors = tissue.colors 
+plots = plots 
+plot.atlas = "tissue" 
 plot.order = unique(all.atlas.max$consensus_content_name)
 subatlas_unit = "tissue"
-outpath = result_folder
+outpath = result_folder 
 prefix = "tissue"
 #####
 
@@ -531,25 +557,31 @@ plots <- c("",
            # "class chord",
            # "group chord",
            # "heatmaps",
-           # "swarm expression",
+           #"swarm expression",
            # "number detected bar",
            # "NX fraction bar",
            # "classification pie",
            # "TPM NX example genes bar",
            # "score plots",
-           "sum TPM",
+           #"sum TPM",
            # "class comparison chord",
            # "class comparison chord",
            # "spearman dendrogram",
-           "blood class tissue expression", 
-           "double donut chord")
+           # "blood class tissue expression", 
+           # "double donut chord",
+           "sample FACS boxplot",
+           "")
 
 make_plots(atlas = blood.atlas, 
            atlas.max = blood.atlas.max, 
            atlas.cat = blood.atlas.category, 
-           Ex_column = "limma_gene_dstmm.zero.impute.expression", 
-           maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx",  
+           sample.atlas = blood.samples.norm,
+           sample_Ex_column = "tmm",
+           Ex_column = "nx", 
+           maxEx_column = "nx",  
+           sample_content_column = "tissue", 
            content_column = "content_name", 
+           consensus_content_column = "consensus_content_name",
            content_hierarchy = blood_atlas_hierarchy, 
            content_colors = with(blood_atlas_colors, setNames(color, content)), 
            plots = plots, 
@@ -558,20 +590,21 @@ make_plots(atlas = blood.atlas,
              filter(!content %in% c("blood", "Total PBMCs")) %$% 
              content[order(content_l1)],
            subatlas_unit = "celltype",
+           FACS_markers = blood_atlas_FACS_markers,
            outpath = result_folder, 
            prefix = "blood_cells")
-
 
 ###
 atlas = blood.atlas 
 atlas.max = blood.atlas.max 
 atlas.cat = blood.atlas.category 
-Ex_column = "limma_gene_dstmm.zero.impute.expression" 
-maxEx_column = "limma_gene_dstmm.zero.impute.expression_maxEx"  
+Ex_column = "nx" 
+maxEx_column = "nx"  
 content_column = "content_name" 
+consensus_content_column = "consensus_content_name"
 content_hierarchy = blood_atlas_hierarchy 
-content_colors = with(blood_atlas_colors, setNames(color, content))
-plots = "all" 
+content_colors = with(blood_atlas_colors, setNames(color, content)) 
+plots = plots 
 plot.atlas = "blood" 
 plot.order = blood_atlas_hierarchy %>%
   filter(!content %in% c("blood", "Total PBMCs")) %$% 

@@ -1,0 +1,541 @@
+celltype	marker	expression	gene_name	comment	ensg_id	gene_description
+basophil	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+classical monocyte	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+eosinophil	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+gdTCR	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+intermediate monocyte	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+MAIT T-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+myeloid DC	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+memory B-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+memory CD4 T-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+memory CD8 T-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+naive B-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+naive CD4 T-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+naive CD8 T-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+neutrophil	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+NK-cell	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+non-classical monocyte	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+plasmacytoid DC	CCR4	NA	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+T-reg	CCR4	+	CCR4		ENSG00000183813	C-C motif chemokine receptor 4
+basophil	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+basophil	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+basophil	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+classical monocyte	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+classical monocyte	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+classical monocyte	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+eosinophil	CD3	NA	CD3G		ENSG00000160654	CD3g molecule
+eosinophil	CD3	NA	CD3D		ENSG00000167286	CD3d molecule
+eosinophil	CD3	NA	CD3E		ENSG00000198851	CD3e molecule
+gdTCR	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+gdTCR	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+gdTCR	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+intermediate monocyte	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+intermediate monocyte	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+intermediate monocyte	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+MAIT T-cell	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+MAIT T-cell	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+MAIT T-cell	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+myeloid DC	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+myeloid DC	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+myeloid DC	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+memory B-cell	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+memory B-cell	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+memory B-cell	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+memory CD4 T-cell	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+memory CD4 T-cell	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+memory CD4 T-cell	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+memory CD8 T-cell	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+memory CD8 T-cell	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+memory CD8 T-cell	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+naive B-cell	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+naive B-cell	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+naive B-cell	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+naive CD4 T-cell	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+naive CD4 T-cell	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+naive CD4 T-cell	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+naive CD8 T-cell	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+naive CD8 T-cell	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+naive CD8 T-cell	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+neutrophil	CD3	NA	CD3G		ENSG00000160654	CD3g molecule
+neutrophil	CD3	NA	CD3D		ENSG00000167286	CD3d molecule
+neutrophil	CD3	NA	CD3E		ENSG00000198851	CD3e molecule
+NK-cell	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+NK-cell	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+NK-cell	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+non-classical monocyte	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+non-classical monocyte	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+non-classical monocyte	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+plasmacytoid DC	CD3	-	CD3G		ENSG00000160654	CD3g molecule
+plasmacytoid DC	CD3	-	CD3D		ENSG00000167286	CD3d molecule
+plasmacytoid DC	CD3	-	CD3E		ENSG00000198851	CD3e molecule
+T-reg	CD3	+	CD3G		ENSG00000160654	CD3g molecule
+T-reg	CD3	+	CD3D		ENSG00000167286	CD3d molecule
+T-reg	CD3	+	CD3E		ENSG00000198851	CD3e molecule
+basophil	CD4	-	CD4		ENSG00000010610	CD4 molecule
+classical monocyte	CD4	-	CD4		ENSG00000010610	CD4 molecule
+eosinophil	CD4	-	CD4		ENSG00000010610	CD4 molecule
+gdTCR	CD4	-	CD4		ENSG00000010610	CD4 molecule
+intermediate monocyte	CD4	-	CD4		ENSG00000010610	CD4 molecule
+MAIT T-cell	CD4	-	CD4		ENSG00000010610	CD4 molecule
+myeloid DC	CD4	-	CD4		ENSG00000010610	CD4 molecule
+memory B-cell	CD4	-	CD4		ENSG00000010610	CD4 molecule
+memory CD4 T-cell	CD4	+	CD4		ENSG00000010610	CD4 molecule
+memory CD8 T-cell	CD4	-	CD4		ENSG00000010610	CD4 molecule
+naive B-cell	CD4	-	CD4		ENSG00000010610	CD4 molecule
+naive CD4 T-cell	CD4	+	CD4		ENSG00000010610	CD4 molecule
+naive CD8 T-cell	CD4	-	CD4		ENSG00000010610	CD4 molecule
+neutrophil	CD4	-	CD4		ENSG00000010610	CD4 molecule
+NK-cell	CD4	-	CD4		ENSG00000010610	CD4 molecule
+non-classical monocyte	CD4	-	CD4		ENSG00000010610	CD4 molecule
+plasmacytoid DC	CD4	-	CD4		ENSG00000010610	CD4 molecule
+T-reg	CD4	+	CD4		ENSG00000010610	CD4 molecule
+basophil	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+basophil	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+basophil	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+classical monocyte	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+classical monocyte	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+classical monocyte	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+eosinophil	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+eosinophil	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+eosinophil	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+gdTCR	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+gdTCR	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+gdTCR	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+intermediate monocyte	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+intermediate monocyte	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+intermediate monocyte	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+MAIT T-cell	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+MAIT T-cell	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+MAIT T-cell	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+myeloid DC	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+myeloid DC	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+myeloid DC	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+memory B-cell	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+memory B-cell	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+memory B-cell	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+memory CD4 T-cell	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+memory CD4 T-cell	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+memory CD4 T-cell	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+memory CD8 T-cell	CD8	+	CD8A		ENSG00000153563	CD8a molecule
+memory CD8 T-cell	CD8	+	CD8B		ENSG00000172116	CD8b molecule
+memory CD8 T-cell	CD8	+	CD8B2		ENSG00000254126	CD8b2 molecule
+naive B-cell	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+naive B-cell	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+naive B-cell	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+naive CD4 T-cell	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+naive CD4 T-cell	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+naive CD4 T-cell	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+naive CD8 T-cell	CD8	+	CD8A		ENSG00000153563	CD8a molecule
+naive CD8 T-cell	CD8	+	CD8B		ENSG00000172116	CD8b molecule
+naive CD8 T-cell	CD8	+	CD8B2		ENSG00000254126	CD8b2 molecule
+neutrophil	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+neutrophil	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+neutrophil	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+NK-cell	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+NK-cell	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+NK-cell	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+non-classical monocyte	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+non-classical monocyte	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+non-classical monocyte	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+plasmacytoid DC	CD8	-	CD8A		ENSG00000153563	CD8a molecule
+plasmacytoid DC	CD8	-	CD8B		ENSG00000172116	CD8b molecule
+plasmacytoid DC	CD8	-	CD8B2		ENSG00000254126	CD8b2 molecule
+T-reg	CD8	NA	CD8A		ENSG00000153563	CD8a molecule
+T-reg	CD8	NA	CD8B		ENSG00000172116	CD8b molecule
+T-reg	CD8	NA	CD8B2		ENSG00000254126	CD8b2 molecule
+basophil	CD11c	-	ITGAX		ENSG00000140678	integrin subunit alpha X
+classical monocyte	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+eosinophil	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+gdTCR	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+intermediate monocyte	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+MAIT T-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+myeloid DC	CD11c	+	ITGAX		ENSG00000140678	integrin subunit alpha X
+memory B-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+memory CD4 T-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+memory CD8 T-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+naive B-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+naive CD4 T-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+naive CD8 T-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+neutrophil	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+NK-cell	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+non-classical monocyte	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+plasmacytoid DC	CD11c	-	ITGAX		ENSG00000140678	integrin subunit alpha X
+T-reg	CD11c	NA	ITGAX		ENSG00000140678	integrin subunit alpha X
+basophil	CD14	-	CD14		ENSG00000170458	CD14 molecule
+classical monocyte	CD14	high	CD14		ENSG00000170458	CD14 molecule
+eosinophil	CD14	-	CD14		ENSG00000170458	CD14 molecule
+gdTCR	CD14	-	CD14		ENSG00000170458	CD14 molecule
+intermediate monocyte	CD14	high	CD14		ENSG00000170458	CD14 molecule
+MAIT T-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+myeloid DC	CD14	low	CD14		ENSG00000170458	CD14 molecule
+memory B-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+memory CD4 T-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+memory CD8 T-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+naive B-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+naive CD4 T-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+naive CD8 T-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+neutrophil	CD14	-	CD14		ENSG00000170458	CD14 molecule
+NK-cell	CD14	-	CD14		ENSG00000170458	CD14 molecule
+non-classical monocyte	CD14	low	CD14		ENSG00000170458	CD14 molecule
+plasmacytoid DC	CD14	-	CD14		ENSG00000170458	CD14 molecule
+T-reg	CD14	NA	CD14		ENSG00000170458	CD14 molecule
+basophil	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+basophil	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+classical monocyte	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+classical monocyte	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+eosinophil	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+eosinophil	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+gdTCR	CD16	NA	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+gdTCR	CD16	NA	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+intermediate monocyte	CD16	high	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+intermediate monocyte	CD16	high	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+MAIT T-cell	CD16	NA	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+MAIT T-cell	CD16	NA	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+myeloid DC	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+myeloid DC	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+memory B-cell	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+memory B-cell	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+memory CD4 T-cell	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+memory CD4 T-cell	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+memory CD8 T-cell	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+memory CD8 T-cell	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+naive B-cell	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+naive B-cell	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+naive CD4 T-cell	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+naive CD4 T-cell	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+naive CD8 T-cell	CD16	-	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+naive CD8 T-cell	CD16	-	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+neutrophil	CD16	+	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+neutrophil	CD16	+	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+NK-cell	CD16	NA	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+NK-cell	CD16	NA	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+non-classical monocyte	CD16	high	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+non-classical monocyte	CD16	high	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+plasmacytoid DC	CD16	NA	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+plasmacytoid DC	CD16	NA	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+T-reg	CD16	NA	FCGR3A		ENSG00000203747	Fc fragment of IgG receptor IIIa
+T-reg	CD16	NA	FCGR3B		ENSG00000162747	Fc fragment of IgG receptor IIIb
+basophil	CD19	-	CD19		ENSG00000177455	CD19 molecule
+classical monocyte	CD19	-	CD19		ENSG00000177455	CD19 molecule
+eosinophil	CD19	-	CD19		ENSG00000177455	CD19 molecule
+gdTCR	CD19	-	CD19		ENSG00000177455	CD19 molecule
+intermediate monocyte	CD19	-	CD19		ENSG00000177455	CD19 molecule
+MAIT T-cell	CD19	-	CD19		ENSG00000177455	CD19 molecule
+myeloid DC	CD19	-	CD19		ENSG00000177455	CD19 molecule
+memory B-cell	CD19	+	CD19		ENSG00000177455	CD19 molecule
+memory CD4 T-cell	CD19	-	CD19		ENSG00000177455	CD19 molecule
+memory CD8 T-cell	CD19	-	CD19		ENSG00000177455	CD19 molecule
+naive B-cell	CD19	+	CD19		ENSG00000177455	CD19 molecule
+naive CD4 T-cell	CD19	-	CD19		ENSG00000177455	CD19 molecule
+naive CD8 T-cell	CD19	-	CD19		ENSG00000177455	CD19 molecule
+neutrophil	CD19	-	CD19		ENSG00000177455	CD19 molecule
+NK-cell	CD19	-	CD19		ENSG00000177455	CD19 molecule
+non-classical monocyte	CD19	-	CD19		ENSG00000177455	CD19 molecule
+plasmacytoid DC	CD19	-	CD19		ENSG00000177455	CD19 molecule
+T-reg	CD19	NA	CD19		ENSG00000177455	CD19 molecule
+basophil	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+classical monocyte	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+eosinophil	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+gdTCR	CD20	NA	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+intermediate monocyte	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+MAIT T-cell	CD20	NA	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+myeloid DC	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+memory B-cell	CD20	+	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+memory CD4 T-cell	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+memory CD8 T-cell	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+naive B-cell	CD20	+	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+naive CD4 T-cell	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+naive CD8 T-cell	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+neutrophil	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+NK-cell	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+non-classical monocyte	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+plasmacytoid DC	CD20	-	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+T-reg	CD20	NA	MS4A1		ENSG00000156738	membrane spanning 4-domains A1
+basophil	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+classical monocyte	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+eosinophil	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+gdTCR	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+intermediate monocyte	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+MAIT T-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+myeloid DC	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+memory B-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+memory CD4 T-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+memory CD8 T-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+naive B-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+naive CD4 T-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+naive CD8 T-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+neutrophil	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+NK-cell	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+non-classical monocyte	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+plasmacytoid DC	CD25	NA	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+T-reg	CD25	+	IL2RA		ENSG00000134460	interleukin 2 receptor subunit alpha
+basophil	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+classical monocyte	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+eosinophil	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+gdTCR	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+intermediate monocyte	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+MAIT T-cell	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+myeloid DC	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+memory B-cell	CD27	+	CD27		ENSG00000139193	CD27 molecule
+memory CD4 T-cell	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+memory CD8 T-cell	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+naive B-cell	CD27	-	CD27		ENSG00000139193	CD27 molecule
+naive CD4 T-cell	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+naive CD8 T-cell	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+neutrophil	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+NK-cell	CD27	either	CD27		ENSG00000139193	CD27 molecule
+non-classical monocyte	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+plasmacytoid DC	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+T-reg	CD27	NA	CD27		ENSG00000139193	CD27 molecule
+basophil	CD38	+	CD38		ENSG00000004468	CD38 molecule
+classical monocyte	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+eosinophil	CD38	low	CD38		ENSG00000004468	CD38 molecule
+gdTCR	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+intermediate monocyte	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+MAIT T-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+myeloid DC	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+memory B-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+memory CD4 T-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+memory CD8 T-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+naive B-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+naive CD4 T-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+naive CD8 T-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+neutrophil	CD38	low	CD38		ENSG00000004468	CD38 molecule
+NK-cell	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+non-classical monocyte	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+plasmacytoid DC	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+T-reg	CD38	NA	CD38		ENSG00000004468	CD38 molecule
+basophil	CD45	+	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+classical monocyte	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+eosinophil	CD45	+	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+gdTCR	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+intermediate monocyte	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+MAIT T-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+myeloid DC	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+memory B-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+memory CD4 T-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+memory CD8 T-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+naive B-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+naive CD4 T-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+naive CD8 T-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+neutrophil	CD45	+	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+NK-cell	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+non-classical monocyte	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+plasmacytoid DC	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+T-reg	CD45	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+basophil	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+classical monocyte	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+eosinophil	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+gdTCR	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+intermediate monocyte	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+MAIT T-cell	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+myeloid DC	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+memory B-cell	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+memory CD4 T-cell	CD45RA	-	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+memory CD8 T-cell	CD45RA	-	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+naive B-cell	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+naive CD4 T-cell	CD45RA	+	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+naive CD8 T-cell	CD45RA	+	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+neutrophil	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+NK-cell	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+non-classical monocyte	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+plasmacytoid DC	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+T-reg	CD45RA	NA	PTPRC		ENSG00000081237	"protein tyrosine phosphatase, receptor type C"
+basophil	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+classical monocyte	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+eosinophil	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+gdTCR	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+intermediate monocyte	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+MAIT T-cell	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+myeloid DC	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+memory B-cell	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+memory CD4 T-cell	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+memory CD8 T-cell	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+naive B-cell	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+naive CD4 T-cell	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+naive CD8 T-cell	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+neutrophil	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+NK-cell	CD56	+	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+non-classical monocyte	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+plasmacytoid DC	CD56	-	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+T-reg	CD56	NA	NCAM1		ENSG00000149294	neural cell adhesion molecule 1
+basophil	CD123	+	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+classical monocyte	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+eosinophil	CD123	low	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+gdTCR	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+intermediate monocyte	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+MAIT T-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+myeloid DC	CD123	-	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+memory B-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+memory CD4 T-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+memory CD8 T-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+naive B-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+naive CD4 T-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+naive CD8 T-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+neutrophil	CD123	-	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+NK-cell	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+non-classical monocyte	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+plasmacytoid DC	CD123	+	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+T-reg	CD123	NA	IL3RA		ENSG00000185291	interleukin 3 receptor subunit alpha
+basophil	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+classical monocyte	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+eosinophil	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+gdTCR	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+intermediate monocyte	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+MAIT T-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+myeloid DC	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+memory B-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+memory CD4 T-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+memory CD8 T-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+naive B-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+naive CD4 T-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+naive CD8 T-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+neutrophil	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+NK-cell	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+non-classical monocyte	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+plasmacytoid DC	CD127	NA	IL7R		ENSG00000168685	interleukin 7 receptor
+T-reg	CD127	low	IL7R		ENSG00000168685	interleukin 7 receptor
+basophil	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+classical monocyte	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+eosinophil	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+gdTCR	CD161	low	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+intermediate monocyte	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+MAIT T-cell	CD161	high	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+myeloid DC	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+memory B-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+memory CD4 T-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+memory CD8 T-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+naive B-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+naive CD4 T-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+naive CD8 T-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+neutrophil	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+NK-cell	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+non-classical monocyte	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+plasmacytoid DC	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+T-reg	CD161	NA	KLRB1		ENSG00000111796	killer cell lectin like receptor B1
+basophil	CD193	+	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+classical monocyte	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+eosinophil	CD193	+	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+gdTCR	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+intermediate monocyte	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+MAIT T-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+myeloid DC	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+memory B-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+memory CD4 T-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+memory CD8 T-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+naive B-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+naive CD4 T-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+naive CD8 T-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+neutrophil	CD193	low	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+NK-cell	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+non-classical monocyte	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+plasmacytoid DC	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+T-reg	CD193	NA	CCR3		ENSG00000183625	C-C motif chemokine receptor 3
+basophil	CD203	+	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+classical monocyte	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+eosinophil	CD203	+	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+gdTCR	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+intermediate monocyte	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+MAIT T-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+myeloid DC	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+memory B-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+memory CD4 T-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+memory CD8 T-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+naive B-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+naive CD4 T-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+naive CD8 T-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+neutrophil	CD203	low	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+NK-cell	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+non-classical monocyte	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+plasmacytoid DC	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+T-reg	CD203	NA	ENPP3		ENSG00000154269	ectonucleotide pyrophosphatase/phosphodiesterase 3
+basophil	gdTCR	NA	NA	NA	NA	NA
+classical monocyte	gdTCR	NA	NA	NA	NA	NA
+eosinophil	gdTCR	NA	NA	NA	NA	NA
+gdTCR	gdTCR	+	NA	NA	NA	NA
+intermediate monocyte	gdTCR	NA	NA	NA	NA	NA
+MAIT T-cell	gdTCR	-	NA	NA	NA	NA
+myeloid DC	gdTCR	NA	NA	NA	NA	NA
+memory B-cell	gdTCR	NA	NA	NA	NA	NA
+memory CD4 T-cell	gdTCR	NA	NA	NA	NA	NA
+memory CD8 T-cell	gdTCR	NA	NA	NA	NA	NA
+naive B-cell	gdTCR	NA	NA	NA	NA	NA
+naive CD4 T-cell	gdTCR	NA	NA	NA	NA	NA
+naive CD8 T-cell	gdTCR	NA	NA	NA	NA	NA
+neutrophil	gdTCR	NA	NA	NA	NA	NA
+NK-cell	gdTCR	NA	NA	NA	NA	NA
+non-classical monocyte	gdTCR	NA	NA	NA	NA	NA
+plasmacytoid DC	gdTCR	NA	NA	NA	NA	NA
+T-reg	gdTCR	NA	NA	NA	NA	NA
+basophil	HLA-DR	-	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+basophil	HLA-DR	-	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+basophil	HLA-DR	-	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+classical monocyte	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+classical monocyte	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+classical monocyte	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+eosinophil	HLA-DR	low	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+eosinophil	HLA-DR	low	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+eosinophil	HLA-DR	low	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+gdTCR	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+gdTCR	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+gdTCR	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+intermediate monocyte	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+intermediate monocyte	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+intermediate monocyte	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+MAIT T-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+MAIT T-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+MAIT T-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+myeloid DC	HLA-DR	high	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+myeloid DC	HLA-DR	high	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+myeloid DC	HLA-DR	high	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+memory B-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+memory B-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+memory B-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+memory CD4 T-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+memory CD4 T-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+memory CD4 T-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+memory CD8 T-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+memory CD8 T-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+memory CD8 T-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+naive B-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+naive B-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+naive B-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+naive CD4 T-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+naive CD4 T-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+naive CD4 T-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+naive CD8 T-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+naive CD8 T-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+naive CD8 T-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+neutrophil	HLA-DR	low	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+neutrophil	HLA-DR	low	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+neutrophil	HLA-DR	low	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+NK-cell	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+NK-cell	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+NK-cell	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+non-classical monocyte	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+non-classical monocyte	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+non-classical monocyte	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+plasmacytoid DC	HLA-DR	+	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+plasmacytoid DC	HLA-DR	+	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+plasmacytoid DC	HLA-DR	+	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+T-reg	HLA-DR	NA	HLA-DRA		ENSG00000204287	"major histocompatibility complex, class II, DR alpha"
+T-reg	HLA-DR	NA	HLA-DRB1		ENSG00000196126	"major histocompatibility complex, class II, DR beta 1"
+T-reg	HLA-DR	NA	HLA-DRB5		ENSG00000198502	"major histocompatibility complex, class II, DR beta 5"
+basophil	TCR Va7.2	NA	NA	NA	NA	NA
+classical monocyte	TCR Va7.2	NA	NA	NA	NA	NA
+eosinophil	TCR Va7.2	NA	NA	NA	NA	NA
+gdTCR	TCR Va7.2	-	NA	NA	NA	NA
+intermediate monocyte	TCR Va7.2	NA	NA	NA	NA	NA
+MAIT T-cell	TCR Va7.2	+	NA	NA	NA	NA
+myeloid DC	TCR Va7.2	NA	NA	NA	NA	NA
+memory B-cell	TCR Va7.2	NA	NA	NA	NA	NA
+memory CD4 T-cell	TCR Va7.2	NA	NA	NA	NA	NA
+memory CD8 T-cell	TCR Va7.2	NA	NA	NA	NA	NA
+naive B-cell	TCR Va7.2	NA	NA	NA	NA	NA
+naive CD4 T-cell	TCR Va7.2	NA	NA	NA	NA	NA
+naive CD8 T-cell	TCR Va7.2	NA	NA	NA	NA	NA
+neutrophil	TCR Va7.2	NA	NA	NA	NA	NA
+NK-cell	TCR Va7.2	NA	NA	NA	NA	NA
+non-classical monocyte	TCR Va7.2	NA	NA	NA	NA	NA
+plasmacytoid DC	TCR Va7.2	NA	NA	NA	NA	NA
+T-reg	TCR Va7.2	NA	NA	NA	NA	NA

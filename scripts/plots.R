@@ -183,12 +183,13 @@ make_general_environment_plots <- function(outpath) {
 
 make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, consensus_content_column, content_hierarchy = NULL, 
                        content_colors, plots = "all", plot.atlas = c("tissue", "blood", "brain"), plot.order,
-                       subatlas_unit = "celltype", global.atlas.category = NULL, 
+                       subatlas_unit = "celltype", global.atlas.category = NULL,
+                       sample.atlas = NULL, FACS_markers = NULL, sample_content_column = NULL, sample_Ex_column = NULL, 
                        outpath, prefix) {
   
   atlas.max.wide <- generate_wide(atlas.max, 
                                   ensg_column = 'ensg_id', 
-                                  group_column = content_column, 
+                                  group_column = consensus_content_column, 
                                   max_column = maxEx_column)
   
   atlas.elevated.table <- calc_elevated.table(tb.wide = atlas.max.wide, 
@@ -303,17 +304,17 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                              outpath = outpath, 
                              prefix = prefix)
     
-    make_expression_heatmaps(atlas.max.tb = atlas.max, 
-                             atlas.cat = atlas.cat, 
-                             maxEx_column = maxEx_column, 
-                             tissue_column = consensus_content_column, 
-                             ensemblanno.table = ensemblanno.table,
-                             proteinclass.table = proteinclass.table, 
-                             proteinclass.table_ensg_id_column = "rna.genes", 
-                             proteinclass.table_class_column = "proteinclass.vec.single", 
-                             outpath = outpath, 
-                             range_scale_x = T,
-                             prefix = paste(prefix, "range scaled", sep = "_"))
+    # make_expression_heatmaps(atlas.max.tb = atlas.max, 
+    #                          atlas.cat = atlas.cat, 
+    #                          maxEx_column = maxEx_column, 
+    #                          tissue_column = consensus_content_column, 
+    #                          ensemblanno.table = ensemblanno.table,
+    #                          proteinclass.table = proteinclass.table, 
+    #                          proteinclass.table_ensg_id_column = "rna.genes", 
+    #                          proteinclass.table_class_column = "proteinclass.vec.single", 
+    #                          outpath = outpath, 
+    #                          range_scale_x = T,
+    #                          prefix = paste(prefix, "range scaled", sep = "_"))
     
     
     
@@ -359,20 +360,20 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   ## ----- swarm plots ----
   ## swarm plot
   if("swarm expression" %in% plots | "all" %in% plots) {
-    make_swarm_expression_plot(atlas.max = atlas.max, 
-                               atlas.cat = atlas.cat, 
-                               maxEx_column = maxEx_column, 
-                               tissue_column = consensus_content_column,
-                               outpath = outpath,
-                               prefix = prefix)
-    
-    make_swarm_expression_plot(atlas.max = atlas.max, 
-                               atlas.cat = atlas.cat, 
-                               maxEx_column = maxEx_column, 
-                               tissue_column = consensus_content_column, 
-                               func = swarm_plot_points,
-                               outpath = outpath,
-                               prefix = paste0(prefix, "_points"))
+    # make_swarm_expression_plot(atlas.max = atlas.max, 
+    #                            atlas.cat = atlas.cat, 
+    #                            maxEx_column = maxEx_column, 
+    #                            tissue_column = consensus_content_column,
+    #                            outpath = outpath,
+    #                            prefix = prefix)
+    # 
+    # make_swarm_expression_plot(atlas.max = atlas.max, 
+    #                            atlas.cat = atlas.cat, 
+    #                            maxEx_column = maxEx_column, 
+    #                            tissue_column = consensus_content_column, 
+    #                            func = swarm_plot_points,
+    #                            outpath = outpath,
+    #                            prefix = paste0(prefix, "_points"))
     
     make_swarm_expression_plot(atlas.max = atlas.max, 
                                atlas.cat = atlas.cat, 
@@ -396,14 +397,14 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   }
   
   # Total elevated expression fraction
-  if("NX fraction bar" %in% plots | "all" %in% plots) {
-    make_elevated_NX_fraction_barplots(atlas.max = atlas.max, 
-                                       atlas.cat = atlas.cat, 
-                                       maxEx_column = maxEx_column,
-                                       tissue_column = consensus_content_column,
-                                       outpath = outpath, 
-                                       prefix = prefix)
-  }
+  # if("NX fraction bar" %in% plots | "all" %in% plots) {
+  #   make_elevated_NX_fraction_barplots(atlas.max = atlas.max, 
+  #                                      atlas.cat = atlas.cat, 
+  #                                      maxEx_column = maxEx_column,
+  #                                      tissue_column = consensus_content_column,
+  #                                      outpath = outpath, 
+  #                                      prefix = prefix)
+  # }
   
   if("classification pie" %in% plots | "all" %in% plots) {
     make_classification_pie_chart(atlas.cat = atlas.cat, 
@@ -417,9 +418,8 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   if("TPM NX example genes bar" %in% plots | "all" %in% plots) {
     atlas.max %>%
       filter(ensg_id %in% unique(ensg_id)[1:100]) %>%
-      make_gene_expression_barplot(maxEx_columns = c("Raw" = "expression_maxEx", 
-                                                     "TMM" = "dstmm.zero.expression_maxEx", 
-                                                     "TMM + Pareto" = "gene_dstmm.zero.impute.expression_maxEx"),
+      make_gene_expression_barplot(maxEx_columns = c("PTPM" = "max_ptpm", 
+                                                     "NX" = "max_nx"),
                                    content_column = consensus_content_column, 
                                    content_color = content_colors)
   }
@@ -612,6 +612,19 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                               global_name = "blood", 
                               prefix = prefix, 
                               outpath = outpath)
+      
+    }
+    
+    if("sample FACS boxplot" %in% plots | "all" %in% plots) {
+      
+      make_FACS_boxplot(sample_atlas = sample.atlas, 
+                        FACS_markers = FACS_markers, 
+                        plot.order = plot.order, 
+                        Ex_column = sample_Ex_column, 
+                        content_hierarchy = content_hierarchy, 
+                        content_column = sample_content_column, 
+                        plot_colors = content_colors, 
+                        x_title = "TMM normalized PTPM")
       
     }
   }
@@ -3824,3 +3837,126 @@ make_double_donut_chord <- function(cat1, cat2, regional_class_dictionary, grid.
   
 }
 
+
+
+make_FACS_boxplot <- function(sample_atlas, FACS_markers, plot.order, Ex_column, content_hierarchy, content_column, plot_colors, x_title = "expression") {
+  
+  # FACS_genes <- 
+  #   tibble(marker = c('CCR4', 'CD3', 'CD3', 'CD3', 
+  #                     'CD4', 'CD8', 'CD8', 'CD8', 
+  #                     'CD11c', 'CD14', 'CD15', 'CD15', 
+  #                     'CD16', 'CD16', 'CD19', 'CD20', 
+  #                     'CD25', 'CD27', 'CD38', 'CD45', 
+  #                     'CD45RA', 'CD56', 'CD123', 'CD127', 
+  #                     'CD161', 'CD193', 'CD203', 'HLA-DR', 
+  #                     'HLA-DR', 'HLA-DR', 'PTCRA'),
+  #          gene_name = c('CCR4', 'CD3G', 'CD3D', 'CD3E', 
+  #                        'CD4', 'CD8A', 'CD8B', 'CD8B2', 
+  #                        'ITGAX', 'CD14', 'FUT4', 'FUT9', 
+  #                        'FCGR3A', 'FCGR3B', 'CD19', 'MS4A1',
+  #                        'IL2RA', 'CD27', 'CD38', 'PTPRC', 
+  #                        'PTPRC', 'NCAM1', 'IL3RA', 'IL7R', 
+  #                        'KLRB1', 'CCR3', 'ENPP3', 'HLA-DRA', 
+  #                        'HLA-DRB1', 'HLA-DRB5', 'PTCRA'),
+  #          comment = c('','','','',
+  #                      '','','','',
+  #                      '','','synthesizes CD15','synthesizes CD15',
+  #                      '','','','',
+  #                      '','','','',
+  #                      '','','','',
+  #                      '','','','',
+  #                      '','','')) %>% 
+  #   left_join(ensemblanno.table %>% select(1, 2, 6), by = "gene_name")
+  # 
+  #  
+  # FACS %>% 
+  #   filter(!is.na(celltype)) %>% 
+  #   select(-2) %>% 
+  #   gather(key = "marker", value = "expression", -1) %>% 
+  #   left_join(FACS_genes, by = "marker") %>%
+  #   readr::write_delim("./ref/20190123FACS cell CD markers long.txt", delim = "\t")
+  
+  
+  
+  # if(!all(unique(sample_atlas$tissue) %in% plot.order)) {
+  #   missing_levels = unique(sample_atlas$tissue)[!unique(sample_atlas$tissue) %in% plot.order]
+  #   warning(paste0("Missing levels in plot.order: '", paste(missing_levels, collapse = "','"), 
+  #                  "'\nMissing levels added last in plot.order"))
+  #   plot.order_ <- c(plot.order, missing_levels)
+  # } else plot.order_ <- plot.order
+  
+  plot_data <- 
+    sample_atlas %>% 
+    rename(content_column = content_column, 
+           Ex_column = Ex_column) %>%
+    
+    left_join(content_hierarchy, by = c("content_column" = "content")) %>%
+    mutate(content_column = factor(content_column, levels = plot.order)) %>%
+    filter(!is.na(content_column)) #%>%
+    #left_join(FACS_markers, by = "ensg_id")
+  
+  
+  markers <- 
+    FACS_markers %>% 
+    select(marker, gene_name, ensg_id, gene_description, comment) %>%
+    unique()
+  
+  for(i in 1:nrow(markers)){
+    marker <- markers$marker[i] 
+    gene_name <- markers$gene_name[i]  
+    ensg <- markers$ensg_id[i]
+    gene_description <- markers$gene_description[i]  
+    commen <- markers$comment[i]  
+    
+    if(is.na(ensg)) next
+    
+    palet <- colorRampPalette(c("red3", "white", "darkgreen"))(3)
+    
+    label_colors <- 
+      FACS_markers %>%
+      filter(ensg_id == ensg) %>%
+      mutate(color = case_when(is.na(expression) ~ "black",
+                               expression == "high" ~ palet[3],
+                               expression == "+" ~ palet[3],
+                               expression == "low" ~ palet[1],
+                               expression == "-" ~ palet[1],
+                               expression =="either" ~ "black")) %>%
+      {.[match(plot.order, .$celltype),]} %$% 
+      setNames(color, celltype)
+    
+    titl <- ifelse(is.na(commen), 
+                   paste(unique(c(marker, gene_name)), collapse = " / "),
+                   paste0(paste(unique(c(marker, gene_name)), collapse = " / "), " (", commen, ")"))
+    
+    
+    plot_data %>%
+      filter(ensg_id == ensg) %>%
+      {ggplot(., aes(content_column, Ex_column, fill = content_l1))+
+          
+          geom_boxplot(show.legend = F) + 
+          geom_rect(data = data.frame(), 
+                    aes(xmin = 1:length(label_colors)-0.5, 
+                        xmax = 1:length(label_colors)+0.5, 
+                        ymin = -Inf, ymax = Inf), 
+                    fill = ifelse(label_colors == "black", NA, label_colors), 
+                    alpha = 0.3, inherit.aes = F) + 
+          geom_boxplot(show.legend = F) +
+          simple_theme +
+          ggtitle(label = titl, subtitle = gene_description) + 
+          coord_flip() + 
+          scale_fill_manual(name = "", 
+                            values = plot_colors) + 
+          theme(#axis.text.y = element_text(color = label_colors, face = ifelse(label_colors != "black", "bold", "plain")), 
+                axis.title.y = element_blank())}
+    
+    
+    
+    ggsave(paste(outpath, paste0(prefix, "_FACS_", gene_name, '_boxplot.pdf'),sep='/'), width = 10, height = 10)
+    
+  }
+  
+  
+  
+}
+
+ 
