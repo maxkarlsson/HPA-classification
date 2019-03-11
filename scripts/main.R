@@ -174,7 +174,8 @@ tissue.colors <- with(contenthierarchy.table.tissue, setNames(c(color, color, co
 
 blood.samples <-
   blood_sample_path %>%
-  readr::read_delim(delim = "\t")
+  readr::read_delim(delim = "\t") %>%
+  mutate(tissue_sample = paste(tissue, sample))
 
 
 
@@ -302,10 +303,10 @@ all.atlas <-
 
 
 # TMM Normalize sample data
-blood.samples.norm <- 
-  blood.samples %>% 
-  mutate(tissue_sample = paste(tissue, sample),
-         tmm = tmm_method_normalization(ptpm, sample_type, tissue_sample, ensg_id))
+# blood.samples.norm <- 
+#   blood.samples %>% 
+#   mutate(tissue_sample = paste(tissue, sample),
+#          tmm = tmm_method_normalization(ptpm, sample_type, tissue_sample, ensg_id))
   
 #
 # ----------- Step 3. Consensus ----------- 
@@ -570,13 +571,15 @@ plots <- c("",
            # "blood class tissue expression", 
            # "double donut chord",
            "sample FACS boxplot",
+           "sample UMAP tSNE",
+           "UMAP tSNE",
            "")
 
 make_plots(atlas = blood.atlas, 
            atlas.max = blood.atlas.max, 
            atlas.cat = blood.atlas.category, 
-           sample.atlas = blood.samples.norm,
-           sample_Ex_column = "tmm",
+           sample.atlas = blood.samples,
+           sample_Ex_column = "ptpm",
            Ex_column = "nx", 
            maxEx_column = "nx",  
            sample_content_column = "tissue", 
@@ -588,7 +591,7 @@ make_plots(atlas = blood.atlas,
            plot.atlas = "blood", 
            plot.order = blood_atlas_hierarchy %>%
              filter(!content %in% c("blood", "Total PBMCs")) %$% 
-             content[order(content_l1)],
+             content[order(content_l2, content_l1)],
            subatlas_unit = "celltype",
            FACS_markers = blood_atlas_FACS_markers,
            outpath = result_folder, 
@@ -598,8 +601,11 @@ make_plots(atlas = blood.atlas,
 atlas = blood.atlas 
 atlas.max = blood.atlas.max 
 atlas.cat = blood.atlas.category 
+sample.atlas = blood.samples
+sample_Ex_column = "ptpm"
 Ex_column = "nx" 
 maxEx_column = "nx"  
+sample_content_column = "tissue" 
 content_column = "content_name" 
 consensus_content_column = "consensus_content_name"
 content_hierarchy = blood_atlas_hierarchy 
@@ -608,11 +614,21 @@ plots = plots
 plot.atlas = "blood" 
 plot.order = blood_atlas_hierarchy %>%
   filter(!content %in% c("blood", "Total PBMCs")) %$% 
-  content[order(content_l1)]
+  content[order(content_l2, content_l1)]
 subatlas_unit = "celltype"
+FACS_markers = blood_atlas_FACS_markers
 outpath = result_folder 
 prefix = "blood_cells"
 ###
+
+
+
+
+#Make blood plots
+
+plot.order = blood_atlas_hierarchy %>%
+  filter(!content %in% c("blood", "Total PBMCs")) %$% 
+  content[order(content_l2, content_l1)]
 
 # =========== *Blood altas (6 cells)* =========== 
 

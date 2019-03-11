@@ -16,6 +16,6 @@ neutrophil	granulocytes	myeloid cells	myeloid cells
 NK-cell	NK-cell	lymphocytes	lymphocytes
 non-classical monocyte	monocytes	myeloid cells	myeloid cells
 plasmacytoid DC	dendritic cells	myeloid cells	myeloid cells
-Total PBMCs	total PBMC	total PBMC	total PBMC
+total PBMC	total PBMC	total PBMC	total PBMC
 T-reg	T-cells	lymphocytes	lymphocytes
 blood	blood	blood	blood

@@ -452,6 +452,23 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                                prefix = prefix)
   }
   
+  ## ----- UMAP and tSNE -----
+  if("UMAP tSNE" %in% plots | "all" %in% plots) {
+    
+    make_umap_plot_2(tb = atlas, 
+                     ensg_column = "ensg_id", 
+                     sample_column = content_column, 
+                     group_column = NULL, 
+                     Ex_column = sample_Ex_column, 
+                     plot_colors = content_colors,
+                     mean_expression_filter = 0.1,
+                     nudge_x = 1.5, 
+                     seed = 42, 
+                     tSNE_perplexity = 3,
+                     outpath = outpath,
+                     prefix = prefix)
+  }
+  
   # =========== *Subatlas*    ===========
   if("brain" %in% plot.atlas | "blood" %in% plot.atlas) {
     
@@ -627,6 +644,25 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
                         x_title = "TMM normalized PTPM")
       
     }
+    
+    if("sample UMAP tSNE" %in% plots | "all" %in% plots) {
+      
+      make_umap_plot_2(tb = sample.atlas, 
+                       ensg_column = "ensg_id", 
+                       sample_column = "tissue_sample", 
+                       group_column = sample_content_column, 
+                       Ex_column = sample_Ex_column, 
+                       plot_colors = content_colors,
+                       mean_expression_filter = 0.1,
+                       nudge_x = 1.5, 
+                       seed = 42, 
+                       tSNE_perplexity = 6,
+                       outpath = outpath,
+                       prefix = paste(prefix, "samples", sep = "_"))
+      
+    }
+    
+     
   }
   
   
@@ -634,6 +670,51 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
   
 }
 
+
+#####
+
+make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, 
+                                         consensus_content_column, content_hierarchy = NULL, 
+                                         content_colors, plot.order, global.atlas.category = NULL,
+                                         sample.atlas = NULL, FACS_markers = NULL, sample_content_column = NULL, sample_Ex_column = NULL, 
+                                         plot_theme, 
+                                         outpath, prefix) {
+  
+  atlas.max.wide <- generate_wide(atlas.max, 
+                                  ensg_column = 'ensg_id', 
+                                  group_column = consensus_content_column, 
+                                  max_column = maxEx_column)
+  
+  atlas.elevated.table <- calc_elevated.table(tb.wide = atlas.max.wide, 
+                                              atlas.categories = atlas.cat)
+  
+  atlas.elevated.summary.table <- calc_elevated.summary.table(atlas.elevated.table)
+  
+  # 1b
+  
+  # *** This plot could be smaller but the legend is too big right now
+  
+  atlas.max %>%
+    rename(consensus_content_column = consensus_content_column) %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>%
+    left_join(content_hierarchy, by = c("consensus_content_column" = "content")) %>%
+    filter(gene_name %in% c("CD40", "CD8A", "CTLA4")) %>%
+    mutate(consensus_content_column = factor(consensus_content_column, levels = plot.order)) %>% 
+    ggplot(aes(consensus_content_column, nx, fill = content_l1)) + 
+    geom_bar(stat = "identity") + 
+    facet_wrap(~ gene_name, nrow = 3, scales = "free_y") + 
+    plot_theme+
+    theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "top") + 
+    ylab("NX") + 
+    xlab("") + 
+    scale_fill_manual(values = content_colors, name = "")
+  
+  ggsave(paste(outpath, "Fig 1B.pdf", sep = "/"), width = 5, height = 8) 
+  
+  # 1c
+  
+  
+}
 
 #####
 make_gene_expression_barplot <- function(atlas.max.tb, maxEx_columns, content_column, content_color) {
@@ -766,6 +847,199 @@ make_clustering_plot <- function(tb.wide, colors, outpath, prefix){
 
 
 # ------ umap, PCA, tsne plots -----------
+
+make_umap_plot_2 <- function(tb, ensg_column, sample_column, group_column = NULL, Ex_column, plot_colors, 
+                             mean_expression_filter = 0, nudge_x = 1, seed = 42, tSNE_perplexity = 6, outpath, prefix) {
+  require(Biobase)
+  require(umap)
+  require(Rtsne)
+  
+  genes_passing_filters <-
+    tb %>%
+    rename(ensg_column = ensg_column,
+           Ex_column = Ex_column) %>%
+    group_by(ensg_column) %>%
+    summarise(mean_expression = mean(Ex_column, na.rm = T)) %>%
+    filter(mean_expression >= mean_expression_filter) %$%
+    ensg_column
+  
+  if(is.null(group_column)) {
+    tb_ <- 
+      tb %>%
+      rename(ensg_column = ensg_column,
+             Ex_column = Ex_column, 
+             sample_column = sample_column) %>%
+      filter(ensg_column %in% genes_passing_filters)
+  } else {
+    tb_ <- 
+      tb %>%
+      rename(ensg_column = ensg_column,
+             Ex_column = Ex_column, 
+             group_column = group_column,
+             sample_column = sample_column) %>%
+      filter(ensg_column %in% genes_passing_filters)
+  }
+  
+  
+  exprs <- 
+    tb_ %>%
+    dplyr::select(sample_column, ensg_column, Ex_column) %>%
+    spread(key = ensg_column, value = Ex_column) %>%
+    column_to_rownames("sample_column") 
+  
+  if(is.null(group_column)) {
+    pdata <- 
+      tb_ %>%
+      select(sample_column = sample_column) %>%
+      distinct() %>%
+      {.[order(match(.$sample_column, rownames(exprs))),]} 
+  } else {
+    pdata <- 
+      tb_ %>%
+      select(sample_column = sample_column,
+             group_column = group_column) %>%
+      distinct() %>%
+      {.[order(match(.$sample_column, rownames(exprs))),]} 
+  }
+  
+
+  stopifnot(all(rownames(exprs) == pdata$sample_column))
+  
+  # UMAP
+  set.seed(seed)
+  embedding <- umap(as.matrix(exprs))
+  
+  
+  if(is.null(group_column)) {
+    umap.plot.matrix <-
+      embedding$layout %>%
+      as.tibble() %>%
+      mutate(sample_column = as.factor(pdata$sample_column))
+  } else {
+    umap.plot.matrix <-
+      embedding$layout %>%
+      as.tibble() %>%
+      mutate(group_column = as.factor(pdata$group_column),
+             sample_column = as.factor(pdata$sample_column))
+  }
+  
+  
+  if(is.null(group_column)) {
+    umap.plot.matrix %>%
+      {ggplot(., aes(V1, V2, label = sample_column, fill = sample_column)) + 
+          geom_point(size = 2.5, 
+                     shape = 21,
+                     show.legend = F)+
+          
+          geom_text_repel(aes(color = sample_column),
+                          size=4, 
+                          show.legend = F)+ 
+          xlab('UMAP1')+
+          ylab('UMAP2')+
+          #labs(title= paste0('umap: ', prefix))+
+          simple_theme+ 
+          scale_color_manual(values = plot_colors)+
+          scale_fill_manual(values = plot_colors)}
+  } else {
+    umap.plot.matrix %>%
+      group_by(., group_column) %>% 
+      mutate(mean_V1 = mean(V1), mean_V2 = mean(V2)) %>%
+      {ggplot(., aes(V1, V2, label = group_column, fill = group_column)) + 
+          geom_point(size = 2.5, 
+                     shape = 21,
+                     show.legend = F)+
+          
+          geom_segment(aes(xend = mean_V1, yend = mean_V2, color = group_column),
+                       size=0.5,
+                       #linetype='dotted',
+                       show.legend = F)+
+          group_by(., group_column) %>% 
+          summarise(V1 = mean(V1), V2 = mean(V2)) %>%
+          {geom_label_repel(data = .,
+                            size=4, 
+                            nudge_x = ifelse(.$V1 > 0, -nudge_x, nudge_x),
+                            show.legend = F)}+ 
+          xlab('UMAP1')+
+          ylab('UMAP2')+
+          #labs(title= paste0('umap: ', prefix))+
+          simple_theme+ 
+          scale_color_manual(values = plot_colors)+
+          scale_fill_manual(values = plot_colors)}
+  }
+  
+  
+  
+  
+  ggsave(paste(outpath, paste0(prefix, '_umap.pdf'),sep='/'), width=10, height=10)
+  
+  
+  # tSNE
+  exprs_pdata <- 
+    pdata %>%
+    left_join(exprs %>%
+                rownames_to_column("sample_column"), 
+              by = "sample_column")
+  
+  set.seed(seed)
+  tsne_out <- Rtsne(exprs, perplexity = tSNE_perplexity, check_duplicates = F)
+  
+  if(is.null(group_column)) {
+    tsne_out$Y %>%
+      as.tibble() %>% 
+      bind_cols(pdata) %>%
+      {ggplot(., aes(V1, V2, label = sample_column, fill = sample_column)) + 
+          geom_point(size = 2.5, 
+                     shape = 21,
+                     show.legend = F)+
+          
+          geom_text_repel(aes(color = sample_column),
+                          size=4, 
+                          show.legend = F)+ 
+          xlab('tSNE1')+
+          ylab('tSNE2')+
+          #labs(title= paste0('umap: ', prefix))+
+          simple_theme+ 
+          scale_color_manual(values = plot_colors)+
+          scale_fill_manual(values = plot_colors)}
+    
+    
+  } else {
+    tsne_out$Y %>%
+      as.tibble() %>% 
+      bind_cols(pdata) %>%
+      group_by(., group_column) %>% 
+      mutate(mean_V1 = mean(V1), mean_V2 = mean(V2)) %>%
+      {ggplot(., aes(V1, V2, label = group_column, fill = group_column)) + 
+          geom_point(size = 2.5, 
+                     shape = 21,
+                     show.legend = F)+
+          
+          geom_segment(aes(xend = mean_V1, yend = mean_V2, color = group_column),
+                       size=0.5,
+                       #linetype='dotted',
+                       show.legend = F)+
+          group_by(., group_column) %>% 
+          summarise(V1 = mean(V1), V2 = mean(V2)) %>%
+          {geom_label_repel(data = .,
+                            size=4, 
+                            nudge_x = ifelse(.$V1 > 0, -nudge_x, nudge_x),
+                            show.legend = F)}+ 
+          xlab('tSNE1')+
+          ylab('tSNE2')+
+          #labs(title= paste0('umap: ', prefix))+
+          simple_theme+ 
+          scale_color_manual(values = plot_colors)+
+          scale_fill_manual(values = plot_colors)}
+    
+    
+  }
+  
+  
+  ggsave(paste(outpath, paste0(prefix, '_tsne.pdf'),sep='/'), width=10, height=10)
+  
+}
+
+
 make_umap_plot <- function(eset,outpath,prefix){
   require(umap)
   require(Rtsne)
