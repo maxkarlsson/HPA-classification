@@ -675,7 +675,7 @@ make_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, con
 
 make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column, maxEx_column, content_column, 
                                          consensus_content_column, content_hierarchy = NULL, 
-                                         content_colors, plot.order, global.atlas.category = NULL,
+                                         content_colors, plot.order, global.atlas = NULL, global.atlas.category = NULL,
                                          sample.atlas = NULL, FACS_markers = NULL, sample_content_column = NULL, sample_Ex_column = NULL, 
                                          plot_theme, 
                                          outpath, prefix) {
@@ -690,28 +690,426 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   atlas.elevated.summary.table <- calc_elevated.summary.table(atlas.elevated.table)
   
-  # 1b
+  # ----- 1c -----
   
   # *** This plot could be smaller but the legend is too big right now
+  
+  genes_to_plot <- c("CLC", "C1QA", "CTLA4", "CD19", "SCT", "KLRF1") #c("CD40", "CD8A", "CTLA4")
   
   atlas.max %>%
     rename(consensus_content_column = consensus_content_column) %>%
     left_join(ensemblanno.table, by = "ensg_id") %>%
     left_join(content_hierarchy, by = c("consensus_content_column" = "content")) %>%
-    filter(gene_name %in% c("CD40", "CD8A", "CTLA4")) %>%
-    mutate(consensus_content_column = factor(consensus_content_column, levels = plot.order)) %>% 
+    filter(gene_name %in% genes_to_plot) %>%
+    mutate(consensus_content_column = factor(consensus_content_column, levels = plot.order), 
+           gene_name = factor(gene_name, levels = genes_to_plot)) %>% 
     ggplot(aes(consensus_content_column, nx, fill = content_l1)) + 
     geom_bar(stat = "identity") + 
-    facet_wrap(~ gene_name, nrow = 3, scales = "free_y") + 
+    facet_wrap(~ gene_name, ncol = 1, scales = "free_y", strip.position = "left") + 
     plot_theme+
-    theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "top") + 
+    theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "top", panel.border = element_rect(fill = NA)) + 
     ylab("NX") + 
     xlab("") + 
     scale_fill_manual(values = content_colors, name = "")
   
-  ggsave(paste(outpath, "Fig 1B.pdf", sep = "/"), width = 5, height = 8) 
+  ggsave(paste(outpath, "Fig 1C.pdf", sep = "/"), width = 5, height = 8) 
   
-  # 1c
+  # not i paper as of now
+  
+  tb = sample.atlas
+  ensg_column = "ensg_id"
+  sample_column = "tissue_sample"
+  group_column = sample_content_column
+  Ex_column = sample_Ex_column
+  plot_colors = content_colors
+  mean_expression_filter = 0.1
+  nudge_x = 1.5
+  seed = 42
+  
+  require(Biobase)
+  require(umap)
+  
+  genes_passing_filters <-
+    tb %>%
+    rename(ensg_column = ensg_column,
+           Ex_column = Ex_column) %>%
+    group_by(ensg_column) %>%
+    summarise(mean_expression = mean(Ex_column, na.rm = T)) %>%
+    filter(mean_expression >= mean_expression_filter) %$%
+    ensg_column
+  
+  tb_ <- 
+    tb %>%
+    rename(ensg_column = ensg_column,
+           Ex_column = Ex_column, 
+           group_column = group_column,
+           sample_column = sample_column) %>%
+    filter(ensg_column %in% genes_passing_filters)
+  
+  exprs <- 
+    tb_ %>%
+    dplyr::select(sample_column, ensg_column, Ex_column) %>%
+    spread(key = ensg_column, value = Ex_column) %>%
+    column_to_rownames("sample_column") 
+  
+  pdata <- 
+    tb_ %>%
+    select(sample_column = sample_column,
+           group_column = group_column) %>%
+    distinct() %>%
+    {.[order(match(.$sample_column, rownames(exprs))),]}
+  
+  
+  # UMAP
+  set.seed(seed)
+  embedding <- umap(as.matrix(exprs))
+  
+  
+  umap.plot.matrix <-
+    embedding$layout %>%
+    as.tibble() %>%
+    mutate(group_column = as.factor(pdata$group_column),
+           sample_column = as.factor(pdata$sample_column))
+  
+  
+  umap.plot.matrix %>%
+    group_by(., group_column) %>% 
+    mutate(mean_V1 = mean(V1), mean_V2 = mean(V2)) %>%
+    
+    {ggplot(., aes(V1, V2, label = group_column, fill = group_column)) + 
+        geom_segment(aes(xend = mean_V1, yend = mean_V2, color = group_column),
+                     size=0.5,
+                     #linetype='dotted',
+                     show.legend = F)+
+        group_by(., group_column) %>% 
+        summarise(V1 = mean(V1), V2 = mean(V2)) %>%
+        left_join(content_hierarchy, by = c("group_column" = "content")) %>%
+        {geom_text_repel(data = ., aes(color = content_l1),
+                          size=4, 
+                          nudge_x = c('basophil' = -1, 
+                                      'classical monocyte' = 1.2, 
+                                      'eosinophil' = 0.8, 
+                                      'gdTCR' = 1, 
+                                      'intermediate monocyte' = -1.8, 
+                                      'MAIT T-cell' = 1, 
+                                      'memory B-cell' = -0.3, 
+                                      'memory CD4 T-cell' = -0.7, 
+                                      'memory CD8 T-cell' = -0.6, 
+                                      'myeloid DC' = 1, 
+                                      'naive B-cell' = 1, 
+                                      'naive CD4 T-cell' = -1.5, 
+                                      'naive CD8 T-cell' = -0.2, 
+                                      'neutrophil' = 1, 
+                                      'NK-cell' = 0.15, 
+                                      'non-classical monocyte' = 2, 
+                                      'plasmacytoid DC' = -1.5, 
+                                      'T-reg' = 1, 
+                                      'total PBMC' = 1),
+                          nudge_y = c('basophil' = 0.6, 
+                                      'classical monocyte' = 0.7, 
+                                      'eosinophil' = 0.5, 
+                                      'gdTCR' = -0.5, 
+                                      'intermediate monocyte' = 0, 
+                                      'MAIT T-cell' = 0.5, 
+                                      'memory B-cell' = 0.9, 
+                                      'memory CD4 T-cell' = -1, 
+                                      'memory CD8 T-cell' = -1.5, 
+                                      'myeloid DC' = 0, 
+                                      'naive B-cell' = -0.2, 
+                                      'naive CD4 T-cell' = 0, 
+                                      'naive CD8 T-cell' = 1, 
+                                      'neutrophil' = 0, 
+                                      'NK-cell' = -0.6, 
+                                      'non-classical monocyte' = 0.6, 
+                                      'plasmacytoid DC' = 0, 
+                                      'T-reg' = 0.5, 
+                                      'total PBMC' = 0),
+                          segment.color = "gray50", fontface = "bold",
+                          #segment.colour = rep(c("red", "black"), 10)[-1],#plot_colors[match(.$group_column, names(plot_colors))],
+                          show.legend = F)}+ 
+        geom_point(size = 2.5, 
+                   shape = 21,
+                   show.legend = F)+
+        
+        
+        
+        xlab('UMAP1')+
+        ylab('UMAP2')+
+        #labs(title= paste0('umap: ', prefix))+
+        plot_theme+ 
+        scale_color_manual(values = plot_colors)+
+        scale_fill_manual(values = plot_colors)}
+  
+  
+  
+  ggsave(paste(outpath, "unnamed.pdf", sep = "/"), width=7, height=7)
+  
+  
+  # ----- 2a ------
+  
+  #### wait for Wen's evolutionary function
+  
+  # ----- 2b -----
+  atlas.cat %>%
+    group_by(elevated.category) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("tissue enriched",
+               "group enriched",
+               "tissue enhanced",
+               "low tissue specificity",
+               "not detected"),
+             .$elevated.category), ]} %>%
+    mutate(elevated.category = factor(elevated.category, levels = rev(c("tissue enriched",
+                                                                        "group enriched",
+                                                                        "tissue enhanced",
+                                                                        "low tissue specificity",
+                                                                        "not detected"))),
+           label_y = cumsum(number) - number / 2) %>% {
+             ggplot(., aes("", number, fill = elevated.category)) +
+               geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+                geom_text(aes(x = 1.55, 
+                              y = label_y, 
+                              label = paste(toupper(substr(as.character(.$elevated.category), 1, 1)), 
+                                            substr(as.character(.$elevated.category), 2, 
+                                                   nchar(as.character(.$elevated.category))), 
+                                            sep=""),
+                              hjust = ifelse(elevated.category == "not detected", 1, 0)),
+                          size = 3.5)+
+                geom_segment(aes(x = 1.45, xend = 1.5,
+                              y = label_y, yend = label_y))+
+                geom_text(aes(x = 1.3, 
+                              y = label_y, 
+                              label = paste0(number, "\n", 
+                                             "(", round(100 * number / sum(number), digits = 1), "%)")), 
+                          color = "black", 
+                          #fontface = "bold"
+                          size = 3)+
+                coord_polar("y")+
+                #scale_x_discrete(expand = c(0, 0.6))+
+                scale_fill_manual(values = elevated.cat.cols) + 
+                theme_void() 
+             }
+  ggsave(paste(outpath, "Fig 2B a.pdf",sep='/'), width=6, height=6)
+  
+  
+  # atlas.elevated.summary.table %>%
+  # {names <- rownames(.); as.tibble(.) %>% mutate(tissue = names)} %>%
+  #   gather(key = "Classification", value = "Number of genes", -tissue) %>%
+  #   mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, FUN = function(x) sum(`Number of genes`[tissue == x & Classification %in% c("Tissue enriched","Celltype enriched",
+  #                                                                                                                                                              "Group enriched","Tissue enhanced","Celltype enhanced")])))]))),
+  #          Classification = factor(Classification, levels = c("Not detected in any tissues","Not detected in any celltypes","Not detected in this tissue","Not detected in this celltype","Mixed in this tissue", "Mixed in this celltype","Expressed in all tissues","Expressed in all celltypes","Tissue enhanced", "Celltype enhanced","Group enriched","Tissue enriched", "Celltype enriched")),
+  #          Classification = gsub(pattern = c("Celltype" = "Tissue"), replacement = names(c("Celltype" = "Tissue")), Classification)) %>%
+  #   filter(Classification %in% c("Tissue enriched","Celltype enriched",
+  #                                "Group enriched","Tissue enhanced","Celltype enhanced")) %>%
+  #   mutate(Classification = factor(Classification, levels = c("Celltype enhanced","Group enriched","Celltype enriched"))) %>%
+  #   ggplot(aes(tissue, `Number of genes`, fill = Classification))+
+  #   geom_bar(stat = "identity") +
+  #   scale_fill_manual(name = "",values = cat2.cols)+
+  #   scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
+  #   stripped_theme+
+  #   xlab("")+
+  #   ylab("Number of genes")+
+  #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+  #         legend.position = c(0.85, 0.7))
+  # ggsave(paste(outpath, "Fig 2A b.pdf",sep='/'), width=5, height=4)
+  
+  # ----- 2C -----
+  require(circlize)
+  circos.par(RESET = T)
+  
+  content_gene_class <- 
+    atlas.elevated.table %>%
+    as_tibble(., rownames = "ensg_id") %>%
+    gather(key = "content", "classification", -ensg_id) %>%
+    # Only include group enriched
+    filter(classification %in% c(3))
+  
+  mat <- 
+    content_gene_class %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+                                                                                filter(., content == cell2)$ensg_id))))} 
+  df <- 
+    mat%>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "number of genes", -from) %>%
+    filter(to != from) %>%
+    mutate(transfer = mapply(.$from, .$to, FUN = function(a,b) paste(sort(c(a,b)), collapse = " to "))) %>%
+    # Take only first occurence of transfer
+    {.[match(unique(.$transfer), .$transfer), ]}
+  
+  
+  
+  total.number.of.genes <- sapply(unique(c(df$from,df$to)), FUN = function(x) sum(df$`number of genes`[grep(x, df$transfer)]))
+  
+  classes <- unique(c(df$from, df$to))
+  tissues <- content_hierarchy$content[match(classes, content_hierarchy$content)]
+  track.levels <- names(content_hierarchy)
+  content_hierarchy_ <- 
+    content_hierarchy %>%
+    filter(content %in% classes)
+  
+  
+  pdf(paste(outpath, "Fig 2C.pdf",sep='/'), width = 10, height = 10)
+  
+  # palet <- colorRampPalette(colors = c("yellow", "orangered", "#800026"))
+  # 
+  # chord <- 
+  #   df %>% 
+  #   mutate(from.sum = total.number.of.genes[match(from, names(total.number.of.genes))],
+  #          to.sum = total.number.of.genes[match(to, names(total.number.of.genes))],
+  #          frac.mean = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) mean(c(n/a, n/b))),
+  #          frac.min = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) min(c(n/a, n/b))),
+  #          frac.max = mapply(`number of genes`, from.sum, to.sum, FUN = function(n,a,b) max(c(n/a, n/b)))) %>%
+  #          {chordDiagram(.[,1:3],
+  #                        grid.col = content_colors,
+  #                        col = palet(100)[cut(.$frac.max, breaks = 100)],
+  #                        directional = 0,link.largest.ontop = T,
+  #                        annotationTrack="grid",
+  #                        annotationTrackHeight = 0.02,
+  #                        preAllocateTracks = eval(parse(text = paste0("list(", 
+  #                                                                     paste0(rep("list(track.height = 0.05, 
+  #                                                                                track.margin = c(0.0035, 0.01))", 
+  #                                                                                length(track.levels)), collapse = ", "), ")"))),
+  #                        order = {if(length(track.levels) == 1) {
+  #                          classes
+  #                        } else {
+  #                          classes[with(content_hierarchy_[match(tissues, content_hierarchy_[, 1][[1]]),],
+  #                                       eval(parse(text = paste0("order(", paste(track.levels[-1], collapse = ", "), ")"))))]
+  #                        }
+  #                        })}
+  
+  #col_ <- colorRampPalette(colors = c("yellow", "orangered", "#800026"))
+
+  chord <-
+    df %>%
+    mutate(from_color = content_colors[match(from, names(content_colors))],
+           to_color = content_colors[match(to, names(content_colors))],
+           mid_color = mapply(A$from_color, A$to_color, FUN = function(a, b) colorRampPalette(colors = c(a, b))(3)[2])) %>%
+           {chordDiagram(.[,1:3],
+                         grid.col = content_colors,
+                         col = .$mid_color,
+                         directional = 0,link.largest.ontop = T,
+                         annotationTrack="grid",
+                         transparency = 0.2,
+                         annotationTrackHeight = 0.02,
+                         preAllocateTracks = eval(parse(text = paste0("list(",
+                                                                      paste0(rep("list(track.height = 0.05,
+                                                                                 track.margin = c(0.0035, 0.01))",
+                                                                                 length(track.levels)), collapse = ", "), ")"))),
+                         order = {if(length(track.levels) == 1) {
+                           classes
+                         } else {
+                           classes[with(content_hierarchy_[match(tissues, content_hierarchy_[, 1][[1]]),],
+                                        eval(parse(text = paste0("order(", paste(track.levels[-1], collapse = ", "), ")"))))]
+                         }
+                         })}
+  
+  sectors <-
+    content_hierarchy_ %>%
+    mutate(main.track.handle = content) %>%
+    gather(key = "level", value = "handle", -main.track.handle) %>%
+    mutate(color = content_colors[match(handle, names(content_colors))],
+           track =  match(level, rev(track.levels))) %>%
+    group_by(handle, color) %>%
+    summarise(track = list(unique(track)),
+              main.track.handles = list(unique(main.track.handle))) 
+  
+  # for(tissue in content_hierarchy_$content) {
+  #   highlight.sector(tissue, 
+  #                    track.index = 1:(length(track.levels)), 
+  #                    col = NA, lwd = 2,
+  #                    border = content_colors[match(tissue, names(content_colors))])
+  # }
+  
+  for(i in 1:nrow(sectors)) {
+    highlight.sector(sectors$main.track.handles[i][[1]], 
+                     track.index = sectors$track[i][[1]], 
+                     col = sectors$color[i], 
+                     text = sectors$handle[i], text.col = "white", facing = "bending", niceFacing = T, cex = 0.8)
+  }
+  
+  dev.off()
+  circos.clear()
+    
+    
+  
+  
+  ###########
+  
+  # ----- 5B -----
+  
+  tissues_to_plot <- c("pancreas", "salivary gland", "liver", 
+                       "heart muscle", "bone marrow", "lymph node",
+                       "cerebral cortex", "skin", 
+                       "T-reg", "memory B-cell", "neutrophil")
+  atlas_temp <- 
+    global.atlas %>%
+    rename(method_column = method, 
+           tissue_column = content_name) %>%
+    filter(method_column %in% c("HPA", "Blood")) %>%
+    filter(tissue_column %in% tissues_to_plot) %>%
+    left_join(proteinlocalization.table %>%
+                mutate(location = case_when(predicted_secreted ~ "secreted",
+                                            predicted_membrane ~ "membrane",
+                                            predicted_intracellular ~ "intracellular",
+                                            T ~ "")),
+              by = "ensg_id")
+  
+  # plot.data_order <-
+  #   atlas_temp %>%
+  #   group_by(tissue_column, location) %>%
+  #   summarise(sum_TPM = sum(ptpm, na.rm = T)) %>%
+  #   filter(location == "secreted") %>%
+  #   group_by(tissue_column) %>%
+  #   summarise(sum_TPM = sum(sum_TPM)) %$%
+  #   tissue_column[order(sum_TPM)]
+
+  plot.data_order <- tissues_to_plot
+  
+  atlas_temp %>%
+    mutate(display = ptpm > 5000,
+           display_label = ptpm > 10000,
+           label = ifelse(display_label, display_name, NA)) %>%
+           {rbind(.[.$display,] %>%
+                    select(tissue_column, location, ptpm, label) %>%
+                    mutate(stacked = "1"),
+                  .[!.$display,] %>%
+                    group_by(tissue_column, location) %>%
+                    summarise(ptpm = sum(ptpm, na.rm = T),
+                              label = paste0("n = ", length(ensg_id[nx >= 1]))) %>%
+                    ungroup() %>%
+                    mutate(stacked = "2"))} %>%
+    mutate(label_size = ifelse(ptpm > 50000, 50000, ptpm)) %>%
+    {.[order(.$stacked, .$ptpm),]} %>%
+    mutate(label = factor(label, levels = unique(label[order(location, stacked)])),
+           tissue_column = factor(tissue_column, levels = rev(plot.data_order))) %>%
+           {ggplot(., aes(tissue_column, ptpm, fill = paste(location, stacked), color = paste(location, stacked)))+
+               geom_bar(stat = "identity", color = "white")+
+               geom_text(aes(label = label, size = label_size),
+                         position = position_stack(vjust = 0.5), color = "white", fontface = "bold", show.legend = F)+
+               plot_theme +
+
+               scale_size_continuous(range = c(0.25, 4))+
+               scale_fill_manual(name = "primary location",
+                                 values = c(setNames(protein.localization.palette,
+                                                     # sapply(protein.localization.palette,
+                                                     #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+                                                     paste(names(protein.localization.palette),
+                                                           "2")),
+                                            setNames(sapply(protein.localization.palette,
+                                                            FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+                                                     paste(names(protein.localization.palette),
+                                                           "1")))) + 
+               scale_y_continuous(expand = c(0.01, 0.01))+
+               theme(legend.position = "bottom",
+                     legend.direction = "horizontal") + 
+               xlab("Tissue / Celltype") + 
+               ylab("PTPM")
+             }
+  ggsave(paste(outpath, "Fig 5B.pdf",sep='/'), width=10, height=8)
+  
   
   
 }

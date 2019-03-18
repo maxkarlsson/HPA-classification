@@ -1,5 +1,20 @@
 simple_theme <- theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
+stripped_theme <- 
+  theme(panel.background = element_rect(fill = NA, colour = NA),
+        plot.background = element_rect(fill = NA, color = NA),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        legend.key = element_rect(colour = NA),
+        #legend.position = "bottom",
+        #legend.direction = "horizontal",
+        legend.key.size= unit(0.3, "cm"),
+        legend.title = element_text(face="italic"),
+        axis.line = element_line(colour="black",size=0.5))
+
+
+
 theme_option_1 <- theme(plot.title = element_text(face = "bold",
                                                   size = rel(1), hjust = 0.5),
                         plot.subtitle=element_text(face = "bold",hjust = 0.5, size=13,vjust=1),

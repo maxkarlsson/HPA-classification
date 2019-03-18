@@ -337,12 +337,14 @@ all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
                                                         group.num = 6)
 readr::write_delim(all.atlas.category, path = paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'), delim = "\t")
 
-blood.atlas.category <- get.categories.with.num.expressed(blood.atlas.max,
-                                                          max_column = "nx", 
-                                                          cat_column = "consensus_content_name",
-                                                          enrich.fold = 4, 
-                                                          under.lim = 1, 
-                                                          group.num = 11)
+blood.atlas.category <- 
+  blood.atlas.max %>%
+  filter(consensus_content_name != "total PBMC") %>%
+  get.categories.with.num.expressed(max_column = "nx", 
+                                    cat_column = "consensus_content_name",
+                                    enrich.fold = 4, 
+                                    under.lim = 1, 
+                                    group.num = 11)
 readr::write_delim(blood.atlas.category, path = paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'), delim = "\t")
 
 # calculate brain categories
@@ -619,13 +621,12 @@ subatlas_unit = "celltype"
 FACS_markers = blood_atlas_FACS_markers
 outpath = result_folder 
 prefix = "blood_cells"
+global.atlas = all.atlas
 ###
 
 
-
-
 #Make blood plots
-
+plot.order = c('basophil', 'eosinophil', 'neutrophil', 'classical monocyte', 'non-classical monocyte', 'intermediate monocyte', 'T-reg', 'gdTCR', 'MAIT T-cell', 'memory CD4 T-cell', 'naive CD4 T-cell', 'memory CD8 T-cell', 'naive CD8 T-cell', 'memory B-cell', 'naive B-cell', 'plasmacytoid DC', 'myeloid DC', 'NK-cell', 'total PBMC')
 plot.order = blood_atlas_hierarchy %>%
   filter(!content %in% c("blood", "Total PBMCs")) %$% 
   content[order(content_l2, content_l1)]
