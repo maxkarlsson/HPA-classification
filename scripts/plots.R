@@ -690,6 +690,14 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   atlas.elevated.summary.table <- calc_elevated.summary.table(atlas.elevated.table)
   
+  global.atlas.max.wide <- generate_wide(global.atlas.max, 
+                                  ensg_column = 'ensg_id', 
+                                  group_column = consensus_content_column, 
+                                  max_column = global_maxEx_column)
+  global.atlas.elevated.table <- calc_elevated.table(tb.wide = global.atlas.max.wide, 
+                                              atlas.categories = global.atlas.category)
+  global.atlas.elevated.summary.table <- calc_elevated.summary.table(global.atlas.elevated.table)
+  
   # ----- 1c -----
   
   # *** This plot could be smaller but the legend is too big right now
@@ -712,7 +720,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
     xlab("") + 
     scale_fill_manual(values = content_colors, name = "")
   
-  ggsave(paste(outpath, "Fig 1C.pdf", sep = "/"), width = 5, height = 8) 
+  ggsave(paste(outpath, "Fig 1C.pdf", sep = "/"), width = 5, height = 6) 
   
   # not i paper as of now
   
@@ -842,9 +850,80 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   
   
-  ggsave(paste(outpath, "unnamed.pdf", sep = "/"), width=7, height=7)
+  ggsave(paste(outpath, "UMAP1.pdf", sep = "/"), width=7, height=7)
   
   
+  umap.plot.matrix %>%
+    group_by(., group_column) %>% 
+    mutate(mean_V1 = mean(V1), mean_V2 = mean(V2)) %>%
+    
+    {ggplot(., aes(V1, V2, label = group_column, fill = group_column)) + 
+        geom_segment(aes(xend = mean_V1, yend = mean_V2, color = group_column),
+                     size=0.1,
+                     #linetype='dotted',
+                     show.legend = F)+
+        group_by(., group_column) %>% 
+        summarise(V1 = mean(V1), V2 = mean(V2)) %>%
+        left_join(content_hierarchy, by = c("group_column" = "content")) %>%
+        {geom_text_repel(data = ., aes(color = content_l1),
+                         size=4, 
+                         nudge_x = c('basophil' = -1, 
+                                     'classical monocyte' = 1.2, 
+                                     'eosinophil' = 0.8, 
+                                     'gdTCR' = 1, 
+                                     'intermediate monocyte' = -1.8, 
+                                     'MAIT T-cell' = 1, 
+                                     'memory B-cell' = -0.3, 
+                                     'memory CD4 T-cell' = -0.7, 
+                                     'memory CD8 T-cell' = -0.6, 
+                                     'myeloid DC' = 1, 
+                                     'naive B-cell' = 1, 
+                                     'naive CD4 T-cell' = -1.5, 
+                                     'naive CD8 T-cell' = -0.2, 
+                                     'neutrophil' = 1, 
+                                     'NK-cell' = 0.15, 
+                                     'non-classical monocyte' = 2, 
+                                     'plasmacytoid DC' = -1.5, 
+                                     'T-reg' = 1, 
+                                     'total PBMC' = 1),
+                         nudge_y = c('basophil' = 0.6, 
+                                     'classical monocyte' = 0.7, 
+                                     'eosinophil' = 0.5, 
+                                     'gdTCR' = -0.5, 
+                                     'intermediate monocyte' = 0, 
+                                     'MAIT T-cell' = 0.5, 
+                                     'memory B-cell' = 0.9, 
+                                     'memory CD4 T-cell' = -1, 
+                                     'memory CD8 T-cell' = -1.5, 
+                                     'myeloid DC' = 0, 
+                                     'naive B-cell' = -0.2, 
+                                     'naive CD4 T-cell' = 0, 
+                                     'naive CD8 T-cell' = 1, 
+                                     'neutrophil' = 0, 
+                                     'NK-cell' = -0.6, 
+                                     'non-classical monocyte' = 0.6, 
+                                     'plasmacytoid DC' = 0, 
+                                     'T-reg' = 0.5, 
+                                     'total PBMC' = 0),
+                         segment.color = "lightgray", fontface = "bold", segment.size = 0.1,
+                         #segment.colour = rep(c("red", "black"), 10)[-1],#plot_colors[match(.$group_column, names(plot_colors))],
+                         show.legend = F)}+ 
+        geom_point(size = 2.5, 
+                   shape = 21,
+                   show.legend = F, 
+                   color = "gray25", 
+                   alpha = 0.8)+
+        
+        
+        
+        xlab('UMAP1')+
+        ylab('UMAP2')+
+        #labs(title= paste0('umap: ', prefix))+
+        plot_theme+ 
+        scale_color_manual(values = plot_colors)+
+        scale_fill_manual(values = plot_colors)}
+  
+  ggsave(paste(outpath, "UMAP2.pdf", sep = "/"), width=7, height=7)
   # ----- 2a ------
   
   #### wait for Wen's evolutionary function
@@ -859,59 +938,47 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                "low tissue specificity",
                "not detected"),
              .$elevated.category), ]} %>%
-    mutate(elevated.category = factor(elevated.category, levels = rev(c("tissue enriched",
-                                                                        "group enriched",
-                                                                        "tissue enhanced",
-                                                                        "low tissue specificity",
-                                                                        "not detected"))),
+    mutate(elevated.category = case_when(elevated.category == "tissue enriched" ~ "Blood cell\nenriched",
+                                         elevated.category == "group enriched" ~ "Group\nenriched",
+                                         elevated.category == "tissue enhanced" ~ "Blood cell\nenhanced",
+                                         elevated.category == "low tissue specificity" ~ "Low blood cell\nspecificity",
+                                         elevated.category == "not detected" ~ "Not detected"),
+           elevated.category = factor(elevated.category, levels = rev(c("Blood cell\nenriched",
+                                                                        "Group\nenriched",
+                                                                        "Blood cell\nenhanced",
+                                                                        "Low blood cell\nspecificity",
+                                                                        "Not detected"))),
            label_y = cumsum(number) - number / 2) %>% {
              ggplot(., aes("", number, fill = elevated.category)) +
                geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
-                geom_text(aes(x = 1.55, 
+                geom_text(aes(x = 1.55,#c(1.55, 1.55, 1.55, 1.55, 1.55), 
                               y = label_y, 
-                              label = paste(toupper(substr(as.character(.$elevated.category), 1, 1)), 
-                                            substr(as.character(.$elevated.category), 2, 
-                                                   nchar(as.character(.$elevated.category))), 
-                                            sep=""),
-                              hjust = ifelse(elevated.category == "not detected", 1, 0)),
-                          size = 3.5)+
+                              label = paste0(elevated.category, "\n(n = ", number, ")"),
+                              hjust = ifelse(elevated.category == "Not detected", 1, 0)),
+                          size = 4)+
                 geom_segment(aes(x = 1.45, xend = 1.5,
                               y = label_y, yend = label_y))+
-                geom_text(aes(x = 1.3, 
-                              y = label_y, 
-                              label = paste0(number, "\n", 
-                                             "(", round(100 * number / sum(number), digits = 1), "%)")), 
-                          color = "black", 
+                geom_text(aes(x = 1.3,
+                              y = label_y,
+                              # label = paste0(number, "\n",
+                              #                "(", round(100 * number / sum(number), digits = 1), "%)")),
+                              label = paste0(round(100 * number / sum(number), digits = 1), "%")),
+                          color = "black",
                           #fontface = "bold"
-                          size = 3)+
+                          size = 4)+
                 coord_polar("y")+
                 #scale_x_discrete(expand = c(0, 0.6))+
-                scale_fill_manual(values = elevated.cat.cols) + 
+                scale_fill_manual(values = c("Blood cell\nenriched" = "#e41a1c", 
+                                             "Group\nenriched" = "#FF9D00",
+                                             "Blood cell\nenhanced" = "#984ea3", 
+                                             "Low blood cell\nspecificity" = "grey40",
+                                             "Not detected" = "grey")) + 
                 theme_void() 
              }
   ggsave(paste(outpath, "Fig 2B a.pdf",sep='/'), width=6, height=6)
   
   
-  # atlas.elevated.summary.table %>%
-  # {names <- rownames(.); as.tibble(.) %>% mutate(tissue = names)} %>%
-  #   gather(key = "Classification", value = "Number of genes", -tissue) %>%
-  #   mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, FUN = function(x) sum(`Number of genes`[tissue == x & Classification %in% c("Tissue enriched","Celltype enriched",
-  #                                                                                                                                                              "Group enriched","Tissue enhanced","Celltype enhanced")])))]))),
-  #          Classification = factor(Classification, levels = c("Not detected in any tissues","Not detected in any celltypes","Not detected in this tissue","Not detected in this celltype","Mixed in this tissue", "Mixed in this celltype","Expressed in all tissues","Expressed in all celltypes","Tissue enhanced", "Celltype enhanced","Group enriched","Tissue enriched", "Celltype enriched")),
-  #          Classification = gsub(pattern = c("Celltype" = "Tissue"), replacement = names(c("Celltype" = "Tissue")), Classification)) %>%
-  #   filter(Classification %in% c("Tissue enriched","Celltype enriched",
-  #                                "Group enriched","Tissue enhanced","Celltype enhanced")) %>%
-  #   mutate(Classification = factor(Classification, levels = c("Celltype enhanced","Group enriched","Celltype enriched"))) %>%
-  #   ggplot(aes(tissue, `Number of genes`, fill = Classification))+
-  #   geom_bar(stat = "identity") +
-  #   scale_fill_manual(name = "",values = cat2.cols)+
-  #   scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
-  #   stripped_theme+
-  #   xlab("")+
-  #   ylab("Number of genes")+
-  #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
-  #         legend.position = c(0.85, 0.7))
-  # ggsave(paste(outpath, "Fig 2A b.pdf",sep='/'), width=5, height=4)
+  
   
   # ----- 2C -----
   require(circlize)
@@ -986,7 +1053,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
     df %>%
     mutate(from_color = content_colors[match(from, names(content_colors))],
            to_color = content_colors[match(to, names(content_colors))],
-           mid_color = mapply(A$from_color, A$to_color, FUN = function(a, b) colorRampPalette(colors = c(a, b))(3)[2])) %>%
+           mid_color = mapply(from_color, to_color, FUN = function(a, b) colorRampPalette(colors = c(a, b))(3)[2])) %>%
            {chordDiagram(.[,1:3],
                          grid.col = content_colors,
                          col = .$mid_color,
@@ -1033,10 +1100,445 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   dev.off()
   circos.clear()
     
+  # ----- 2E -----
+  
+  plot.data.unfilt <- 
+    atlas.max %>%
+    ungroup() %>%
+    mutate(NX = eval(parse(text = maxEx_column)),
+           Grouping = eval(parse(text = consensus_content_column)))
+  if(is.null(plot.order)) {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = as.factor(Grouping))
+  } else {
+    plot.data.unfilt <- 
+      plot.data.unfilt %>%
+      mutate(Grouping = factor(Grouping, levels = plot.order))
+  }
+  
+  plot.data.unfilt <- 
+    plot.data.unfilt %>%
+    dplyr::select(Grouping, ensg_id, NX) %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    left_join(proteinlocalization.table, by = "ensg_id") %>%
+    mutate(score = `tissue/group specific score`,
+           predicted_localization_class_simple = case_when(predicted_localization_class == "intracellular" ~ "",
+                                                           predicted_localization_class == "intracellular and membrane isoforms" ~ "membrane",
+                                                           predicted_localization_class == "intracellular and secreted isoforms" ~ "secreted",
+                                                           predicted_localization_class == "intracellular, membrane, secreted isoforms" ~ "membrane and secreted isoforms",
+                                                           T ~ predicted_localization_class),
+           predicted_localization_class_simple = case_when(predicted_secreted ~ "secreted",
+                                                           predicted_membrane ~ "membrane",
+                                                           predicted_intracellular ~ "intracellular",
+                                                           T ~ ""))
+  
+  
+  #---- Elevated genes
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched", "group enriched", "tissue enhanced") &
+             mapply(paste0("(^|, )", Grouping, "(, |$)"), 
+                    `enriched tissues`, FUN = function(x,y) grepl(x, y))) %>%
+                    {.[order(.$NX, decreasing = T),][1:1000,]}
+
+  
+  # --All elevated genes
+  # Expression
+  # plot.data %>%
+  #   func(color_palette = elevated.cat.cols, 
+  #        color_column = "elevated.category",
+  #        legend_name = "Elevated category", 
+  #        y_column = "expression")
+  # ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
+  
+  plot.data %>%
+    rename(y = NX) %>%
+    {ggplot(., aes(Grouping, y, label = display_name, color = predicted_localization_class_simple)) +
+        ggbeeswarm::geom_beeswarm(cex = 0.5)+
+        ggrepel::geom_text_repel(data = {
+          
+          group_by(., Grouping) %>%
+            mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
+            filter(rank <= 5) },
+          
+          fontface = "bold")+
+        
+        scale_color_manual(values = protein.localization.palette, name = "Protein location")+
+        scale_y_log10()+
+        ylab("NX")+
+        scale_size_continuous(guide = F)+
+        plot_theme+
+        theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line(),
+              axis.line.x = element_line(), 
+              legend.position = "top",
+              legend.direction = "horizontal")}
+  
+  ggsave(paste(outpath, "Fig swarm elevated.pdf",sep='/'), width=25, height=5)
+  
+  
+  plot.data <- 
+    plot.data.unfilt %>%
+    filter(elevated.category %in% c("tissue enriched") &
+             mapply(paste0("(^|, )", Grouping, "(, |$)"), 
+                    `enriched tissues`, FUN = function(x,y) grepl(x, y))) 
+  
+  plot.data %>%
+    rename(y = NX) %>%
+    {ggplot(., aes(Grouping, y, label = display_name, color = predicted_localization_class_simple)) +
+        ggbeeswarm::geom_beeswarm(cex = 0.5)+
+        ggrepel::geom_text_repel(data = {
+          
+          group_by(., Grouping) %>%
+            mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
+            filter(rank <= 5) },
+          
+          fontface = "bold")+
+        
+        scale_color_manual(values = protein.localization.palette, name = "Protein location")+
+        scale_y_log10()+
+        ylab("NX")+
+        scale_size_continuous(guide = F)+
+        plot_theme+
+        theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line(),
+              axis.line.x = element_line(), 
+              legend.position = "top",
+              legend.direction = "horizontal")}
+  
+  ggsave(paste(outpath, "Fig swarm enriched.pdf",sep='/'), width=25, height=5)
+  # ----- 3A -----
+  
+  genes <- 
+    atlas.max %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = consensus_content_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
     
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
   
   
-  ###########
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = rna.genes, 
+                       protein_class = proteinclass.vec.single), by = "ensg_id")
+  }
+  
+  
+  
+  
+  
+  #-----------------------------------------------------------------
+  #-----------------------------------------------------------------
+  ## All genes
+  plot.data <- 
+    genes 
+  
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = F, 
+                under_lim_tile_color = "black", 
+                x_margin = 0.1,
+                under_lim = 0)+
+      scale_fill_gradientn(name = "log(NX + 1)", colors = viridis::magma(4)) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, "Fig 3A.pdf",sep='/'), width=18, height=10)
+  
+  
+  # ----- 3B -----
+  
+  genes <- 
+    global.atlas.max %>%
+    rename(consensus_content_column = consensus_content_column) %>%
+    filter(!consensus_content_column %in% c("ductus deferens", "tongue", "retina")) %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = consensus_content_column, 
+           "expression" = "max_nx") %>%
+    mutate(expression = log10(expression + 1)) %>% 
+    
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
+  
+  
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = rna.genes, 
+                       protein_class = proteinclass.vec.single), by = "ensg_id")
+  }
+  
+  
+  
+  
+  
+  #-----------------------------------------------------------------
+  #-----------------------------------------------------------------
+  ## All genes
+  plot.data <- 
+    genes 
+  
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "euclidean", 
+                range_scale_x = F, 
+                under_lim_tile_color = "black", 
+                x_margin = 0.1,
+                under_lim = 0)+
+      scale_fill_gradientn(name = "log(NX + 1)", colors = viridis::magma(4)) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, "Fig 3B.pdf",sep='/'), width=18, height=10)
+  
+  
+  
+  # ----- 3C -----
+  
+  genes <- 
+    bind_rows(global.atlas.max %>%
+                rename(max_norm_exp = 3,
+                       nx = 4),
+              atlas.max) %>%
+    rename(consensus_content_column = consensus_content_column) %>%
+    filter(!consensus_content_column %in% c("ductus deferens", "tongue", "retina")) %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = consensus_content_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+    
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
+  
+  
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = rna.genes, 
+                       protein_class = proteinclass.vec.single), by = "ensg_id")
+  }
+  
+  
+  
+  
+  
+  #-----------------------------------------------------------------
+  #-----------------------------------------------------------------
+  ## All genes
+  plot.data <- 
+    genes 
+  
+  ## 1
+  plot.data %$%
+  {ggdendroheat(from, to, expression, 
+                x_clustering_method = "spearman", 
+                range_scale_x = F, 
+                under_lim_tile_color = "black", 
+                x_margin = 0.1,
+                under_lim = 0)+
+      scale_fill_gradientn(name = "log(NX + 1)", colors = viridis::magma(4)) + 
+      theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+      ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
+      xlab("genes")}
+  ggsave(paste(outpath, "Fig 3C.pdf",sep='/'), width=18, height=10)
+  ########
+  
+  # ----- 5A -----
+  
+  cat1 = global.atlas.category 
+  cat2 = atlas.cat 
+  regional_class_dictionary = c("low blood cell specificity",
+                                "not detected in blood cells",
+                                "blood cell elevated") 
+  grid.col = c("blood elevated" = "firebrick4", 
+               "elevated in other tissue" = "turquoise4", 
+               "low tissue specificity" = "grey40", 
+               "low blood cell specificity" = "grey40", 
+               "blood cell elevated" = "darkred", 
+               "not detected in blood cells" = "gray",
+               "not detected in tissues" = "gray")
+  
+  elevated_name <- "blood elevated"
+  
+  global_local_elevation <- 
+    left_join(cat1 %>%
+                select(ensg_id, `enriched tissues`, elevated.category), 
+              cat2 %>%
+                select(ensg_id, `enriched tissues`, elevated.category),
+              by = "ensg_id") %>%
+    mutate(global_elevation = case_when(elevated.category.x == "not detected" ~ "not detected in tissues", 
+                                        elevated.category.x == "low tissue specificity" ~ "low tissue specificity",
+                                        grepl("blood", `enriched tissues.x`) ~ elevated_name,
+                                        elevated.category.x %in% c("tissue enhanced",
+                                                                   "tissue enriched",
+                                                                   "group enriched") ~ "elevated in other tissue"),
+           local_elevation = case_when(elevated.category.y == "low tissue specificity" ~ regional_class_dictionary[1],
+                                       elevated.category.y == "not detected" ~ regional_class_dictionary[2],
+                                       elevated.category.y %in% c("tissue enhanced",
+                                                                  "tissue enriched",
+                                                                  "group enriched") ~ regional_class_dictionary[3])) 
+  
+  global_local_elevation_summary <- 
+    global_local_elevation %>%
+    group_by(global_elevation, local_elevation) %>%
+    summarise(number = length(ensg_id))
+  
+  pdf(file = paste(outpath, "Fig 5A.pdf",sep='/'), width=10, height=10, useDingbats = F)
+  
+  from = global_local_elevation_summary$global_elevation
+  to = global_local_elevation_summary$local_elevation
+  sizes = global_local_elevation_summary$number
+  groups = c(1, 1, 1, 1, 2, 2, 2)
+  plot.order = c(elevated_name, "elevated in other tissue", "low tissue specificity", "not detected in tissues",
+                 regional_class_dictionary[2], regional_class_dictionary[1], regional_class_dictionary[3])
+  
+  
+  factors.from <- unique(from)
+  factors.to <- unique(to)
+  factors <- c(factors.from, factors.to)
+  
+  
+  tb <- 
+    tibble(from, to, sizes)
+  
+  #groups <- groups[plot.order]
+  gap.after.par <- c()
+  for(i in 1:(length(groups)-1)) {
+    if(groups[i] == groups[i+1]) {
+      gap.after.par <- c(gap.after.par, 2)
+    } else {
+      gap.after.par <- c(gap.after.par, 15)
+    }
+  }
+  
+  if(groups[length(groups)] == groups[1]) {
+    gap.after.par <- c(gap.after.par, 2)
+  } else {
+    gap.after.par <- c(gap.after.par, 15)
+  }
+  
+  circos.par(gap.after = gap.after.par)
+  
+  chord <-
+    tb %>% 
+    chordDiagram(grid.col = grid.col,
+                 directional = 0,
+                 annotationTrack="grid",
+                 annotationTrackHeight = 0.05, 
+                 preAllocateTracks = 1, 
+                 order = plot.order)
+  
+  
+  for(i in 1:nrow(chord)) {
+    value <- chord$value[i]
+    if(is.null(value)) value <- chord$value1[1]
+    x1 <- chord$x1[i] - value / 2
+    x2 <- chord$x2[i] - value / 2
+    to_ <- chord$cn[i]
+    from_ <- chord$rn[i]
+    circos.text(x = x1, y = -1, track.index = 2, labels = value, cex = 0.7, sector.index = from_, niceFacing = T)
+    circos.text(x = x2, y = -1, track.index = 2, labels = value, cex = 0.7, sector.index = to_, niceFacing = T)
+  }
+  
+  
+  
+  
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim <- get.cell.meta.data("xlim")
+    ylim <- get.cell.meta.data("ylim")
+    sector.name <- get.cell.meta.data("sector.index")
+    sector.index <- get.cell.meta.data("sector.numeric.index")
+    
+    
+    
+    
+    circos.text(mean(xlim), 0.1, sector.name, niceFacing = TRUE, facing = "bending")
+  }, bg.border = NA)
+  
+  circos.clear()
+  
+  
+  dev.off()
+  
+  
   
   # ----- 5B -----
   
@@ -1111,6 +1613,192 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   ggsave(paste(outpath, "Fig 5B.pdf",sep='/'), width=10, height=8)
   
   
+  
+  
+  # Tissue elevated bar plot
+  
+  global.atlas.elevated.summary.table %>%
+  {names <- rownames(.); as.tibble(.) %>% mutate(tissue = names)} %>%
+    gather(key = "Classification", value = "Number of genes", -tissue) %>%
+    mutate(tissue = factor(tissue, levels = rev(unique(tissue[order(mapply(tissue, 
+                                                                           FUN = function(x) sum(`Number of genes`[tissue == x & 
+                                                                                                                     Classification %in% c("Tissue enriched","Celltype enriched",
+                                                                                                                                           "Group enriched","Tissue enhanced",
+                                                                                                                                           "Celltype enhanced")])))])))) %>%
+    filter(Classification %in% c("Tissue enriched","Celltype enriched",
+                                 "Group enriched","Tissue enhanced","Celltype enhanced")) %>%
+    mutate(Classification = factor(Classification, levels = c("Tissue enhanced","Group enriched","Tissue enriched"))) %>%
+    ggplot(aes(tissue, `Number of genes`, fill = Classification))+
+    geom_bar(stat = "identity") +
+    scale_fill_manual(name = "",values = cat2.cols)+
+    scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
+    stripped_theme+
+    xlab("")+
+    ylab("Number of genes")+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          legend.position = c(0.85, 0.7))
+  ggsave(paste(outpath, "Fig tissue elevated bar.pdf",sep='/'), width=5, height=4)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # ----- Supplementary -----
+  
+  # ----- blood specificity pie -----
+  atlas.cat %>%
+    group_by(express.category.2) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("expressed in single",
+               "expressed in some",
+               "expressed in many",
+               "expressed in all",
+               "not expressed"),
+             .$express.category.2), ]} %>%
+    mutate(express.category.2 = case_when(express.category.2 == "expressed in all" ~ "Expressed\nin all",
+                                          express.category.2 == "expressed in many" ~ "Expressed\nin many",
+                                          express.category.2 == "expressed in single" ~ "Expressed\nin single",
+                                          express.category.2 == "expressed in some" ~ "Expressed\nin some",
+                                          express.category.2 == "not expressed" ~ "Not expressed"),
+           express.category.2 = factor(express.category.2, levels = rev(c("Expressed\nin single",
+                                                                          "Expressed\nin some",
+                                                                          "Expressed\nin many",
+                                                                          "Expressed\nin all",
+                                                                          "Not expressed"))),
+           label_y = cumsum(number) - number / 2) %>% {
+             ggplot(., aes("", number, fill = express.category.2)) +
+               geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+               geom_text(aes(x = c(1.55, 1.55, 1.55, 1.6, 1.55), 
+                             y = label_y, 
+                             label = express.category.2,
+                             hjust = ifelse(express.category.2 == "Not expressed", 1, 0)),
+                         size = 4)+
+               geom_segment(aes(x = 1.45, xend = 1.5,
+                                y = label_y, yend = label_y))+
+               geom_text(aes(x = 1.3, 
+                             y = label_y, 
+                             label = paste0(number, "\n", 
+                                            "(", round(100 * number / sum(number), digits = 1), "%)")), 
+                         color = "black", 
+                         #fontface = "bold"
+                         size = 3)+
+               coord_polar("y")+
+               #scale_x_discrete(expand = c(0, 0.6))+
+               scale_fill_manual(values = c('Expressed\nin all' = '#253494', 
+                                            'Expressed\nin many' = '#2c7fb8', 
+                                            'Expressed\nin some' = '#41b6c4', 
+                                            'Expressed\nin single' = '#a1dab4', 
+                                            'Not expressed' = 'grey')) + 
+               theme_void() 
+           }
+  ggsave(paste(outpath, "Sup blood specificity pie.pdf",sep='/'), width=6, height=6)
+  
+  
+  # ----- global elevated pie -----
+  global.atlas.category %>%
+    group_by(elevated.category) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("tissue enriched",
+               "group enriched",
+               "tissue enhanced",
+               "low tissue specificity",
+               "not detected"),
+             .$elevated.category), ]} %>%
+    mutate(elevated.category = case_when(elevated.category == "tissue enriched" ~ "Tissue\nenriched",
+                                         elevated.category == "group enriched" ~ "Group\nenriched",
+                                         elevated.category == "tissue enhanced" ~ "Tissue\nenhanced",
+                                         elevated.category == "low tissue specificity" ~ "Low tissue\nspecificity",
+                                         elevated.category == "not detected" ~ "Not detected"),
+           elevated.category = factor(elevated.category, levels = rev(c("Tissue\nenriched",
+                                                                        "Group\nenriched",
+                                                                        "Tissue\nenhanced",
+                                                                        "Low tissue\nspecificity",
+                                                                        "Not detected"))),
+           label_y = cumsum(number) - number / 2) %>% {
+             ggplot(., aes("", number, fill = elevated.category)) +
+               geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+               geom_text(aes(x = 1.55,#c(1.55, 1.55, 1.55, 1.55, 1.55), 
+                             y = label_y, 
+                             label = elevated.category,
+                             hjust = ifelse(elevated.category == "Not detected" |
+                                              elevated.category == "Low tissue\nspecificity", 1, 0)),
+                         size = 4)+
+               geom_segment(aes(x = 1.45, xend = 1.5,
+                                y = label_y, yend = label_y))+
+               geom_text(aes(x = 1.3, 
+                             y = label_y, 
+                             label = paste0(number, "\n", 
+                                            "(", round(100 * number / sum(number), digits = 1), "%)")), 
+                         color = "black", 
+                         #fontface = "bold"
+                         size = 3)+
+               coord_polar("y")+
+               #scale_x_discrete(expand = c(0, 0.6))+
+               scale_fill_manual(values = c("Tissue\nenriched" = "#e41a1c", 
+                                            "Group\nenriched" = "#FF9D00",
+                                            "Tissue\nenhanced" = "#984ea3", 
+                                            "Low tissue\nspecificity" = "grey40",
+                                            "Not detected" = "grey")) + 
+               theme_void() 
+           }
+  ggsave(paste(outpath, "Sup global elevated pie.pdf",sep='/'), width=6, height=6)
+  
+  
+  # ----- global specificity pie -----
+  global.atlas.category %>%
+    group_by(express.category.2) %>%
+    summarise(number = length(ensg_id)) %>%
+    {.[match(c("expressed in single",
+               "expressed in some",
+               "expressed in many",
+               "expressed in all",
+               "not expressed"),
+             .$express.category.2), ]} %>%
+    mutate(express.category.2 = case_when(express.category.2 == "expressed in all" ~ "Expressed\nin all",
+                                          express.category.2 == "expressed in many" ~ "Expressed\nin many",
+                                          express.category.2 == "expressed in single" ~ "Expressed\nin single",
+                                          express.category.2 == "expressed in some" ~ "Expressed\nin some",
+                                          express.category.2 == "not expressed" ~ "Not expressed"),
+           express.category.2 = factor(express.category.2, levels = rev(c("Expressed\nin single",
+                                                                          "Expressed\nin some",
+                                                                          "Expressed\nin many",
+                                                                          "Expressed\nin all",
+                                                                          "Not expressed"))),
+           label_y = cumsum(number) - number / 2) %>% {
+             ggplot(., aes("", number, fill = express.category.2)) +
+               geom_bar(stat = "identity", show.legend = F, color = "white", size = 1)+
+               geom_text(aes(x = c(1.55, 1.55, 1.55, 1.6, 1.55), 
+                             y = label_y, 
+                             label = express.category.2,
+                             hjust = ifelse(express.category.2 == "Not expressed"|
+                                              express.category.2 == "Expressed\nin all", 1, 0)),
+                         size = 4)+
+               geom_segment(aes(x = 1.45, xend = 1.5,
+                                y = label_y, yend = label_y))+
+               geom_text(aes(x = 1.3, 
+                             y = label_y, 
+                             label = paste0(number, "\n", 
+                                            "(", round(100 * number / sum(number), digits = 1), "%)")), 
+                         color = "black", 
+                         #fontface = "bold"
+                         size = 3)+
+               coord_polar("y")+
+               #scale_x_discrete(expand = c(0, 0.6))+
+               scale_fill_manual(values = c('Expressed\nin all' = '#253494', 
+                                            'Expressed\nin many' = '#2c7fb8', 
+                                            'Expressed\nin some' = '#41b6c4', 
+                                            'Expressed\nin single' = '#a1dab4', 
+                                            'Not expressed' = 'grey')) + 
+               theme_void() 
+           }
+  ggsave(paste(outpath, "Sup global specificity pie.pdf",sep='/'), width=6, height=6)
   
 }
 

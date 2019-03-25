@@ -484,7 +484,7 @@ blood.atlas.category.cytoscape.nodes.full %>%
 
 # =========== *All altas =========== 
 plots <- c("",
-           "all",
+           #"all",
            # "spearman dendrogram",
            # "tissue distribution",
            # "PCA",
@@ -494,17 +494,17 @@ plots <- c("",
            # "class chord",
            # "group chord",
            # "heatmaps",
-           # "swarm expression",
+            "swarm expression")
            # "number detected bar",
            # "NX fraction bar",
            # "classification pie",
            # "TPM NX example genes bar",
            # "score plots",
-           "sum TPM",
+           #"sum TPM",
            # "class comparison chord",
            # "class comparison chord",
            # "spearman dendrogram",
-           "blood class tissue expression")
+           #"blood class tissue expression")
 
 make_plots(atlas = all.atlas, 
            atlas.max = all.atlas.max, 
@@ -575,7 +575,7 @@ plots <- c("",
            "sample FACS boxplot",
            "sample UMAP tSNE",
            "UMAP tSNE",
-           "")
+           "all")
 
 make_plots(atlas = blood.atlas, 
            atlas.max = blood.atlas.max, 
@@ -614,19 +614,30 @@ content_hierarchy = blood_atlas_hierarchy
 content_colors = with(blood_atlas_colors, setNames(color, content)) 
 plots = plots 
 plot.atlas = "blood" 
-plot.order = blood_atlas_hierarchy %>%
-  filter(!content %in% c("blood", "Total PBMCs")) %$% 
-  content[order(content_l2, content_l1)]
+# plot.order = blood_atlas_hierarchy %>%
+#   filter(!content %in% c("blood", "Total PBMCs")) %$% 
+#   content[order(content_l2, content_l1)]
+plot.order = c('basophil', 'eosinophil', 'neutrophil', 
+               'classical monocyte', 'non-classical monocyte', 'intermediate monocyte', 
+               'T-reg', 'gdTCR', 'MAIT T-cell', 'memory CD4 T-cell', 
+               'naive CD4 T-cell', 'memory CD8 T-cell', 'naive CD8 T-cell', 
+               'memory B-cell', 'naive B-cell', 
+               'plasmacytoid DC', 'myeloid DC', 
+               'NK-cell', 'total PBMC')
+
 subatlas_unit = "celltype"
 FACS_markers = blood_atlas_FACS_markers
 outpath = result_folder 
 prefix = "blood_cells"
 global.atlas = all.atlas
+global.atlas.max = all.atlas.max
+global.atlas.category = all.atlas.category
+global_maxEx_column = "max_nx"  
 ###
 
 
 #Make blood plots
-plot.order = c('basophil', 'eosinophil', 'neutrophil', 'classical monocyte', 'non-classical monocyte', 'intermediate monocyte', 'T-reg', 'gdTCR', 'MAIT T-cell', 'memory CD4 T-cell', 'naive CD4 T-cell', 'memory CD8 T-cell', 'naive CD8 T-cell', 'memory B-cell', 'naive B-cell', 'plasmacytoid DC', 'myeloid DC', 'NK-cell', 'total PBMC')
+
 plot.order = blood_atlas_hierarchy %>%
   filter(!content %in% c("blood", "Total PBMCs")) %$% 
   content[order(content_l2, content_l1)]
