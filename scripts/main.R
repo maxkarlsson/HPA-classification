@@ -45,6 +45,8 @@ blood_atlas_hierarchy <- readr::read_delim("ref/blood_atlas_hierarchy.txt", deli
 blood_atlas_colors <- readr::read_delim("ref/blood_atlas_colors.txt", delim = "\t")
 blood_atlas_FACS_markers <- readr::read_delim("ref/20190123FACS cell CD markers long.txt", delim = "\t")
 
+## essential genes
+hart2015 <- "data/Hart2015_essential_genes.xlsx"
 
 
 ## datasets
@@ -54,6 +56,7 @@ fantom_path <- './data/lims/rna_fantom.tsv'
 blood_path <- './data/lims/rna_blood.tsv'
 mouse_path <- './data/lims/rna_mousebrain_mouse_92.tsv'
 pig_path <- './data/lims/rna_pigbrain_pig_92.tsv'
+tissue2015_path <- './data/TissueAtlasSup(2015).xlsx'
 
 ### Sample data
 hpa_sample_path <- './data/lims/Sample TPM data/rna_all_tissue_sample_92.tsv'
@@ -178,6 +181,12 @@ blood.samples <-
   mutate(tissue_sample = paste(tissue, sample))
 
 
+## TissueAtlas 2015 dataset
+
+Tissue2015 <-
+  tissue2015_path %>%
+  readxl::read_excel(sheet = 1) 
+
 
 
 
@@ -269,6 +278,15 @@ cell.lines.atlas <-
   readr::read_delim(delim = "\t") 
   
 
+## Essential genes
+essential_genes_hart2015 <- 
+  hart2015 %>%
+  readxl::read_excel(sheet = 1) %>%
+  filter(numTKOHits >= 3) %>%
+  left_join(ensemblanno.table %>%
+              filter(ensg_id %in% unique(all.atlas.raw$ensg_id)), 
+            by = c("Gene" = "gene_name"))
+
 
 #
 # ----------- Step 2. normalization ----------- 
@@ -276,12 +294,14 @@ cell.lines.atlas <-
   
 blood.atlas <- 
   read_delim(blood_norm_path, delim = "\t") %>%
+  rename(content_name = 2) %>%
   mutate(method = "Blood") %>% 
   # Remove Total for classification
   filter(content_name != "total PBMC") 
 
 blood.atlas.total.PBMC <- 
   read_delim(blood_norm_path, delim = "\t") %>%
+  rename(content_name = 2) %>%
   mutate(method = "Blood") 
 
 blood.atlas.6 <- 
@@ -291,12 +311,15 @@ blood.atlas.6 <-
 
 all.atlas <- 
   bind_rows(read_delim(hpa_norm_path, delim = "\t") %>%
-              mutate(method = "HPA"),
+              mutate(method = "HPA") %>%
+              rename(content_name = 2),
             read_delim(gtex_norm_path, delim = "\t") %>%
-              mutate(method = "GTEx"),
+              mutate(method = "GTEx") %>%
+              rename(content_name = 2),
             read_delim(fantom_norm_path, delim = "\t") %>%
-              mutate(method = "FANTOM"),
-            blood.atlas)
+              mutate(method = "FANTOM") %>%
+              rename(content_name = 2),
+            blood.atlas) 
 
 
  # Load brain data
@@ -329,13 +352,18 @@ blood.atlas.max <-
 #
 
   
-all.atlas.category <- get.categories.with.num.expressed(all.atlas.max,
-                                                        max_column = "max_nx",
-                                                        cat_column = "consensus_content_name",
-                                                        enrich.fold = 4,
-                                                        under.lim = 1,
-                                                        group.num = 6)
-readr::write_delim(all.atlas.category, path = paste(result_folder, paste0('gene_categories_all_tissues.txt'),sep='/'), delim = "\t")
+all.atlas.category <-
+  read_delim(category_path, delim = "\t") %>%
+  rename(elevated.category = specificity_category,
+         express.category.2 = distribution_category,
+         `enriched tissues` = enhanced_tissues) %>%
+  mutate(elevated.category = tolower(elevated.category), 
+         category = case_when(elevated.category == 'not detected' ~ 1,
+                              elevated.category == 'tissue enriched' ~ 2,
+                              elevated.category == 'group enriched' ~ 3,
+                              elevated.category == 'tissue enhanced' ~ 4,
+                              elevated.category == 'low tissue specificity' ~ 5),
+         express.category.2 = gsub("detected", "expressed", express.category.2))
 
 blood.atlas.category <- 
   blood.atlas.max %>%
@@ -352,8 +380,6 @@ readr::write_delim(blood.atlas.category, path = paste(result_folder, paste0('gen
 # Add a test function: Compare LIMS and our classification
 
 
-# print number of different categories of genes
-table(all.atlas.category$category.text)
 all.atlas.category %>%
   group_by(elevated.category, express.category.2) %>% 
   summarise(n = length(elevated.category)) %>% 
@@ -414,10 +440,10 @@ blood.atlas.category.cytoscape.nodes.full %>%
 # ----------- Brain atlas classification ----------- 
 #
 # 
-# brain.atlas <- 
-#   all.atlas %>%
-#   filter(!method=='HPA') %>%
-#   filter(consensus_content_name == "brain")
+brain.atlas <-
+  all.atlas %>%
+  filter(!method=='HPA') %>%
+  filter(consensus_content_name == "brain")
 # 
 # brain.atlas <- 
 #   brain.atlas %>%
@@ -587,13 +613,18 @@ make_plots(atlas = blood.atlas,
            sample_content_column = "tissue", 
            content_column = "content_name", 
            consensus_content_column = "consensus_content_name",
+           method_column = "method",
            content_hierarchy = blood_atlas_hierarchy, 
            content_colors = with(blood_atlas_colors, setNames(color, content)), 
            plots = plots, 
            plot.atlas = "blood", 
-           plot.order = blood_atlas_hierarchy %>%
-             filter(!content %in% c("blood", "Total PBMCs")) %$% 
-             content[order(content_l2, content_l1)],
+           plot.order = c('basophil', 'eosinophil', 'neutrophil', 
+                          'classical monocyte', 'non-classical monocyte', 'intermediate monocyte', 
+                          'T-reg', 'gdTCR', 'MAIT T-cell', 'memory CD4 T-cell', 
+                          'naive CD4 T-cell', 'memory CD8 T-cell', 'naive CD8 T-cell', 
+                          'memory B-cell', 'naive B-cell', 
+                          'plasmacytoid DC', 'myeloid DC', 
+                          'NK-cell', 'total PBMC'),
            subatlas_unit = "celltype",
            FACS_markers = blood_atlas_FACS_markers,
            outpath = result_folder, 
@@ -612,6 +643,7 @@ content_column = "content_name"
 consensus_content_column = "consensus_content_name"
 content_hierarchy = blood_atlas_hierarchy 
 content_colors = with(blood_atlas_colors, setNames(color, content)) 
+method_column = "method"
 plots = plots 
 plot.atlas = "blood" 
 # plot.order = blood_atlas_hierarchy %>%
@@ -632,15 +664,39 @@ prefix = "blood_cells"
 global.atlas = all.atlas
 global.atlas.max = all.atlas.max
 global.atlas.category = all.atlas.category
-global_maxEx_column = "max_nx"  
+global_maxEx_column = "nx"  
 ###
 
 
 #Make blood plots
+make_blood_atlas_paper_plots(atlas = blood.atlas, 
+                             atlas.max = blood.atlas.max, 
+                             atlas.cat = blood.atlas.category, 
+                             Ex_column = "nx", 
+                             maxEx_column = "nx", 
+                             content_column = "content_name", 
+                             consensus_content_column = "consensus_content_name", 
+                             content_hierarchy = blood_atlas_hierarchy, 
+                             content_colors = with(blood_atlas_colors, setNames(color, content)), 
+                             plot.order = c('basophil', 'eosinophil', 'neutrophil', 
+                                            'classical monocyte', 'non-classical monocyte', 'intermediate monocyte', 
+                                            'T-reg', 'gdTCR', 'MAIT T-cell', 'memory CD4 T-cell', 
+                                            'naive CD4 T-cell', 'memory CD8 T-cell', 'naive CD8 T-cell', 
+                                            'memory B-cell', 'naive B-cell', 
+                                            'plasmacytoid DC', 'myeloid DC', 
+                                            'NK-cell', 'total PBMC'), 
+                             global.atlas = all.atlas, 
+                             global.atlas.max = all.atlas.max,
+                             global.atlas.category = all.atlas.category,
+                             global_maxEx_column = "nx",
+                             sample.atlas = blood.samples, 
+                             FACS_markers = blood_atlas_FACS_markers, 
+                             sample_content_column = "tissue", 
+                             sample_Ex_column = "ptpm", 
+                             plot_theme = stripped_theme, 
+                             outpath = result_folder, 
+                             prefix = "Blood Atlas")
 
-plot.order = blood_atlas_hierarchy %>%
-  filter(!content %in% c("blood", "Total PBMCs")) %$% 
-  content[order(content_l2, content_l1)]
 
 # =========== *Blood altas (6 cells)* =========== 
 

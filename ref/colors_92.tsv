@@ -68,7 +68,7 @@ blood	blood	#b30000	tissue
 appendix	Bone marrow & immune system	#A1A8AA	tissue
 bone marrow	Bone marrow & immune system	#A1A8AA	tissue
 lymph node	Bone marrow & immune system	#A1A8AA	tissue
-lymphoid system	Bone marrow & immune system	#A1A8AA	tissue
+lymphoid tissue	Bone marrow & immune system	#A1A8AA	tissue
 spleen	Bone marrow & immune system	#A1A8AA	tissue
 thymus	Bone marrow & immune system	#A1A8AA	tissue
 tonsil	Bone marrow & immune system	#A1A8AA	tissue
@@ -120,7 +120,7 @@ thalamus	Brain	#6BA792	tissue
 ventral forebrain	Brain	#6BA792	tissue
 visual cortex	Brain	#6BA792	tissue
 breast	Breast and female reproductive system	#F8BDD7	tissue
-cervix, uterine	Breast and female reproductive system	#F8BDD7	tissue
+"cervix, uterine"	Breast and female reproductive system	#F8BDD7	tissue
 endometrium	Breast and female reproductive system	#F8BDD7	tissue
 fallopian tube	Breast and female reproductive system	#F8BDD7	tissue
 lactating breast	Breast and female reproductive system	#F8BDD7	tissue
@@ -146,11 +146,11 @@ kidney	Kidney & urinary bladder	#F9A266	tissue
 urinary bladder	Kidney & urinary bladder	#F9A266	tissue
 gallbladder	Liver & gallbladder	#D1CBE5	tissue
 liver	Liver & gallbladder	#D1CBE5	tissue
-appendix	lymphoid system	#A1A8AA	tissue
-lymph node	lymphoid system	#A1A8AA	tissue
-spleen	lymphoid system	#A1A8AA	tissue
-thymus	lymphoid system	#A1A8AA	tissue
-tonsil	lymphoid system	#A1A8AA	tissue
+appendix	lymphoid tissue	#A1A8AA	tissue
+lymph node	lymphoid tissue	#A1A8AA	tissue
+spleen	lymphoid tissue	#A1A8AA	tissue
+thymus	lymphoid tissue	#A1A8AA	tissue
+tonsil	lymphoid tissue	#A1A8AA	tissue
 ductus deferens	Male reproductive system	#95D4F5	tissue
 epididymis	Male reproductive system	#95D4F5	tissue
 prostate	Male reproductive system	#95D4F5	tissue
