@@ -29,3 +29,4 @@ dendritic cells	#199985
 T-cells	#7D8DAF
 B-cells	#66287F
 NK-cells	#ad1d78
+progenitor	#657d4a

@@ -40,7 +40,26 @@ tmm_method_normalization <- function(expression, method, tissue.method, ensg_id)
     return(tmm.expression)
 }
 
-
+tmm_normalization <- function(expression, tissue.method, ensg_id){
+  # TMM: normalization
+  tb.tmm <-
+    tibble(expression, tissue.method, ensg_id) %>%
+    left_join({
+      tb <- 
+        spread(.,key = tissue.method, value = expression) %>%
+        column_to_rownames("ensg_id") %>%
+        as.matrix() %>%
+        NOISeq::tmm() %>%
+        {names <- rownames(.); as.tibble(.) %>% mutate(ensg_id = names)} %>%
+        gather(key = "tissue.method", value = "tmm.expression", -ensg_id)},
+      by = c("ensg_id","tissue.method")) %>%
+    mutate(tmm.expression = ifelse(is.na(tmm.expression), 
+                                   expression, 
+                                   tmm.expression),
+           tmm.expression = ifelse(tmm.expression<0, 0, 
+                                   tmm.expression)) %$%
+    return(tmm.expression)
+}
 
 pareto_scale_method_gene <- function(expression, method, ensg_id) {
   #SD: Method and gene standard deviation on dataset scaled values

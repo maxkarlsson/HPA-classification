@@ -928,9 +928,187 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
         scale_fill_manual(values = plot_colors)}
   
   ggsave(paste(outpath, "UMAP2.pdf", sep = "/"), width=7, height=7)
-  # ----- 2a ------
   
-  #### wait for Wen's evolutionary function
+  
+  umap.plot.matrix %>%
+    group_by(., group_column) %>% 
+    mutate(mean_V1 = mean(V1), mean_V2 = mean(V2)) %>%
+    
+    {ggplot(., aes(V1, V2, label = group_column, fill = group_column)) + 
+        geom_segment(aes(xend = mean_V1, yend = mean_V2, color = group_column),
+                     size=0.3,
+                     linetype='dotted',
+                     show.legend = F)+
+        group_by(., group_column) %>% 
+        summarise(V1 = mean(V1), V2 = mean(V2)) %>%
+        left_join(content_hierarchy, by = c("group_column" = "content")) %>%
+        {geom_text_repel(data = ., aes(color = content_l1),
+                         size=4, 
+                         nudge_x = c('basophil' = -1, 
+                                     'classical monocyte' = 1.2, 
+                                     'eosinophil' = 0.8, 
+                                     'gdTCR' = 1, 
+                                     'intermediate monocyte' = -1.8, 
+                                     'MAIT T-cell' = 1, 
+                                     'memory B-cell' = -0.3, 
+                                     'memory CD4 T-cell' = -0.7, 
+                                     'memory CD8 T-cell' = -0.6, 
+                                     'myeloid DC' = 1, 
+                                     'naive B-cell' = 1, 
+                                     'naive CD4 T-cell' = -1.5, 
+                                     'naive CD8 T-cell' = -0.2, 
+                                     'neutrophil' = 1, 
+                                     'NK-cell' = 0.15, 
+                                     'non-classical monocyte' = 2, 
+                                     'plasmacytoid DC' = -1.5, 
+                                     'T-reg' = 1, 
+                                     'total PBMC' = 1),
+                         nudge_y = c('basophil' = 0.6, 
+                                     'classical monocyte' = 0.7, 
+                                     'eosinophil' = 0.5, 
+                                     'gdTCR' = -0.5, 
+                                     'intermediate monocyte' = 0, 
+                                     'MAIT T-cell' = 0.5, 
+                                     'memory B-cell' = 0.9, 
+                                     'memory CD4 T-cell' = -1, 
+                                     'memory CD8 T-cell' = -1.5, 
+                                     'myeloid DC' = 0, 
+                                     'naive B-cell' = -0.2, 
+                                     'naive CD4 T-cell' = 0, 
+                                     'naive CD8 T-cell' = 1, 
+                                     'neutrophil' = 0, 
+                                     'NK-cell' = -0.6, 
+                                     'non-classical monocyte' = 0.6, 
+                                     'plasmacytoid DC' = 0, 
+                                     'T-reg' = 0.5, 
+                                     'total PBMC' = 0),
+                         segment.color = "black", fontface = "bold", segment.size = 0.1,
+                         #segment.colour = rep(c("red", "black"), 10)[-1],#plot_colors[match(.$group_column, names(plot_colors))],
+                         show.legend = F)}+ 
+        geom_point(size = 5, 
+                   shape = 21,
+                   show.legend = F, 
+                   color = "gray25", 
+                   alpha = 0.8)+
+        
+        
+        
+        xlab('UMAP1')+
+        ylab('UMAP2')+
+        #labs(title= paste0('umap: ', prefix))+
+        plot_theme+ 
+        theme(aspect.ratio = 1)+
+        scale_color_manual(values = plot_colors)+
+        scale_fill_manual(values = plot_colors)}
+  
+  ggsave(paste(outpath, "UMAP.pdf", sep = "/"), width=7, height=7, useDingbats = F)
+  # ----- UMAP Monaco Schmiedel -----
+  
+  
+  require(Biobase)
+  require(umap)
+  
+  genes_passing_filters <-
+    joined_blood_atlas_normed %>%
+    group_by(ensg_id) %>%
+    summarise(mean_expression = mean(norm, na.rm = T)) %>%
+    filter(mean_expression >= 0.1) %$%
+    ensg_id
+  
+  tb_ <- 
+    joined_blood_atlas_normed %>%
+    filter(ensg_id %in% genes_passing_filters)
+  
+  exprs <- 
+    tb_ %>%
+    dplyr::select(tissue.method, ensg_id, norm) %>%
+    spread(key = ensg_id, value = norm) %>%
+    column_to_rownames("tissue.method") 
+  
+  pdata <- 
+    tb_ %>%
+    select(content_name,
+           tissue.method,
+           type) %>%
+    distinct() %>%
+    {.[order(match(.$tissue.method, rownames(exprs))),]}
+  
+  
+  # UMAP
+  set.seed(42)
+  embedding <- umap(as.matrix(exprs))
+  
+  
+  umap.plot.matrix <-
+    embedding$layout %>%
+    as.tibble() %>%
+    mutate(content_name = as.factor(pdata$content_name),
+           tissue.method = as.factor(pdata$tissue.method), 
+           type = as.factor(pdata$type))
+  
+  umap.plot.matrix %>%
+    group_by(content_name) %>% 
+    mutate(mean_V1 = mean(V1), mean_V2 = mean(V2)) %>%
+    left_join(monaco_schmiedel_lineage, 
+              by = "content_name") %>%
+    
+    {ggplot(., aes(V1, V2, 
+                   label = content_name, 
+                   shape = type, 
+                   color = lineage)) + 
+        geom_segment(aes(xend = mean_V1, yend = mean_V2, color = lineage),
+                     size=0.3,
+                     linetype='dotted',
+                     show.legend = F)+
+        geom_point(size = 3, 
+                   #shape = 21,
+                   show.legend = T, 
+                   # color = "gray25", 
+                   alpha = 0.95)+
+        geom_text_repel(data = group_by(., content_name, lineage) %>% 
+                          summarise(V1 = mean(V1), V2 = mean(V2)), 
+                        aes(V1, V2, label = content_name, color = lineage),
+                        size=2.5, 
+                        segment.color = "black", 
+                        color = "black",
+                        # fontface = "bold", 
+                        segment.size = 0.1,
+                        inherit.aes = F,
+                        show.legend = F)+ 
+        
+        
+        
+        
+        xlab('UMAP1')+
+        ylab('UMAP2')+
+        #labs(title= paste0('umap: ', prefix))+
+        plot_theme+ 
+        theme(aspect.ratio = 1)+
+        scale_color_manual(values = content_colors)+
+        scale_fill_manual(values = content_colors)}
+  
+  ggsave(paste(outpath, "UMAP Monaco Schmiedel.pdf", sep = "/"), width=7, height=7, useDingbats = F)
+  
+  
+  # ----- Wen's evolution tree ------
+  
+  require(ape)
+  
+  all.samples.dist <- cor(atlas.max.wide, method = 'spearman', use="pairwise.complete.obs")
+  all.samples.nj <- nj(dist(1-all.samples.dist))
+  all.samples.boots <- boot.phylo(all.samples.nj, 1-all.samples.dist, function(x) nj(dist(1-all.samples.dist)), B = 1000)
+  
+  
+  pdf(file = paste0(result_folder, '/blood_neighber_joining_clustering_allsamples.pdf'), width=7, height=7, useDingbats = F)
+  plot.phylo(as.phylo(all.samples.nj), 
+             type="u", 
+             lab4ut = "axial", font = 1, cex = 0.8,
+             tip.color = content_colors,
+             edge.col="black", 
+             edge.width=2, 
+             show.node.label=TRUE, no.margin=TRUE,use.edge.length = T)
+  dev.off()
+  
   
   # ----- specificity pie blood cells -----
   atlas.cat %>%
@@ -988,6 +1166,8 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   pdf(paste(outpath, "Fig chord blood spec-dist.pdf",sep='/'), width=10, height=10, useDingbats = F)
   atlas.cat %>%
+    mutate(express.category.2  = gsub("expressed", "detected", 
+                                      gsub("not expressed", "not detected ", express.category.2))) %>%
     group_by(elevated.category,express.category.2) %>% 
     summarize(num.genes=n()) %$%
     chord_classification(from = elevated.category, 
@@ -996,13 +1176,15 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                          grid.col = c(elevated.cat.cols, expressed.cat.cols),#c(cat.cols, "not expressed" = "gray", "low tissue specificity" = "#4daf4a", "expressed in all" = "#377eb8", "expressed in some" = "#377eb8", "expressed in single" = "#377eb8", "expressed in many" = "#377eb8"),
                          groups = c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
                          plot.order = c(c("not detected", "low tissue specificity","tissue enhanced", "group enriched", "tissue enriched"), 
-                                        c("not expressed","expressed in single", "expressed in some","expressed in many", "expressed in all")),
+                                        c("not detected ","detected in single", "detected in some","detected in many", "detected in all")),
                          size_labels = T,
                          line_expansion = 0)
   dev.off()
   
   pdf(paste(outpath, "Fig chord global spec-dist.pdf",sep='/'), width=10, height=10, useDingbats = F)
   global.atlas.category %>%
+    mutate(express.category.2  = gsub("expressed", "detected", 
+                                      gsub("not expressed", "not detected ", express.category.2))) %>%
     group_by(elevated.category,express.category.2) %>% 
     summarize(num.genes=n()) %$%
     chord_classification(from = elevated.category, 
@@ -1011,13 +1193,13 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                          grid.col = c(elevated.cat.cols, expressed.cat.cols),#c(cat.cols, "not expressed" = "gray", "low tissue specificity" = "#4daf4a", "expressed in all" = "#377eb8", "expressed in some" = "#377eb8", "expressed in single" = "#377eb8", "expressed in many" = "#377eb8"),
                          groups = c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
                          plot.order = c(c("not detected", "low tissue specificity","tissue enhanced", "group enriched", "tissue enriched"), 
-                                        c("not expressed","expressed in single", "expressed in some","expressed in many", "expressed in all")),
+                                        c("not detected ","detected in single", "detected in some","detected in many", "detected in all")),
                          size_labels = T,
                          line_expansion = 0)
   dev.off()
 
   
-  # ----- classification chord -----
+  # ----- group enriched chord variant 1 -----
   require(circlize)
   circos.par(RESET = T)
   
@@ -1137,6 +1319,101 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   dev.off()
   circos.clear()
     
+  
+  # ----- group enriched chord variant 2 -----
+  require(circlize)
+  circos.par(RESET = T)
+  
+  content_gene_class <- 
+    atlas.elevated.table %>%
+    as_tibble(., rownames = "ensg_id") %>%
+    gather(key = "content", "classification", -ensg_id) %>%
+    # Only include group enriched
+    filter(classification %in% c(3))
+  
+  mat <- 
+    content_gene_class %>%
+    {mapply(unique(.$content), 
+            FUN = function(cell1) mapply(unique(.$content), 
+                                         FUN = function(cell2) length(intersect(filter(., content == cell1)$ensg_id, 
+                                                                                filter(., content == cell2)$ensg_id))))} 
+  df <- 
+    mat%>%
+    as_tibble(., rownames = "from") %>%
+    gather(key = "to", value = "number of genes", -from) %>%
+    filter(to != from) %>%
+    mutate(transfer = mapply(.$from, .$to, FUN = function(a,b) paste(sort(c(a,b)), collapse = " to "))) %>%
+    # Take only first occurence of transfer
+    {.[match(unique(.$transfer), .$transfer), ]}
+  
+  
+  
+  total.number.of.genes <- sapply(unique(c(df$from,df$to)), FUN = function(x) sum(df$`number of genes`[grep(x, df$transfer)]))
+  
+  classes <- unique(c(df$from, df$to))
+  tissues <- content_hierarchy$content[match(classes, content_hierarchy$content)]
+  track.levels <- names(content_hierarchy)[1:3]
+  content_hierarchy_ <- 
+    content_hierarchy %>%
+    filter(content %in% classes) %>%
+    select(1:3)
+  
+  
+  pdf(paste(outpath, "Fig classification chord blood cells var2.pdf",sep='/'), width = 10, height = 10)
+  
+  
+  chord <-
+    df %>%
+    mutate(from_color = content_colors[match(from, names(content_colors))],
+           to_color = content_colors[match(to, names(content_colors))],
+           mid_color = mapply(from_color, to_color, FUN = function(a, b) colorRampPalette(colors = c(a, b))(3)[2])) %>%
+           {chordDiagram(.[,1:3],
+                         grid.col = content_colors,
+                         col = .$mid_color,
+                         directional = 0,link.largest.ontop = T,
+                         annotationTrack="grid",
+                         transparency = 0.2,
+                         annotationTrackHeight = 0.03,
+                         preAllocateTracks = eval(parse(text = paste0("list(",
+                                                                      paste0(rep("list(track.height = 0.07,
+                                                                                 track.margin = c(0.0035, 0.01))",
+                                                                                 length(track.levels)-1), collapse = ", "), ")"))),
+                         order = {if(length(track.levels) == 1) {
+                           classes
+                         } else {
+                           classes[with(content_hierarchy_[match(tissues, content_hierarchy_[, 1][[1]]),],
+                                        eval(parse(text = paste0("order(", paste(track.levels[-1], collapse = ", "), ")"))))]
+                         }
+                         })}
+  
+  sectors <-
+    content_hierarchy_ %>%
+    mutate(main.track.handle = content) %>%
+    gather(key = "level", value = "handle", -main.track.handle) %>%
+    mutate(color = content_colors[match(handle, names(content_colors))],
+           track =  match(level, rev(track.levels)),
+           handle = ifelse(track == 3, "", handle)) %>%
+    group_by(handle, color) %>%
+    summarise(track = list(unique(track)),
+              main.track.handles = list(unique(main.track.handle))) 
+  
+  # for(tissue in content_hierarchy_$content) {
+  #   highlight.sector(tissue, 
+  #                    track.index = 1:(length(track.levels)), 
+  #                    col = NA, lwd = 2,
+  #                    border = content_colors[match(tissue, names(content_colors))])
+  # }
+  
+  for(i in 1:nrow(sectors)) {
+    highlight.sector(sectors$main.track.handles[i][[1]], 
+                     track.index = sectors$track[i][[1]], 
+                     col = sectors$color[i], 
+                     text = sectors$handle[i], text.col = "white", facing = "bending", niceFacing = T, cex = 1.4)
+  }
+  
+  dev.off()
+  circos.clear()
+  
   # ----- swarm plots -----
   
   plot.data.unfilt <- 
@@ -1157,10 +1434,9 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   plot.data.unfilt <- 
     plot.data.unfilt %>%
     dplyr::select(Grouping, ensg_id, NX) %>%
-    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`, `tissue/group specific score`), by = "ensg_id") %>%
+    left_join(dplyr::select(atlas.cat, ensg_id, express.category.2, elevated.category, `enriched tissues`), by = "ensg_id") %>%
     left_join(proteinlocalization.table, by = "ensg_id") %>%
-    mutate(score = `tissue/group specific score`,
-           predicted_localization_class_simple = case_when(predicted_localization_class == "intracellular" ~ "",
+    mutate(predicted_localization_class_simple = case_when(predicted_localization_class == "intracellular" ~ "",
                                                            predicted_localization_class == "intracellular and membrane isoforms" ~ "membrane",
                                                            predicted_localization_class == "intracellular and secreted isoforms" ~ "secreted",
                                                            predicted_localization_class == "intracellular, membrane, secreted isoforms" ~ "membrane and secreted isoforms",
@@ -1190,31 +1466,31 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   #        y_column = "expression")
   # ggsave(paste(outpath, paste0(prefix, '_all_elevated_jitter.pdf'),sep='/'), width=15, height=10)
   
-  plot.data %>%
-    rename(y = NX) %>%
-    {ggplot(., aes(Grouping, y, label = display_name, color = predicted_localization_class_simple)) +
-        ggbeeswarm::geom_beeswarm(cex = 0.5)+
-        ggrepel::geom_text_repel(data = {
-          
-          group_by(., Grouping) %>%
-            mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
-            filter(rank <= 5) },
-          
-          fontface = "bold")+
-        
-        scale_color_manual(values = protein.localization.palette, name = "Protein location")+
-        scale_y_log10()+
-        ylab("NX")+
-        scale_size_continuous(guide = F)+
-        plot_theme+
-        theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1), 
-              axis.title.x = element_blank(), 
-              panel.grid = element_blank(), 
-              panel.background = element_blank(), 
-              axis.line.y = element_line(),
-              axis.line.x = element_line(), 
-              legend.position = "top",
-              legend.direction = "horizontal")}
+  # plot.data %>%
+  #   rename(y = NX) %>%
+  #   {ggplot(., aes(Grouping, y, label = display_name, color = predicted_localization_class_simple)) +
+  #       ggbeeswarm::geom_beeswarm(cex = 0.5)+
+  #       ggrepel::geom_text_repel(data = {
+  #         
+  #         group_by(., Grouping) %>%
+  #           mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
+  #           filter(rank <= 5) },
+  #         
+  #         fontface = "bold")+
+  #       
+  #       scale_color_manual(values = protein.localization.palette, name = "Protein location")+
+  #       scale_y_log10()+
+  #       ylab("NX")+
+  #       scale_size_continuous(guide = F)+
+  #       plot_theme+
+  #       theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1), 
+  #             axis.title.x = element_blank(), 
+  #             panel.grid = element_blank(), 
+  #             panel.background = element_blank(), 
+  #             axis.line.y = element_line(),
+  #             axis.line.x = element_line(), 
+  #             legend.position = "top",
+  #             legend.direction = "horizontal")}
   
   # ggsave(paste(outpath, "Fig swarm elevated.pdf",sep='/'), width=25, height=5)
   
@@ -1251,213 +1527,38 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
               legend.direction = "horizontal")}
 
   
-  ggsave(paste(outpath, "Fig swarm enriched.pdf",sep='/'), width=18, height=8)
+  ggsave(paste(outpath, "Fig swarm enriched.pdf",sep='/'), width=18, height=8, useDingbats = F)
   
-  # ----- PID heatmaps -----
-  
-  genes <- 
-    atlas.max %>%
-    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
-    left_join(immunodeficiency.table %>%
-                select(1, 2, ensg_id) %>%
-                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
-                group_by(ensg_id) %>% 
-                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
-                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
-                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
-    rename("content" = consensus_content_column, 
-           "expression" = maxEx_column) %>%
-    mutate(expression = log10(expression + 1)) %>% 
-    
-    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
-    left_join(ensemblanno.table, by = "ensg_id") %>% 
-    group_by(gene_name, content) %>%
-    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
-    ungroup() %>%
-    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
-        unique(gene_name)},
-        gene_name_2 = ifelse(nonunique_gene_name, 
-                             paste(gene_name, gene_name_occurence),
-                             gene_name),
-        
-        ###
-        
-        from = gene_name_2,
-        to = content)
+  plot.data %>%
+    rename(y = NX) %>%
+    {ggplot(., aes(Grouping, y, label = display_name, color = predicted_localization_class_simple)) +
+        ggbeeswarm::geom_beeswarm(cex = 0.6)+
+        ggrepel::geom_text_repel(data = {
+          
+          group_by(., Grouping) %>%
+            mutate(rank = - (rank(y) - max(rank(y)) - 1)) %>%
+            filter(rank <= 5) },
+          
+          fontface = "bold")+
+        scale_color_manual(values = protein.localization.palette, name = "Protein location")+
+        scale_y_log10()+
+        scale_size_continuous(guide = F)+
+        ylab("NX")+
+        plot_theme+
+        coord_flip()+
+        theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1), 
+              axis.title.x = element_blank(), 
+              panel.grid = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line.y = element_line(),
+              axis.line.x = element_line(), 
+              legend.position = "top",
+              legend.direction = "horizontal")}
   
   
-  if(!is.null(proteinclass.table)) {
-    genes <- 
-      genes %>%
-      left_join(select(proteinclass.table, 
-                       ensg_id = rna.genes, 
-                       protein_class = proteinclass.vec.single), by = "ensg_id")
-  }
+  ggsave(paste(outpath, "Fig swarm enriched flipped.pdf",sep='/'), width=8, height=12, useDingbats = F)
   
   
-  
-  
-  
-
-  ## All genes
-  plot.data <- 
-    genes 
-  
-  ## 1
-  # plot.data %$%
-  # {ggdendroheat(from, to, expression, 
-  #               x_clustering_method = "ward.D2", 
-  #               y_clustering_method = "ward.D2", 
-  #               range_scale_x = F, 
-  #               under_lim_tile_color = "black", 
-  #               x_margin = 0.1,
-  #               under_lim = 0)+
-  #     scale_fill_gradientn(name = "log10(NX + 1)", colors = heatmap_palette) + 
-  #     theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
-  #     ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
-  #     xlab("genes")}
-  # ggsave(paste(outpath, "Fig PID heatmap blood cells.pdf",sep='/'), width=18, height=10)
-  
-  pdf(paste(outpath, "Fig PID heatmap blood cells.pdf",sep='/'), width=18, height=6)
-  require(pheatmap)
-  pheat_data <- 
-    plot.data %>%
-    select(from, to, expression) %>%
-    spread(key = from, value = expression) 
-  
-  pheat_meta <-
-    plot.data %>%
-    select(to) %>%
-    unique() %>%
-    mutate(celltype = to)  %>%
-    column_to_rownames("to") %>%
-    as.data.frame()
-  
-  pheat_data %>%
-    column_to_rownames("to") %>% 
-    as.matrix() %>% {
-      pheatmap::pheatmap(., 
-                         cluster_cols = T,
-                         cluster_rows = T,
-                         fontsize_row = 10,
-                         fontsize_col = 7,
-                         clustering_method = 'ward.D2',
-                         annotation_colors = list(celltype = content_colors),
-                         annotation_legend = F,
-                         main = paste0("All PID genes (n = ", dim(.)[2], ")"),
-                         annotation_row = pheat_meta,
-                         treeheight_col = 100,
-                         treeheight_row = 70,
-                         color = heatmap_palette)
-    }
-  
-  Sys.sleep(15)
-  dev.off()
-  # 
-  
-  genes <- 
-    bind_rows(global.atlas.max %>%
-                rename(max_norm_exp = 3,
-                       nx = 4),
-              atlas.max) %>%
-    rename(consensus_content_column = consensus_content_column) %>%
-    filter(!consensus_content_column %in% c("ductus deferens", "tongue", "retina")) %>%
-    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
-    left_join(immunodeficiency.table %>%
-                select(1, 2, ensg_id) %>%
-                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,4}\\."))) %>% 
-                group_by(ensg_id) %>% 
-                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
-                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
-                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
-    rename("content" = consensus_content_column, 
-           "expression" = maxEx_column) %>%
-    mutate(expression = log10(expression + 1)) %>% 
-    
-    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
-    left_join(ensemblanno.table, by = "ensg_id") %>% 
-    group_by(gene_name, content) %>%
-    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
-    ungroup() %>%
-    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
-        unique(gene_name)},
-        gene_name_2 = ifelse(nonunique_gene_name, 
-                             paste(gene_name, gene_name_occurence),
-                             gene_name),
-        
-        ###
-        
-        from = gene_name_2,
-        to = content)
-  
-  
-  if(!is.null(proteinclass.table)) {
-    genes <- 
-      genes %>%
-      left_join(select(proteinclass.table, 
-                       ensg_id = rna.genes, 
-                       protein_class = proteinclass.vec.single), by = "ensg_id")
-  }
-  
-  
-  
-  
-  
-  ## All genes
-  plot.data <- 
-    genes %>%
-    filter(content != "blood")
-  
-  ## 1
-  # plot.data %$%
-  # {ggdendroheat(from, to, expression, 
-  #               x_clustering_method = "ward.D2", 
-  #               y_clustering_method = "ward.D2", 
-  #               range_scale_x = F, 
-  #               under_lim_tile_color = "black", 
-  #               x_margin = 0.1,
-  #               under_lim = 0)+
-  #     scale_fill_gradientn(name = "log(NX + 1)", colors = heatmap_palette) + 
-  #     theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
-  #     ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
-  #     xlab("genes")}
-  # ggsave(paste(outpath, "Fig PID heatmap bloodcell tissue.pdf",sep='/'), width=18, height=10)
-  
-  pdf(paste(outpath, "Fig PID heatmap bloodcell tissue.pdf",sep='/'), width=18, height=10)
-  require(pheatmap)
-  pheat_data <- 
-    plot.data %>%
-    select(from, to, expression) %>%
-    spread(key = from, value = expression) 
-  
-  pheat_meta <-
-    plot.data %>%
-    select(to) %>%
-    unique() %>%
-    mutate(`celltype/tissue` = to)  %>%
-    column_to_rownames("to") %>%
-    as.data.frame()
-  
-  pheat_data %>%
-    column_to_rownames("to") %>% 
-    as.matrix() %>% {
-      pheatmap::pheatmap(., 
-                         cluster_cols = T,
-                         cluster_rows = T,
-                         fontsize_row = 10,
-                         fontsize_col = 7,
-                         clustering_method = 'ward.D2',
-                         annotation_colors = list(`celltype/tissue` = c(content_colors, tissue.colors)),
-                         annotation_legend = F,
-                         main = paste0("All PID genes (n = ", dim(.)[2], ")"),
-                         annotation_row = pheat_meta,
-                         treeheight_col = 100,
-                         treeheight_row = 70,
-                         color = heatmap_palette)
-    }
-  
-  Sys.sleep(15)
-  dev.off()
   ########
   
   # ----- elevation comparison blood cells tissues -----
@@ -1695,7 +1796,8 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   plot.data_order <- tissues_to_plot
   
-  atlas_temp %>%
+  plot_data <- 
+    atlas_temp %>%
     mutate(display = ptpm > 5000,
            display_label = ptpm > 10000,
            label = ifelse(display_label, display_name, NA)) %>%
@@ -1711,7 +1813,9 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
     mutate(label_size = ifelse(ptpm > 50000, 50000, ptpm)) %>%
     {.[order(.$stacked, .$ptpm),]} %>%
     mutate(label = factor(label, levels = unique(label[order(location, stacked)])),
-           tissue_column = factor(tissue_column, levels = rev(plot.data_order))) %>%
+           tissue_column = factor(tissue_column, levels = rev(plot.data_order))) 
+  
+  plot_data %>%
            {ggplot(., aes(tissue_column, ptpm, fill = paste(location, stacked), color = paste(location, stacked)))+
                geom_bar(stat = "identity", color = "white")+
                geom_text(aes(label = label, size = label_size),
@@ -1731,15 +1835,127 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                                                            "1")))) + 
                scale_y_continuous(expand = c(0.01, 0.01))+
                theme(legend.position = "bottom",
-                     legend.direction = "horizontal") + 
+                     legend.direction = "horizontal", 
+                     axis.text.x = element_text(angle = 60, size = 15, hjust = 1)) + 
                xlab("Tissue / Celltype") + 
                ylab("PTPM")
              }
   ggsave(paste(outpath, "Fig stacked bar location PTPM.pdf",sep='/'), width=10, height=8)
   
+  plot_data %>%
+  {ggplot(., aes(tissue_column, ptpm, fill = paste(location, stacked), color = paste(location, stacked)))+
+      geom_bar(stat = "identity", color = "white")+
+      geom_text(aes(label = label, size = label_size),
+                position = position_stack(vjust = 0.5), 
+                color = "white", 
+                fontface = "bold", 
+                angle = -90,
+                show.legend = F)+
+      plot_theme +
+      
+      scale_size_continuous(range = c(0.25, 4))+
+      scale_fill_manual(name = "primary location",
+                        values = c(setNames(protein.localization.palette,
+                                            # sapply(protein.localization.palette,
+                                            #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+                                            paste(names(protein.localization.palette),
+                                                  "2")),
+                                   setNames(sapply(protein.localization.palette,
+                                                   FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+                                            paste(names(protein.localization.palette),
+                                                  "1")))) + 
+      coord_flip() +
+      scale_y_continuous(expand = c(0.01, 0.01))+
+      theme(legend.position = "bottom",
+            legend.direction = "horizontal") + 
+      xlab("Tissue / Celltype") + 
+      ylab("PTPM")
+  }
+  ggsave(paste(outpath, "Fig stacked bar location PTPM flipped.pdf",sep='/'), width=8, height=10)
+  
+  
+  # Reduced text
+  
+  plot_data <- 
+    atlas_temp %>%
+    mutate(display = ptpm > 5000,
+           display_label = ptpm > 30000,
+           label = ifelse(display_label, display_name, NA)) %>%
+           {rbind(.[.$display,] %>%
+                    select(tissue_column, location, ptpm, label) %>%
+                    mutate(stacked = "1"),
+                  .[!.$display,] %>%
+                    group_by(tissue_column, location) %>%
+                    summarise(label = "",
+                              ptpm = sum(ptpm, na.rm = T)) %>%
+                    ungroup() %>%
+                    mutate(stacked = "2"))} %>%
+    mutate(label_size = ifelse(ptpm > 50000, 50000, ptpm)) %>%
+    {.[order(.$stacked, .$ptpm),]} %>%
+    mutate(label = factor(label, levels = unique(label[order(location, stacked)])),
+           tissue_column = factor(tissue_column, levels = rev(plot.data_order))) 
+  
+  plot_data %>%
+  {ggplot(., aes(tissue_column, ptpm, fill = paste(location, stacked), color = paste(location, stacked)))+
+      geom_bar(stat = "identity", color = "white")+
+      geom_text(aes(label = label, size = label_size),
+                position = position_stack(vjust = 0.5), color = "white", fontface = "bold", show.legend = F)+
+      plot_theme +
+      
+      scale_size_continuous(range = c(0.25, 4))+
+      scale_fill_manual(name = "primary location",
+                        values = c(setNames(protein.localization.palette,
+                                            # sapply(protein.localization.palette,
+                                            #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+                                            paste(names(protein.localization.palette),
+                                                  "2")),
+                                   setNames(sapply(protein.localization.palette,
+                                                   FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+                                            paste(names(protein.localization.palette),
+                                                  "1")))) + 
+      scale_y_continuous(expand = c(0.01, 0.01))+
+      theme(legend.position = "bottom",
+            legend.direction = "horizontal", 
+            axis.text.x = element_text(angle = 60, size = 15, hjust = 1)) + 
+      xlab("Tissue / Celltype") + 
+      ylab("PTPM")
+  }
+  ggsave(paste(outpath, "Fig stacked bar location PTPM reduced.pdf",sep='/'), width=10, height=8)
+  
+  plot_data %>%
+  {ggplot(., aes(tissue_column, ptpm, fill = paste(location, stacked), color = paste(location, stacked)))+
+      geom_bar(stat = "identity", color = "white")+
+      geom_text(aes(label = label, size = label_size),
+                position = position_stack(vjust = 0.5), 
+                color = "white", 
+                fontface = "bold", 
+                angle = -90,
+                show.legend = F)+
+      plot_theme +
+      
+      scale_size_continuous(range = c(0.25, 4))+
+      scale_fill_manual(name = "primary location",
+                        values = c(setNames(protein.localization.palette,
+                                            # sapply(protein.localization.palette,
+                                            #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+                                            paste(names(protein.localization.palette),
+                                                  "2")),
+                                   setNames(sapply(protein.localization.palette,
+                                                   FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+                                            paste(names(protein.localization.palette),
+                                                  "1")))) + 
+      coord_flip() +
+      scale_y_continuous(expand = c(0.01, 0.01))+
+      theme(legend.position = "bottom",
+            legend.direction = "horizontal") + 
+      xlab("Tissue / Celltype") + 
+      ylab("PTPM")
+  }
+  ggsave(paste(outpath, "Fig stacked bar location PTPM reduced flipped.pdf",sep='/'), width=8, height=10)
+  
   # atlas_temp %>%
-  #   mutate(display = nx > 250,
-  #          display_label = nx > 500,
+  #   mutate(display = nx > 1000,
+  #          display_label = nx > 1500,
   #          label = ifelse(display_label, display_name, NA)) %>%
   #          {rbind(.[.$display,] %>%
   #                   select(tissue_column, location, nx, label) %>%
@@ -1748,6 +1964,49 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   #                   group_by(tissue_column, location) %>%
   #                   summarise(nx = sum(nx, na.rm = T),
   #                             label = paste0("n = ", length(ensg_id[ptpm >= 1]))) %>%
+  #                   ungroup() %>%
+  #                   mutate(stacked = "2"))} %>%
+  #   mutate(label_size = ifelse(nx > 50000, 50000, nx)) %>%
+  #   {.[order(.$stacked, .$nx),]} %>%
+  #   mutate(label = factor(label, levels = unique(label[order(location, stacked)])),
+  #          tissue_column = factor(tissue_column, levels = rev(plot.data_order))) %>%
+  #          {ggplot(., aes(tissue_column, nx, fill = paste(location, stacked), color = paste(location, stacked)))+
+  #              geom_bar(stat = "identity", color = "white")+
+  #              geom_text(aes(label = label, size = label_size),
+  #                        position = position_stack(vjust = 0.5), color = "white", fontface = "bold", show.legend = F)+
+  #              plot_theme +
+  # 
+  #              scale_size_continuous(range = c(0.25, 4))+
+  #              scale_fill_manual(name = "primary location",
+  #                                values = c(setNames(protein.localization.palette,
+  #                                                    # sapply(protein.localization.palette,
+  #                                                    #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+  #                                                    paste(names(protein.localization.palette),
+  #                                                          "2")),
+  #                                           setNames(sapply(protein.localization.palette,
+  #                                                           FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+  #                                                    paste(names(protein.localization.palette),
+  #                                                          "1")))) +
+  #              scale_y_continuous(expand = c(0.01, 0.01))+
+  #              theme(legend.position = "bottom",
+  #                    legend.direction = "horizontal", 
+  #                    axis.text.x = element_text(angle = 60, size = 15, hjust = 1)) +
+  #              xlab("Tissue / Celltype") +
+  #              ylab("nx")
+  #          }
+  # ggsave(paste(outpath, "Fig stacked bar location nx.pdf",sep='/'), width=10, height=8)
+  # 
+  # atlas_temp %>%
+  #   mutate(display = nx > 1000,
+  #          display_label = nx > 2500,
+  #          label = ifelse(display_label, display_name, NA)) %>%
+  #          {rbind(.[.$display,] %>%
+  #                   select(tissue_column, location, nx, label) %>%
+  #                   mutate(stacked = "1"),
+  #                 .[!.$display,] %>%
+  #                   group_by(tissue_column, location) %>%
+  #                   summarise(nx = sum(nx, na.rm = T),
+  #                             label = "") %>%
   #                   ungroup() %>%
   #                   mutate(stacked = "2"))} %>%
   #   mutate(label_size = ifelse(nx > 50000, 50000, nx)) %>%
@@ -1770,15 +2029,16 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   #                                           setNames(sapply(protein.localization.palette,
   #                                                           FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
   #                                                    paste(names(protein.localization.palette),
-  #                                                          "1")))) + 
+  #                                                          "1")))) +
   #              scale_y_continuous(expand = c(0.01, 0.01))+
   #              theme(legend.position = "bottom",
-  #                    legend.direction = "horizontal") + 
-  #              xlab("Tissue / Celltype") + 
+  #                    legend.direction = "horizontal", 
+  #                    axis.text.x = element_text(angle = 60, size = 15, hjust = 1)) +
+  #              xlab("Tissue / Celltype") +
   #              ylab("nx")
   #          }
-  # ggsave(paste(outpath, "Fig stacked bar location nx.pdf",sep='/'), width=10, height=8)
-  # 
+  # ggsave(paste(outpath, "Fig stacked bar location nx reduced.pdf",sep='/'), width=10, height=8)
+
   atlas_temp %>%
     group_by(tissue_column) %>%
     mutate(nx = nx / (sum(nx) / 1e6)) %>%
@@ -1804,7 +2064,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                geom_text(aes(label = label, size = label_size),
                          position = position_stack(vjust = 0.5), color = "white", fontface = "bold", show.legend = F)+
                plot_theme +
-
+               
                scale_size_continuous(range = c(0.25, 4))+
                scale_fill_manual(name = "primary location",
                                  values = c(setNames(protein.localization.palette,
@@ -1818,11 +2078,58 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                                                            "1")))) +
                scale_y_continuous(expand = c(0.01, 0.01))+
                theme(legend.position = "bottom",
-                     legend.direction = "horizontal") +
+                     legend.direction = "horizontal", 
+                     axis.text.x = element_text(angle = 60, size = 15, hjust = 1)) +
                xlab("Tissue / Celltype") +
                ylab("nx")
            }
   ggsave(paste(outpath, "Fig stacked bar location nx 1e6.pdf",sep='/'), width=10, height=8)
+  
+  atlas_temp %>%
+    group_by(tissue_column) %>%
+    mutate(nx = nx / (sum(nx) / 1e6)) %>%
+    ungroup() %>%
+    mutate(display = nx > 5000,
+           display_label = nx > 12000,
+           label = ifelse(display_label, display_name, NA)) %>%
+           {rbind(.[.$display,] %>%
+                    select(tissue_column, location, nx, label) %>%
+                    mutate(stacked = "1"),
+                  .[!.$display,] %>%
+                    group_by(tissue_column, location) %>%
+                    summarise(nx = sum(nx, na.rm = T),
+                              label = "") %>%
+                    ungroup() %>%
+                    mutate(stacked = "2"))} %>%
+    mutate(label_size = ifelse(nx > 50000, 50000, nx)) %>%
+    {.[order(.$stacked, .$nx),]} %>%
+    mutate(label = factor(label, levels = unique(label[order(location, stacked)])),
+           tissue_column = factor(tissue_column, levels = rev(plot.data_order))) %>%
+           {ggplot(., aes(tissue_column, nx, fill = paste(location, stacked), color = paste(location, stacked)))+
+               geom_bar(stat = "identity", color = "white")+
+               geom_text(aes(label = label, size = label_size),
+                         position = position_stack(vjust = 0.5), color = "white", fontface = "bold", show.legend = F)+
+               plot_theme +
+               
+               scale_size_continuous(range = c(0.25, 4))+
+               scale_fill_manual(name = "primary location",
+                                 values = c(setNames(protein.localization.palette,
+                                                     # sapply(protein.localization.palette,
+                                                     #        FUN = function(x) colorRampPalette(c(x, "white"))(7)[2]),
+                                                     paste(names(protein.localization.palette),
+                                                           "2")),
+                                            setNames(sapply(protein.localization.palette,
+                                                            FUN = function(x) colorRampPalette(c(x, "white"))(6)[2]),
+                                                     paste(names(protein.localization.palette),
+                                                           "1")))) +
+               scale_y_continuous(expand = c(0.01, 0.01))+
+               theme(legend.position = "bottom",
+                     legend.direction = "horizontal", 
+                     axis.text.x = element_text(angle = 60, size = 15, hjust = 1)) +
+               xlab("Tissue / Celltype") +
+               ylab("nx")
+           }
+  ggsave(paste(outpath, "Fig stacked bar location nx 1e6 reduced.pdf",sep='/'), width=10, height=8)
   # 
   # atlas_temp %>%
   #   mutate(display = nx2 > 3000,
@@ -1960,13 +2267,10 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   
   
-  
-  
-  category_no_blood <- 
-    global.atlas.max %>%
-    rename(maxEx_column = maxEx_column,
-           consensus_content_column = consensus_content_column) %>%
-    filter(consensus_content_column != "blood") %>%
+  category_celline <- 
+    cell.lines.atlas %>%
+    rename(maxEx_column = "norm_exp",
+           consensus_content_column = "celline_name") %>%
     
     mutate(maxEx_column = round(maxEx_column, 4)) %>%
     group_by(ensg_id) %>%
@@ -1974,7 +2278,8 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
               frac.exp = num.exp/length(maxEx_column[!is.na(maxEx_column)])*100)
   
   
-  category_blood <- 
+  
+  category_all <- 
     global.atlas.max %>%
     rename(maxEx_column = maxEx_column,
            consensus_content_column = consensus_content_column) %>%
@@ -1983,39 +2288,91 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
     group_by(ensg_id) %>%
     summarise(num.exp = length(which(maxEx_column >= 1)),
               frac.exp = num.exp/length(maxEx_column[!is.na(maxEx_column)])*100)
+  
+  category_bloodcells <- 
+    atlas.max %>%
+    rename(maxEx_column = maxEx_column,
+           consensus_content_column = consensus_content_column) %>%
+    
+    mutate(maxEx_column = round(maxEx_column, 4)) %>%
+    group_by(ensg_id) %>%
+    summarise(num.exp = length(which(maxEx_column >= 1)),
+              frac.exp = num.exp/length(maxEx_column[!is.na(maxEx_column)])*100)
+  
+  
+  
+  category_blood_celline_tiss <- 
+    filter(category_all, frac.exp == 100) %>%
+    inner_join(filter(category_celline, frac.exp == 100), 
+               by = "ensg_id") %>%
+    inner_join(filter(category_bloodcells, frac.exp == 100), 
+               by = "ensg_id")
+  
+  write_csv(category_blood_celline_tiss, 
+            paste(outpath, "Genes exp all Blood - cell lines - tissues.csv",sep='/'))
   
   Hart_ess <- 
     essential_genes_hart2015 %>%
+    filter(numTKOHits >= 3) %>%
     select(ensg_id) %>%
-    mutate(IDd_hpa = ensg_id %in% {category_blood %>% filter(frac.exp == 100) %$% ensg_id}) 
+    mutate(IDd_hpa = ensg_id %in% {category_blood_celline_tiss %>% filter(frac.exp == 100) %$% ensg_id}) 
+  
+  write_csv(Hart_ess, 
+            paste(outpath, "Hart2015 essential genes.csv",sep='/'))
   
   
+  Wang_ess <- 
+    essential_genes_wang2015 %>%
+    select(ensg_id) %>%
+    mutate(IDd_hpa = ensg_id %in% {category_blood_celline_tiss %>% filter(frac.exp == 100) %$% ensg_id}) 
   
-  tibble(name = c("HPA 2015\nUhlen et al\nScience (2015)", 
-                  "HPA 2019\nexcluding blood cells", 
-                  "HPA 2019\nincluding blood cells", 
-                  "Hart et al\nCell (2015)", 
-                  "Hart et al\nCell (2015)"), 
+  write_csv(Wang_ess, 
+            paste(outpath, "Wang2015 essential genes.csv",sep='/'))
+  
+  tibble(name = c("HPA 2015\nUhlen et al\nScience\n(2015)", 
+                  "HPA 2019\nTissues", 
+                  "HPA 2019\nBlood cells", 
+                  "HPA 2019\nCell lines", 
+                  "HPA 2019\nBlood cells,\nCell lines,\nTissues", 
+                  "Hart et al\nCell\n(2015)", 
+                  "Hart et al\nCell\n(2015)",
+                  "Wang et al\nScience\n(2015)", 
+                  "Wang et al\nScience\n(2015)"), 
          n = c(Tissue2015 %>%
                  summarise(n = length(which(`#detected tissues` == 32))) %$%
                  n,
-               category_no_blood %>%
-                 summarise(n = length(which(frac.exp == 100))) %$%
-                 n,
-               category_blood %>%
+               category_all %>%
                  summarise(n = length(which(frac.exp == 100))) %$%
                  n, 
+               category_bloodcells %>%
+                 summarise(n = length(which(frac.exp == 100))) %$%
+                 n, 
+               category_celline %>%
+                 summarise(n = length(which(frac.exp == 100))) %$%
+                 n, 
+               category_blood_celline_tiss %>%
+                 nrow(),
                Hart_ess %>%
                  summarise(n = length(which(IDd_hpa))) %$%
                  n,
                Hart_ess %>%
                  summarise(n = length(which(!IDd_hpa))) %$%
+                 n,
+               Wang_ess %>%
+                 summarise(n = length(which(IDd_hpa))) %$%
+                 n,
+               Wang_ess %>%
+                 summarise(n = length(which(!IDd_hpa))) %$%
                  n), 
-         IDd_hpa = c("yes", "yes", "yes", "yes", "no")) %>%
-    mutate(name = factor(name, levels = c("HPA 2015\nUhlen et al\nScience (2015)", 
-                                          "HPA 2019\nexcluding blood cells", 
-                                          "HPA 2019\nincluding blood cells", 
-                                          "Hart et al\nCell (2015)"))) %>%
+         IDd_hpa = c("yes", "yes", "yes", "yes", "yes", "yes", "no", "yes", "no")) %>%
+    
+    mutate(name = factor(name, levels = c("HPA 2015\nUhlen et al\nScience\n(2015)",
+                                          "HPA 2019\nTissues", 
+                                          "HPA 2019\nBlood cells", 
+                                          "HPA 2019\nCell lines", 
+                                          "HPA 2019\nBlood cells,\nCell lines,\nTissues", 
+                                          "Wang et al\nScience\n(2015)",
+                                          "Hart et al\nCell\n(2015)"))) %>%
     {ggplot(., aes(name, n, fill = IDd_hpa))+
         geom_bar(stat = "identity") + 
         geom_text(data = group_by(., name) %>%
@@ -2026,7 +2383,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
         ylab("Number of genes")+
         xlab("")+
         scale_y_continuous(expand = expand_scale(mult = c(0.01, 0.05)))+
-        scale_fill_manual(values = c("red", "gray"), name = "Expressed in all\nHPA tissues")+
+        scale_fill_manual(values = c("red", "gray"), name = "Expressed in all\nHPA tissues,\ncell lines,\nand blood cells")+
         plot_theme }
   ggsave(paste(outpath, "Fig bar number essential genes.pdf",sep='/'), width=7, height=7)
   
@@ -2058,8 +2415,8 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
               summarise(n = length(which(maxEx_column >= 1)))) %>%
     mutate(type = factor(type, levels = c("Multiple tissues", 
                                           "Tissues", 
-                                          "Cell lines", 
-                                          "Blood cells"))) %>%
+                                          "Blood cells", 
+                                          "Cell lines"))) %>%
     ggplot(aes(type, n)) +
     geom_boxplot(fill = "lightblue4", outlier.color = NA, alpha = 0.3) +
     ggbeeswarm::geom_beeswarm(cex = 1.4, size = 1, color = "lightblue4") + 
@@ -2067,7 +2424,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
     ylab("Number of detected genes") + 
     plot_theme
   
-  ggsave(paste(outpath, "Fig boxplot num det genes per type.pdf",sep='/'), width=5, height=5)
+  ggsave(paste(outpath, "Fig boxplot num det genes per type.pdf",sep='/'), width=5, height=5, useDingbats = F)
   # ----- Tissue elevated bar plot ------
   
   global.atlas.elevated.summary.table %>%
@@ -2097,7 +2454,308 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   
   
-  # ----- PID Heatmaps -----
+  # ----- PID heatmaps -----
+  
+  genes <- 
+    atlas.max %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,2}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = consensus_content_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+    
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
+  
+  
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = rna.genes, 
+                       protein_class = proteinclass.vec.single), by = "ensg_id")
+  }
+  
+  
+  
+  
+  
+  
+  ## All genes
+  plot.data <- 
+    genes 
+  
+  ## 1
+  # plot.data %$%
+  # {ggdendroheat(from, to, expression, 
+  #               x_clustering_method = "ward.D2", 
+  #               y_clustering_method = "ward.D2", 
+  #               range_scale_x = F, 
+  #               under_lim_tile_color = "black", 
+  #               x_margin = 0.1,
+  #               under_lim = 0)+
+  #     scale_fill_gradientn(name = "log10(NX + 1)", colors = heatmap_palette) + 
+  #     theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+  #     ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
+  #     xlab("genes")}
+  # ggsave(paste(outpath, "Fig PID heatmap blood cells.pdf",sep='/'), width=18, height=10)
+  
+  pdf(paste(outpath, "Fig PID heatmap blood cells.pdf",sep='/'), width=18, height=6)
+  require(pheatmap)
+  pheat_data <- 
+    plot.data %>%
+    select(from, to, expression) %>%
+    spread(key = from, value = expression) 
+  
+  pheat_meta <-
+    plot.data %>%
+    select(to) %>%
+    unique() %>%
+    mutate(celltype = to)  %>%
+    column_to_rownames("to") %>%
+    as.data.frame()
+  
+  pheat_data %>%
+    column_to_rownames("to") %>% 
+    as.matrix() %>% {
+      pheatmap::pheatmap(., 
+                         cluster_cols = T,
+                         cluster_rows = T,
+                         fontsize_row = 10,
+                         fontsize_col = 7,
+                         clustering_method = 'ward.D2',
+                         annotation_colors = list(celltype = content_colors),
+                         annotation_legend = F,
+                         main = paste0("All PID genes (n = ", dim(.)[2], ")"),
+                         annotation_row = pheat_meta,
+                         treeheight_col = 100,
+                         treeheight_row = 70,
+                         color = heatmap_palette)
+    }
+  
+  Sys.sleep(15)
+  dev.off()
+  # 
+  
+  genes <- 
+    bind_rows(global.atlas.max %>%
+                rename(max_norm_exp = 3,
+                       nx = 4),
+              atlas.max) %>%
+    rename(consensus_content_column = consensus_content_column) %>%
+    filter(!consensus_content_column %in% c("ductus deferens", "tongue", "retina")) %>%
+    filter(ensg_id %in% immunodeficiency.table$ensg_id) %>%
+    left_join(immunodeficiency.table %>%
+                select(1, 2, ensg_id) %>%
+                mutate(Major_ID = gsub("\\.", "", str_extract( `Major groups of PIDs`, ".{1,4}\\."))) %>% 
+                group_by(ensg_id) %>% 
+                summarise(`Major groups of PIDs` = paste(unique(`Major groups of PIDs`), collapse = ", "),
+                          `Subgroups of PIDs` = paste(unique(`Subgroups of PIDs`), collapse = ", "),
+                          Major_ID = paste(unique(Major_ID), collapse = ", ")), by = "ensg_id") %>%
+    rename("content" = consensus_content_column, 
+           "expression" = maxEx_column) %>%
+    mutate(expression = log10(expression + 1)) %>% 
+    
+    left_join(select(atlas.cat, ensg_id, elevated.category, `enriched tissues`), by = "ensg_id") %>%
+    left_join(ensemblanno.table, by = "ensg_id") %>% 
+    group_by(gene_name, content) %>%
+    mutate(gene_name_occurence = 1:length(unique(ensg_id))) %>%
+    ungroup() %>%
+    mutate(nonunique_gene_name = gene_name %in% {filter(., gene_name_occurence != 1) %$% 
+        unique(gene_name)},
+        gene_name_2 = ifelse(nonunique_gene_name, 
+                             paste(gene_name, gene_name_occurence),
+                             gene_name),
+        
+        ###
+        
+        from = gene_name_2,
+        to = content)
+  
+  
+  if(!is.null(proteinclass.table)) {
+    genes <- 
+      genes %>%
+      left_join(select(proteinclass.table, 
+                       ensg_id = rna.genes, 
+                       protein_class = proteinclass.vec.single), by = "ensg_id")
+  }
+  
+  
+  
+  
+  
+  ## All genes
+  plot.data <- 
+    genes %>%
+    filter(content != "blood")
+  
+  ## 1
+  # plot.data %$%
+  # {ggdendroheat(from, to, expression, 
+  #               x_clustering_method = "ward.D2", 
+  #               y_clustering_method = "ward.D2", 
+  #               range_scale_x = F, 
+  #               under_lim_tile_color = "black", 
+  #               x_margin = 0.1,
+  #               under_lim = 0)+
+  #     scale_fill_gradientn(name = "log(NX + 1)", colors = heatmap_palette) + 
+  #     theme(axis.text.x = element_text(size = 5), axis.title.y = element_blank()) + 
+  #     ggtitle(paste0("All PID genes (n = ", length(unique(from)), ")")) + 
+  #     xlab("genes")}
+  # ggsave(paste(outpath, "Fig PID heatmap bloodcell tissue.pdf",sep='/'), width=18, height=10)
+  
+  pdf(paste(outpath, "Fig PID heatmap bloodcell tissue.pdf",sep='/'), width=18, height=10)
+  require(pheatmap)
+  pheat_data <- 
+    plot.data %>%
+    select(from, to, expression) %>%
+    spread(key = from, value = expression) 
+  
+  pheat_meta <-
+    plot.data %>%
+    select(to) %>%
+    unique() %>%
+    mutate(`celltype/tissue` = to)  %>%
+    column_to_rownames("to") %>%
+    as.data.frame()
+  
+  pheat_data %>%
+    column_to_rownames("to") %>% 
+    as.matrix() %>% {
+      pheatmap::pheatmap(., 
+                         cluster_cols = T,
+                         cluster_rows = T,
+                         fontsize_row = 10,
+                         fontsize_col = 7,
+                         clustering_method = 'ward.D2',
+                         annotation_colors = list(`celltype/tissue` = c(content_colors, tissue.colors)),
+                         annotation_legend = F,
+                         main = paste0("All PID genes (n = ", dim(.)[2], ")"),
+                         annotation_row = pheat_meta,
+                         treeheight_col = 100,
+                         treeheight_row = 70,
+                         color = heatmap_palette)
+    }
+  
+  Sys.sleep(15)
+  dev.off()
+  
+  
+  
+  ## All genes
+  plot.data <- 
+    genes %>%
+    filter(content != "blood") %>%
+    filter(content %in% c(names(content_colors), 
+                          "lymphoid tissue",
+                          "bone marrow", 
+                          "liver", 
+                          "skin", 
+                          "kidney", 
+                          "skeletal muscle", 
+                          "intestine"))
+  
+  pheat_data <- 
+    plot.data %>%
+    select(from, to, expression) %>%
+    spread(key = from, value = expression) 
+  
+  pheat_meta <-
+    plot.data %>%
+    select(to) %>%
+    unique() %>%
+    mutate(`celltype/tissue` = to)  %>%
+    column_to_rownames("to") %>%
+    as.data.frame()
+  
+  require(pheatmap)
+  phe <- 
+    pheat_data %>%
+    column_to_rownames("to") %>% 
+    as.matrix() %>% {
+      pheatmap::pheatmap(., 
+                         cluster_cols = T,
+                         cluster_rows = T,
+                         fontsize_row = 10,
+                         fontsize_col = 7,
+                         clustering_method = 'ward.D2',
+                         annotation_colors = list(`celltype/tissue` = c(content_colors, tissue.colors)),
+                         annotation_legend = F,cutree_cols = 7,
+                         main = paste0("All PID genes (n = ", dim(.)[2], ")"),
+                         annotation_row = pheat_meta,
+                         treeheight_col = 100,
+                         treeheight_row = 70,
+                         color = heatmap_palette)
+    }
+  
+  
+  PID_clusters <- 
+    cutree(phe$tree_col, 7) %>% 
+    {data.frame(cluster = case_when(. == 1 ~ "C", 
+                                    . == 2 ~ "B", 
+                                    . == 3 ~ "E", 
+                                    . == 4 ~ "G", 
+                                    . == 5 ~ "F", 
+                                    . == 6 ~ "D", 
+                                    . == 7 ~ "A"), 
+              row.names = names(.))}
+  
+  write_csv(PID_clusters %>% 
+              rownames_to_column("gene_name") %>%
+              inner_join(genes %>% select(ensg_id, gene_name), 
+                         by = "gene_name") %>% 
+              unique(), 
+            paste(outpath, "PID heatmap clusters selected tissues.csv",sep='/'))
+  
+  
+  pdf(paste(outpath, "Fig PID heatmap selected tissues.pdf",sep='/'), width=18, height=6)
+  
+  pheat_data %>%
+    column_to_rownames("to") %>% 
+    as.matrix() %>% 
+    {pheatmap::pheatmap(., 
+                        cluster_cols = T,
+                        cluster_rows = T,
+                        fontsize_row = 10,
+                        fontsize_col = 7,
+                        clustering_method = 'ward.D2',
+                        annotation_colors = list(`celltype/tissue` = c(content_colors, tissue.colors), 
+                                                 cluster = setNames(viridis::viridis(7), LETTERS[1:7])),
+                        annotation_legend = F,
+                        cutree_cols = 7,
+                        # cutree_rows = 3,
+                        main = paste0("All PID genes (n = ", dim(.)[2], ")"),
+                        annotation_row = pheat_meta,
+                        annotation_col = PID_clusters, 
+                        treeheight_col = 100,
+                        treeheight_row = 70,
+                        color = heatmap_palette)
+    }
+  
+  Sys.sleep(15)
+  dev.off()
+  
+  # ----- PID Heatmaps separate -----
   
   genes <- 
     bind_rows(global.atlas.max %>%
@@ -2208,11 +2866,16 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   pheat_data %>% {
       pheatmap::pheatmap(., 
-                         cluster_cols = T,
-                         cluster_rows = T,
+                         cluster_cols = pheat_data %>%
+                         {1 - .} %>%
+                           as.dist() %>%
+                           hclust("average"),
+                         cluster_rows = pheat_data %>%
+                         {1 - .} %>%
+                           as.dist() %>%
+                           hclust("average"),
                          fontsize_row = 10,
                          fontsize_col = 10,
-                         clustering_method = 'ward.D2',
                          annotation_colors = list(celltype = content_colors),
                          annotation_legend = F,
                          annotation_row = pheat_meta,
@@ -2226,7 +2889,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   Sys.sleep(20)
   dev.off()
   
-  # ----- tissue spearman correlation heatmap-----
+  # ----- tissue spearman correlation heatmap & dendrogram -----
   
   require(pheatmap)
   pheat_data <- 
@@ -2244,14 +2907,20 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
     set_rownames(rownames(pheat_data)) %>%
     as.data.frame()
   
-  pdf(paste(outpath, "Fig tissue spearman heatmap.pdf",sep='/'), width=7, height=7)
+  pdf(paste(outpath, "Fig tissue spearman heatmap.pdf",sep='/'), width=7, height=7, useDingbats = F)
   pheat_data %>% {
     pheatmap::pheatmap(., 
-                       cluster_cols = T,
-                       cluster_rows = T,
+                       cluster_cols = pheat_data %>%
+                         {1 - .} %>%
+                         as.dist() %>%
+                         hclust("average"),
+                       cluster_rows = pheat_data %>%
+                         {1 - .} %>%
+                         as.dist() %>%
+                         hclust("average"),
                        fontsize_row = 10,
                        fontsize_col = 10,
-                       clustering_method = 'ward.D2',
+                       clustering_method = 'average',
                        annotation_colors = list(celltype = c(content_colors, tissue.colors)),
                        annotation_legend = F,
                        annotation_row = pheat_meta,
@@ -2263,6 +2932,64 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   }
   
   Sys.sleep(20)
+  dev.off()
+  
+  
+  # ----- Tissue elevated bar plot with dendrogram ------
+  
+  require(pheatmap)
+  require(ggdendro)
+  plot_dendrogram <- 
+    global.atlas.max %>%
+    select(ensg_id, content_column = consensus_content_column, Ex_column = global_maxEx_column) %>%
+    spread(key = content_column, value = Ex_column) %>%
+    column_to_rownames("ensg_id") %>%
+    {.[complete.cases(.),]} %>%
+    as.matrix() %>%
+    {log10(. + 1)} %>%
+    cor(method = "spearman") %>%
+    {1 - .} %>%
+    as.dist() %>%
+    hclust("average") %>%
+    dendro_data()
+  
+  g1 <- 
+    ggdendrogram(plot_dendrogram) +
+    geom_rect(data = label(plot_dendrogram), 
+              aes(xmin = x - 0.5, 
+                  xmax = x + 0.5, 
+                  ymin = -0.02, 
+                  ymax = 0, 
+                  fill = label), 
+              show.legend = F) + 
+    #coord_flip() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    scale_fill_manual(values = tissue.colors) +
+    coord_flip()+
+    scale_y_reverse() + 
+    theme(axis.text.y = element_blank())
+  
+  g2 <- 
+    global.atlas.elevated.summary.table %>%
+    as.tibble(rownames = "tissue") %>%
+    gather(key = "Classification", value = "Number of genes", -tissue) %>%
+    mutate(tissue = factor(tissue, levels = (label(plot_dendrogram)$label))) %>%
+    filter(Classification %in% c("Tissue enriched","Celltype enriched",
+                                 "Group enriched","Tissue enhanced","Celltype enhanced")) %>%
+    mutate(Classification = factor(Classification, levels = c("Tissue enhanced","Group enriched","Tissue enriched"))) %>%
+    ggplot(aes(tissue, `Number of genes`, fill = Classification))+
+    geom_bar(stat = "identity") +
+    scale_fill_manual(name = "",values = cat2.cols)+
+    scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
+    stripped_theme+
+    coord_flip()+
+    xlab("")+
+    ylab("Number of genes")+
+    theme(axis.text.y = element_text(hjust = 0.5),
+          legend.position = c(0.55, 0.7))
+  
+  pdf(paste(outpath, "Fig tissue elevated bar dendrogram.pdf",sep='/'), width=8, height=6, useDingbats = F)
+  grid.arrange(g1, g2, nrow = 1, widths = c(0.6, 1))
   dev.off()
   
   # ----- Tissue/group enriched expression heatmap -----
@@ -2382,6 +3109,124 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   ggsave(paste(outpath, "Fig new cell markers example.pdf", sep = "/"), width = 5, height = 4) 
   
   
+  
+  # ----- GZMB sorted data -----
+  
+  GZMB_sort_data %>%
+    ggplot(aes(GranzymeB, CD45, color = type, fill = type)) +
+    geom_point(alpha = 0.5, 
+               shape = 20, 
+               size = 0.01, 
+               show.legend = F)+
+    # geom_density_2d(size = 2.5, alpha = 0.5, )+
+    stat_density2d(aes(alpha=..level..), 
+                   geom="polygon", 
+                   color = NA, 
+                   show.legend = F) +
+    # geom_hex(aes(alpha = ..count..), 
+    #          bins = 100)+
+    scale_alpha_continuous(range = c(0.1, 0.5))+
+    annotate("text", 
+             x = c(4, 1, 5), 
+             y = c(4.5, 2.5, 2),
+             label = c("CD8+ T-cell",
+                       "NK-cell", 
+                       "plasmacytoid DC"),
+             color = c("#243353",
+                       "#ad1d78", 
+                       "#007F6B"), 
+             fontface = "bold", 
+             size = 4)+
+    plot_theme+
+    xlab("Granzyme B (GZMB)")+
+    ylab("CD45")+
+    theme(axis.text = element_blank(), 
+          aspect.ratio = 1) +
+    scale_color_manual(values = c("CD8+ T-cell" = "#243353",
+                                  "NK-cell" = "#ad1d78", 
+                                  "plasmacytoid DC" = "#007F6B"))+
+    scale_fill_manual(values = c("CD8+ T-cell" = "#243353",
+                                  "NK-cell" = "#ad1d78", 
+                                  "plasmacytoid DC" = "#007F6B"))
+  
+  ggsave(paste(outpath, "Fig GZMB CD45 1.pdf", sep = "/"), width = 4, height = 4, useDingbats = F) 
+  
+  GZMB_sort_data %>%
+    ggplot(aes(GranzymeB, CD45, color = type, fill = type)) +
+    geom_point(alpha = 0.5, 
+               shape = 20, 
+               size = 0.01, 
+               show.legend = F)+
+    geom_density_2d(alpha = 0.5, show.legend = F)+
+    # stat_density2d(aes(alpha=..level..), 
+    #                geom="polygon", 
+    #                color = NA, 
+    #                show.legend = F) +
+    # geom_hex(aes(alpha = ..count..), 
+    #          bins = 100)+
+    # scale_alpha_continuous(range = c(0.1, 1))+
+    annotate("text", 
+             x = c(4, 1, 5), 
+             y = c(4.5, 2.5, 2),
+             label = c("CD8+ T-cell",
+                       "NK-cell", 
+                       "plasmacytoid DC"),
+             color = c("#243353",
+                       "#ad1d78", 
+                       "#007F6B"), 
+             fontface = "bold", 
+             size = 4)+
+    plot_theme+
+    xlab("Granzyme B (GZMB)")+
+    ylab("CD45")+
+    theme(axis.text = element_blank(), 
+          aspect.ratio = 1) +
+    scale_color_manual(values = c("CD8+ T-cell" = "#243353",
+                                  "NK-cell" = "#ad1d78", 
+                                  "plasmacytoid DC" = "#007F6B"))+
+    scale_fill_manual(values = c("CD8+ T-cell" = "#243353",
+                                 "NK-cell" = "#ad1d78", 
+                                 "plasmacytoid DC" = "#007F6B"))
+  
+  ggsave(paste(outpath, "Fig GZMB CD45 2.pdf", sep = "/"), width = 4, height = 4, useDingbats = F) 
+  
+  GZMB_sort_data %>%
+    ggplot(aes(GranzymeB, CD45, color = type, fill = type)) +
+    geom_point(alpha = 0.5, 
+               shape = 20, 
+               size = 0.01, 
+               show.legend = F)+
+    # geom_density_2d(size = 2.5, alpha = 0.5, )+
+    stat_density2d(aes(alpha=..level..), 
+                   geom="polygon", 
+                   show.legend = F) +
+    # geom_hex(aes(alpha = ..count..), 
+    #          bins = 100)+
+    scale_alpha_continuous(range = c(0.05, 0.4))+
+    annotate("text", 
+             x = c(4, 1, 5), 
+             y = c(4.5, 2.5, 2),
+             label = c("CD8+ T-cell",
+                       "NK-cell", 
+                       "plasmacytoid DC"),
+             color = c("#243353",
+                       "#ad1d78", 
+                       "#007F6B"), 
+             fontface = "bold", 
+             size = 4)+
+    plot_theme+
+    xlab("Granzyme B (GZMB)")+
+    ylab("CD45")+
+    theme(axis.text = element_blank(), 
+          aspect.ratio = 1) +
+    scale_color_manual(values = c("CD8+ T-cell" = "#243353",
+                                  "NK-cell" = "#ad1d78", 
+                                  "plasmacytoid DC" = "#007F6B"))+
+    scale_fill_manual(values = c("CD8+ T-cell" = "#243353",
+                                 "NK-cell" = "#ad1d78", 
+                                 "plasmacytoid DC" = "#007F6B"))
+  
+  ggsave(paste(outpath, "Fig GZMB CD45 3.pdf", sep = "/"), width = 4, height = 4, useDingbats = F) 
   # ----- Number detected genes per tissue PTPM and NX -----
   
   plot_data <- 
@@ -2399,7 +3244,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   plot_data %>%
     gather(key = "type", value = "genes", pTPM, NX) %>%
     mutate(consensus_content_column = factor(consensus_content_column, 
-                                             levels = filter(., type == "pTPM") %$%
+                                             levels = filter(., type == "NX") %$%
                                                consensus_content_column[order(genes)])) %>%
     ggplot(aes(consensus_content_column, genes, fill = type)) + 
     geom_col(position = "dodge") +
@@ -2601,6 +3446,45 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
                theme_void() 
            }
   ggsave(paste(outpath, "Sup global specificity pie.pdf",sep='/'), width=6, height=6)
+  
+  
+  # ----- Schmiedel, Monaco, HPA comparison -----
+  
+  
+  common_content <- 
+    joined_atlas %>% 
+    group_by(content_name) %>%
+    summarise(n = length(unique(type))) %>%
+    filter(n == 3) %$%
+    content_name
+  
+  joined_atlas %>% 
+    filter(content_name %in% common_content) %>% 
+    left_join(atlas.cat, by = "ensg_id") %>%
+    filter(elevated.category == "tissue enriched") %>%
+    filter(`enriched tissues` %in% common_content) %>%
+    filter(ensg_id %in% sample(ensg_id, 12)) %>%
+    mutate(content_name = unclass(factor(content_name))) %>%
+    ggplot(aes(content_name, ptpm, color = type, group = type))+
+    geom_line()+
+    facet_wrap(~ ensg_id, scales = "free_y")+
+    # scale_y_log10()+
+    plot_theme
+  
+  joined_atlas %>% 
+    filter(content_name %in% common_content) %>% 
+    left_join(atlas.cat, by = "ensg_id") %>%
+    filter(elevated.category == "tissue enriched") %>%
+    filter(`enriched tissues` %in% common_content) %>%
+    # filter(type == "Monaco") %>%
+    # mutate(content_name = unclass(factor(content_name))) %>%
+    ggplot(aes(content_name, ptpm, color = type, group = paste(ensg_id, type))) + 
+    geom_line()+
+    facet_wrap(~ `enriched tissues`, scales = "free_y")+
+    # scale_y_log10()+
+    plot_theme +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
+  
   
 }
 

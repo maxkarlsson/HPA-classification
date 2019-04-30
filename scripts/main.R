@@ -47,7 +47,7 @@ blood_atlas_FACS_markers <- readr::read_delim("ref/20190123FACS cell CD markers 
 
 ## essential genes
 hart2015 <- "data/Hart2015_essential_genes.xlsx"
-
+wang2015 <- "data/Wang2015_essential_genes.txt"
 
 ## datasets
 hpa_path <- './data/lims/rna_hpa.tsv'
@@ -57,6 +57,9 @@ blood_path <- './data/lims/rna_blood.tsv'
 mouse_path <- './data/lims/rna_mousebrain_mouse_92.tsv'
 pig_path <- './data/lims/rna_pigbrain_pig_92.tsv'
 tissue2015_path <- './data/TissueAtlasSup(2015).xlsx'
+
+monaco_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_bloodcells_monaco_92.tsv"
+schmiedel_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_bloodcells_schmiedel_92.tsv"
 
 ### Sample data
 hpa_sample_path <- './data/lims/Sample TPM data/rna_all_tissue_sample_92.tsv'
@@ -77,6 +80,8 @@ consensus_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_
 consensus_blood_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_bloodcells_hpa_92.tsv"
 ### category
 category_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_all_category_92.tsv"
+category_blood_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/bloodcells_hpa_category_92.tsv"
+category_cellline_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_celline_category_92.tsv"
 
 #
 # ----------- Step 1. data wrangling ----------- 
@@ -283,9 +288,47 @@ essential_genes_hart2015 <-
   hart2015 %>%
   readxl::read_excel(sheet = 1) %>%
   filter(numTKOHits >= 3) %>%
-  left_join(ensemblanno.table %>%
+  inner_join(ensemblanno.table %>%
               filter(ensg_id %in% unique(all.atlas.raw$ensg_id)), 
             by = c("Gene" = "gene_name"))
+
+essential_genes_wang2015 <- 
+  wang2015 %>%
+  read_delim(delim = "\t")
+
+
+## Schmiedel and Monaco
+
+schmiedel <-
+  schmiedel_path %>%
+  readr::read_delim(delim = "\t") %>%
+  dplyr::rename(content_name = 2) 
+
+monaco <-
+  monaco_path %>%
+  readr::read_delim(delim = "\t") %>%
+  dplyr::rename(content_name = 2) 
+
+joined_blood_atlas <- 
+  bind_rows(monaco %>% 
+              select(1:4) %>%
+              mutate(type = "Monaco"),
+            schmiedel %>% 
+              select(1:4) %>%
+              mutate(type = "Schmiedel"),
+            blood.atlas %>% 
+              select(1:4) %>%
+              mutate(type = "HPA")) %>%
+  mutate(tissue.method = paste(content_name, type, sep = "."))
+
+## GZMB sorting validation
+GZMB_sort_data <- 
+  bind_rows(readr::read_csv("data/GZMB validation/export_null_CD8+T+GranzymeB+.csv") %>%
+              mutate(type = "CD8+ T-cell"),
+            readr::read_csv("data/GZMB validation/export_null_NK+GranzymeB+.csv") %>%
+              mutate(type = "NK-cell"),
+            readr::read_csv("data/GZMB validation/export_null_pDC+GranzymeB+.csv") %>%
+              mutate(type = "plasmacytoid DC"))
 
 
 #
@@ -320,6 +363,30 @@ all.atlas <-
               mutate(method = "FANTOM") %>%
               rename(content_name = 2),
             blood.atlas) 
+
+
+
+
+#  normalization of Monaco and Schmiedel
+common_genes <- 
+  joined_blood_atlas %>%
+  group_by(ensg_id) %>%
+  summarise(n = length(unique(type))) %>%
+  filter(n == 3) %$%
+  ensg_id
+
+
+joined_blood_atlas_normed <-
+  joined_blood_atlas %>%
+  filter(ensg_id %in% common_genes) %>%
+  mutate(tmm = tmm_normalization(expression = ptpm, 
+                                 tissue.method = tissue.method, 
+                                 ensg_id = ensg_id),
+         norm = limma_method_correction(tmm, 
+                                      type,
+                                      tissue.method, 
+                                      ensg_id, 
+                                      filtered.methods = ""))
 
 
  # Load brain data
@@ -365,14 +432,35 @@ all.atlas.category <-
                               elevated.category == 'low tissue specificity' ~ 5),
          express.category.2 = gsub("detected", "expressed", express.category.2))
 
+
 blood.atlas.category <- 
-  blood.atlas.max %>%
-  filter(consensus_content_name != "total PBMC") %>%
-  get.categories.with.num.expressed(max_column = "nx", 
-                                    cat_column = "consensus_content_name",
-                                    enrich.fold = 4, 
-                                    under.lim = 1, 
-                                    group.num = 11)
+  read_delim(category_blood_path, delim = "\t") %>%
+  rename(elevated.category = specificity_category,
+         express.category.2 = distribution_category,
+         `enriched tissues` = enhanced_tissues) %>%
+  mutate(elevated.category = tolower(elevated.category), 
+         category = case_when(elevated.category == 'not detected' ~ 1,
+                              elevated.category == 'tissue enriched' ~ 2,
+                              elevated.category == 'group enriched' ~ 3,
+                              elevated.category == 'tissue enhanced' ~ 4,
+                              elevated.category == 'low tissue specificity' ~ 5),
+         express.category.2 = gsub("detected", "expressed", express.category.2))
+
+cellline.atlas.category <- 
+  read_delim(category_cellline_path, delim = "\t") %>%
+  rename(elevated.category = specificity_category,
+         express.category.2 = distribution_category,
+         `enriched tissues` = enhanced_tissues) %>%
+  mutate(elevated.category = tolower(elevated.category), 
+         category = case_when(elevated.category == 'not detected' ~ 1,
+                              elevated.category == 'tissue enriched' ~ 2,
+                              elevated.category == 'group enriched' ~ 3,
+                              elevated.category == 'tissue enhanced' ~ 4,
+                              elevated.category == 'low tissue specificity' ~ 5),
+         express.category.2 = gsub("detected", "expressed", express.category.2))
+
+
+
 readr::write_delim(blood.atlas.category, path = paste(result_folder, paste0('gene_categories_blood_cells.txt'),sep='/'), delim = "\t")
 
 # calculate brain categories
@@ -409,7 +497,7 @@ first <- T
 for(content_name in unique(blood.atlas$content_name)) {
   temp <- 
     blood.atlas.category.cytoscape.nodes %>%
-    filter(grepl(paste0("(^|, )", content_name, "(, |$)"), `enriched tissues`)) %>% 
+    filter(grepl(paste0("(^|,)", content_name, "(,|$)"), `enriched tissues`)) %>% 
     mutate(content_name = content_name, 
            edge = 1)
   
