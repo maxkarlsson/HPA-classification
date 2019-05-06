@@ -297,29 +297,7 @@ essential_genes_wang2015 <-
   read_delim(delim = "\t")
 
 
-## Schmiedel and Monaco
 
-schmiedel <-
-  schmiedel_path %>%
-  readr::read_delim(delim = "\t") %>%
-  dplyr::rename(content_name = 2) 
-
-monaco <-
-  monaco_path %>%
-  readr::read_delim(delim = "\t") %>%
-  dplyr::rename(content_name = 2) 
-
-joined_blood_atlas <- 
-  bind_rows(monaco %>% 
-              select(1:4) %>%
-              mutate(type = "Monaco"),
-            schmiedel %>% 
-              select(1:4) %>%
-              mutate(type = "Schmiedel"),
-            blood.atlas %>% 
-              select(1:4) %>%
-              mutate(type = "HPA")) %>%
-  mutate(tissue.method = paste(content_name, type, sep = "."))
 
 ## GZMB sorting validation
 GZMB_sort_data <- 
@@ -365,6 +343,30 @@ all.atlas <-
             blood.atlas) 
 
 
+
+## Schmiedel and Monaco
+
+schmiedel <-
+  schmiedel_path %>%
+  readr::read_delim(delim = "\t") %>%
+  dplyr::rename(content_name = 2) 
+
+monaco <-
+  monaco_path %>%
+  readr::read_delim(delim = "\t") %>%
+  dplyr::rename(content_name = 2) 
+
+joined_blood_atlas <- 
+  bind_rows(monaco %>% 
+              select(1:4) %>%
+              mutate(type = "Monaco"),
+            schmiedel %>% 
+              select(1:4) %>%
+              mutate(type = "Schmiedel"),
+            blood.atlas %>% 
+              select(1:4) %>%
+              mutate(type = "HPA")) %>%
+  mutate(tissue.method = paste(content_name, type, sep = "."))
 
 
 #  normalization of Monaco and Schmiedel
@@ -485,44 +487,44 @@ for(celltype in unique(blood.atlas.max$consensus_content_name)) {
 #
 # ----------- Step 5. Cytoscape files ----------- 
 #
-
-blood.atlas.category.cytoscape.nodes <- 
-  blood.atlas.category %>% 
-  group_by(elevated.category, `enriched tissues`) %>% 
-  summarise(n = length(ensg_id)) %>%
-  ungroup() %>%
-  mutate(node_id = 1:nrow(.))
-
-first <- T
-for(content_name in unique(blood.atlas$content_name)) {
-  temp <- 
-    blood.atlas.category.cytoscape.nodes %>%
-    filter(grepl(paste0("(^|,)", content_name, "(,|$)"), `enriched tissues`)) %>% 
-    mutate(content_name = content_name, 
-           edge = 1)
-  
-  if(first){
-    blood.atlas.category.cytoscape.nodes.full <- temp
-    
-    first <- F
-  } else {
-    blood.atlas.category.cytoscape.nodes.full <- 
-      rbind(blood.atlas.category.cytoscape.nodes.full, temp)
-  }
-  
-  
-}
-
-blood.atlas.category.cytoscape.nodes.full %>%
-  left_join(blood_atlas_hierarchy %>% 
-              filter(!content %in% c("blood", "Total PBMCs")) %>% 
-              {.[with(., order(content_l3, content_l2, content_l1, content)),]} %>% 
-              mutate(circle_order_1 = 1:nrow(.), 
-                     circle_order_2 = 1:nrow(.),
-                     content_name = content), 
-            by = "content_name") %>%
-  filter(n > 2 & elevated.category %in% c("group enriched", "tissue enriched")) %>%
-  write_delim(paste(result_folder, paste0('gene_categories_blood_cells_summarised.txt'),sep='/'), delim = "\t")
+# 
+# blood.atlas.category.cytoscape.nodes <- 
+#   blood.atlas.category %>% 
+#   group_by(elevated.category, `enriched tissues`) %>% 
+#   summarise(n = length(ensg_id)) %>%
+#   ungroup() %>%
+#   mutate(node_id = 1:nrow(.))
+# 
+# first <- T
+# for(content_name in unique(blood.atlas$content_name)) {
+#   temp <- 
+#     blood.atlas.category.cytoscape.nodes %>%
+#     filter(grepl(paste0("(^|,)", content_name, "(,|$)"), `enriched tissues`)) %>% 
+#     mutate(content_name = content_name, 
+#            edge = 1)
+#   
+#   if(first){
+#     blood.atlas.category.cytoscape.nodes.full <- temp
+#     
+#     first <- F
+#   } else {
+#     blood.atlas.category.cytoscape.nodes.full <- 
+#       rbind(blood.atlas.category.cytoscape.nodes.full, temp)
+#   }
+#   
+#   
+# }
+# 
+# blood.atlas.category.cytoscape.nodes.full %>%
+#   left_join(blood_atlas_hierarchy %>% 
+#               filter(!content %in% c("blood", "Total PBMCs")) %>% 
+#               {.[with(., order(content_l3, content_l2, content_l1, content)),]} %>% 
+#               mutate(circle_order_1 = 1:nrow(.), 
+#                      circle_order_2 = 1:nrow(.),
+#                      content_name = content), 
+#             by = "content_name") %>%
+#   filter(n > 2 & elevated.category %in% c("group enriched", "tissue enriched")) %>%
+#   write_delim(paste(result_folder, paste0('gene_categories_blood_cells_summarised.txt'),sep='/'), delim = "\t")
 
 #
 # ----------- Brain atlas classification ----------- 
