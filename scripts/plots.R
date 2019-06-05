@@ -1101,7 +1101,7 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   pdf(file = paste0(result_folder, '/blood_neighber_joining_clustering_allsamples.pdf'), width=7, height=7, useDingbats = F)
   plot.phylo(as.phylo(all.samples.nj), 
-             type="u", 
+             type="p", 
              lab4ut = "axial", font = 1, cex = 0.8,
              tip.color = content_colors,
              edge.col="black", 
@@ -3980,6 +3980,110 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   
   ggsave(paste(outpath, "UMAP Tissue content.pdf", sep = "/"), width=7, height=7, useDingbats = F)
   
+  
+  # ----- Fraction of transcripts figures -----
+  
+  global_elevated_table_2 <- calc_elevated.table2(global.atlas.max.wide, global.atlas.category)
+  
+  
+  plot_data <- 
+    global_elevated_table_2 %>%
+    as.tibble(rownames = "ensg_id") %>%
+    gather(key = "content", value = "class", -ensg_id) %>%
+    filter(class != "") %>%
+    group_by(class, content) %>%
+    summarise(n = length(ensg_id)) %>% 
+    ungroup() %>%
+    mutate(class = factor(class, levels = c("tissue enhanced","group enriched","tissue enriched"))) %>% {
+      lev <- 
+        group_by(., content) %>%
+        summarise(n = sum(n)) %$%
+        content[order(n)]
+      mutate(., 
+             content = factor(content, levels = lev))} 
+  
+  levels(plot_data$content)
+  
+  plot_data %>%
+    ggplot(aes(content, n, fill = class))+
+    geom_bar(stat = "identity") +
+    scale_fill_manual(name = "",values = elevated.cat.cols)+
+    scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
+    stripped_theme+
+    coord_flip()+
+    xlab("")+
+    ylab("Number of genes")+
+    theme(axis.text.y = element_text(hjust = 0.5),
+          legend.position = c(0.55, 0.7))
+  
+  ggsave(paste(outpath, "consensus number genes per elevated class.pdf", sep = "/"), width=7, height=7, useDingbats = F)
+  
+  plot_maxtpm <- 
+    bind_rows(global.atlas %>% 
+                select(ensg_id, content_name, ptpm, method),
+              global.atlas %>%
+                group_by(ensg_id, content_name) %>%
+                summarise(ptpm = median(ptpm, na.rm = T)) %>%
+                mutate(method = "Median")) %>%
+                
+    inner_join(global_elevated_table_2 %>%
+                 as.tibble(rownames = "ensg_id") %>%
+                 gather(key = "content_name", value = "elevated_category_", -1) %>%
+                 filter(elevated_category_ != ""), 
+               by = c("ensg_id", "content_name")) 
+    
+  plot_maxtpm %>%
+    left_join(global.atlas.category, 
+              by = "ensg_id") %>%
+    group_by(content_name, elevated.category, method) %>% 
+    summarise(sum_pTPM = sum(ptpm, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(elevated.category = factor(elevated.category, levels = c("tissue enhanced","group enriched","tissue enriched")), 
+           content_name = factor(content_name, levels = levels(plot_data$content))) %>%
+    
+    ggplot(aes(content_name, sum_pTPM, fill = elevated.category)) + 
+    geom_col() + 
+    scale_fill_manual(name = "",values = elevated.cat.cols)+
+    scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
+    stripped_theme+
+    coord_flip()+
+    facet_wrap(~ method, nrow = 1) + 
+    ylab("pTPM")
+  
+  ggsave(paste(outpath, "pTPM per elevated class.pdf", sep = "/"), width=16, height=7, useDingbats = F)
+  
+  
+  # Consensus ptpm
+  
+  
+  plot_maxtpm <- 
+    global.atlas.max %>%
+    
+    inner_join(global_elevated_table_2 %>%
+                 as.tibble(rownames = "ensg_id") %>%
+                 gather(key = "consensus_content_name", value = "elevated_category_", -1) %>%
+                 filter(elevated_category_ != ""), 
+               by = c("ensg_id", "consensus_content_name")) 
+  
+  plot_maxtpm %>%
+    left_join(global.atlas.category, 
+              by = "ensg_id") %>%
+    group_by(consensus_content_name, elevated.category) %>% 
+    summarise(sum_pTPM = sum(ptpm, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(elevated.category = factor(elevated.category, levels = c("tissue enhanced","group enriched","tissue enriched")), 
+           consensus_content_name = factor(consensus_content_name, levels = levels(plot_data$content))) %>%
+    
+    ggplot(aes(consensus_content_name, sum_pTPM, fill = elevated.category)) + 
+    geom_col() + 
+    scale_fill_manual(name = "",values = elevated.cat.cols)+
+    scale_y_continuous(expand = c(0.025, 0, 0.05, 0))+
+    stripped_theme+
+    coord_flip()+ 
+    ylab("pTPM")
+  
+  ggsave(paste(outpath, "consensus pTPM per elevated class.pdf", sep = "/"), width=7, height=7, useDingbats = F)
+
   
 }
 

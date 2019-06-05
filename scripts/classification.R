@@ -114,6 +114,18 @@ calc_elevated.table <- function(tb.wide, atlas.categories, under.lim = 1, cat.co
   return(elevated.table)
 }
 
+calc_elevated.table2 <- function(tb.wide, atlas.categories) {
+  
+  sapply(colnames(tb.wide), 
+         FUN = function(tiss) {
+           ifelse(grepl(paste0("(^|,)", tiss, "($|,)"), atlas.categories$`enriched tissues`), 
+                  atlas.categories$elevated.category, 
+                  "")
+         }) %>%
+  set_rownames(atlas.categories$ensg_id)
+  
+}
+
 
 calc_elevated.summary.table <- function(elevated.table, celltype = F) { 
   cat_names <- setNames(c("Not detected in this tissue","Not detected in any tissues","Tissue enriched",

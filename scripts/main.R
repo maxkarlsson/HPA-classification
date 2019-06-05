@@ -81,6 +81,7 @@ consensus_blood_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/cons
 ### category
 category_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_all_category_92.tsv"
 category_blood_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/bloodcells_hpa_category_92.tsv"
+category_blood_lineage_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/bloodcells_hpa_regional_category_92.tsv"
 category_cellline_path <- "data/lims/Normalisation pTPM,NX and RNA Categories/consensus_celline_category_92.tsv"
 
 #
@@ -437,6 +438,19 @@ all.atlas.category <-
 
 blood.atlas.category <- 
   read_delim(category_blood_path, delim = "\t") %>%
+  rename(elevated.category = specificity_category,
+         express.category.2 = distribution_category,
+         `enriched tissues` = enhanced_tissues) %>%
+  mutate(elevated.category = tolower(elevated.category), 
+         category = case_when(elevated.category == 'not detected' ~ 1,
+                              elevated.category == 'tissue enriched' ~ 2,
+                              elevated.category == 'group enriched' ~ 3,
+                              elevated.category == 'tissue enhanced' ~ 4,
+                              elevated.category == 'low tissue specificity' ~ 5),
+         express.category.2 = gsub("detected", "expressed", express.category.2))
+
+bloodlineage.atlas.category <- 
+  read_delim(category_blood_lineage_path, delim = "\t") %>%
   rename(elevated.category = specificity_category,
          express.category.2 = distribution_category,
          `enriched tissues` = enhanced_tissues) %>%
