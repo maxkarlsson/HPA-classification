@@ -4085,7 +4085,94 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   ggsave(paste(outpath, "consensus pTPM per elevated class.pdf", sep = "/"), width=7, height=7, useDingbats = F)
 
   
-}
+  # ----- Comparison of reproducibility in blood datasets -----
+  
+  
+  require(pheatmap)
+  
+  plot_data <- 
+    left_join(blood.atlas %>%
+                mutate(source_contname = paste("HPA", content_name, sep = "_")) %>%
+                select(1,source_contname, 4) %>%
+                spread(key = source_contname, value = ptpm),
+              monaco %>%
+                mutate(source_contname = paste("Monaco", content_name, sep = "_")) %>%
+                select(1,source_contname, 4) %>%
+                spread(key = source_contname, value = ptpm),
+              by = "ensg_id") %>%
+    left_join(schmiedel %>%
+                mutate(source_contname = paste("Schmiedel", content_name, sep = "_")) %>%
+                select(1,source_contname, 4) %>%
+                spread(key = source_contname, value = ptpm),
+              by = "ensg_id")
+  plot_cor <- 
+    plot_data %>%
+    column_to_rownames("ensg_id") %>%
+    cor(method = "spearman", use = "pairwise.complete.obs") 
+  
+  plot_annotation <- 
+    tibble(name = rownames(plot_cor)) %>%
+    separate(name, into = c("Dataset", "cell_type"), sep = "_", remove = F) %>%
+    left_join(monaco_schmiedel_lineage, 
+              by = c("cell_type" = "content_name")) %>%
+    select(-cell_type) %>%
+    column_to_rownames("name") %>%
+    as.data.frame()
+  
+  plot_clst <- 
+    dist(1 - plot_cor) %>%
+    hclust(method = "average") 
+  
+  plot_cor %>%
+    pheatmap(annotation_row = plot_annotation, 
+             annotation_colors = list("lineage" = content_colors[names(content_colors) %in% plot_annotation$lineage]), 
+             cluster_cols = plot_clst,
+             cluster_rows = plot_clst,
+             filename = paste(outpath, "Heat blood datasets correlation.pdf", sep = "/"), 
+             width=20, height=10, useDingbats = F)
+  
+  ###
+  
+  plot_data <- 
+    joined_blood_atlas_normed %>%
+    mutate(source_contname = paste(type, content_name, sep = "_")) %>%
+    select(1, source_contname, norm) %>%
+    spread(key = source_contname, value = norm)
+  plot_cor <- 
+    plot_data %>%
+    column_to_rownames("ensg_id") %>%
+    cor(method = "spearman", use = "pairwise.complete.obs") 
+  
+  plot_annotation <- 
+    tibble(name = rownames(plot_cor)) %>%
+    separate(name, into = c("Dataset", "cell_type"), sep = "_", remove = F) %>%
+    left_join(monaco_schmiedel_lineage, 
+              by = c("cell_type" = "content_name")) %>%
+    select(-cell_type) %>%
+    column_to_rownames("name") %>%
+    as.data.frame()
+  
+  plot_clst <- 
+    dist(1 - plot_cor) %>%
+    hclust(method = "average") 
+  
+  plot_cor %>%
+    pheatmap(annotation_row = plot_annotation, 
+             annotation_colors = list("lineage" = content_colors[names(content_colors) %in% plot_annotation$lineage]), 
+             cluster_cols = plot_clst,
+             cluster_rows = plot_clst,
+             filename = paste(outpath, "Heat blood datasets correlation normed.pdf", sep = "/"), 
+             width=20, height=10, useDingbats = F)
+  
+  blood_gene_CV <- 
+    joined_blood_atlas_normed %>%
+    group_by(content_name, ensg_id) %>%
+    summarise(CV = 100*sd(norm, na.rm = T)/mean(norm, na.rm = T))
+
+  blood_gene_CV %>%
+    ggplot(aes(content_name, CV)) + 
+    geom_boxplot()
+  }
 
 #####
 make_gene_expression_barplot <- function(atlas.max.tb, maxEx_columns, content_column, content_color) {
