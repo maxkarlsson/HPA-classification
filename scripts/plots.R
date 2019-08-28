@@ -4172,6 +4172,288 @@ make_blood_atlas_paper_plots <- function(atlas, atlas.max, atlas.cat, Ex_column,
   blood_gene_CV %>%
     ggplot(aes(content_name, CV)) + 
     geom_boxplot()
+  
+  
+  ####
+  HMS_plot_data <- 
+    joined_blood_atlas_normed %>%
+    select(1, 2, type, norm) %>%
+    spread(key = type, value = norm) %>%
+    filter(!is.na(HPA)) %>%
+    # filter(ensg_id %in% sample(unique(ensg_id), 1000)) %>%
+    group_by(ensg_id) %>%
+    summarise(HM_cor = cor(HPA, Monaco, 
+                           use = "pairwise.complete.obs", 
+                           method = "spearman"),
+              HS_cor = cor(HPA, Schmiedel, 
+                           use = "pairwise.complete.obs", 
+                           method = "spearman"), 
+              H_CV = 100*sd(HPA, na.rm = T)/mean(HPA, na.rm = T),
+              M_CV = 100*sd(Monaco, na.rm = T)/mean(Monaco, na.rm = T),
+              S_CV = 100*sd(Schmiedel, na.rm = T)/mean(Schmiedel, na.rm = T),
+              H_mean = mean(HPA, na.rm = T),
+              H_SD = sd(HPA, na.rm = T)) 
+    
+  HMS_plot_data %>%
+    gather(key = "type", value = "correlation", 2:3) %>%
+    ggplot(aes(type, correlation))+
+    geom_violin(draw_quantiles = 0.5)
+  
+  
+  HMS_plot_data %>%
+    mutate(mean_Q = cut(H_mean, 
+                          breaks = quantile(H_mean, 
+                                            probs = seq(0, 1, 0.25),
+                                            na.rm = T), 
+                          labels = 1:4, 
+                          include.lowest = T)) %>%
+    rename(Monaco = 2, 
+           Schmiedel = 3) %>%
+    gather(key = "type", value = "correlation", 2:3) %>%
+    ggplot(aes(mean_Q, correlation)) +
+    geom_violin(draw_quantiles = 0.5, scale = "width", fill = "slategray3") +
+    facet_wrap(~ type) + 
+    stripped_theme + 
+    xlab("Quartile of mean expression") + 
+    ggtitle("Gene-wise spearman correlation by expression level")
+  ggsave(paste(outpath, "Correlation M+S by explevel.pdf", sep = "/"), width=7, height=4, useDingbats = F)
+  
+  HMS_plot_data %>%
+    mutate(CV_Q = cut(H_CV, 
+                      breaks = quantile(H_CV, 
+                                        probs = seq(0, 1, 0.25),
+                                        na.rm = T), 
+                      labels = 1:4, 
+                      include.lowest = T),
+           mean_Q = cut(H_mean, 
+                        breaks = quantile(H_mean, 
+                                          probs = seq(0, 1, 0.25),
+                                          na.rm = T), 
+                        labels = 1:4, 
+                        include.lowest = T)) %>%
+    rename(Monaco = 2, 
+           Schmiedel = 3) %>%
+    filter(!is.na(CV_Q)) %>%
+    gather(key = "type", value = "correlation", 2:3) %>%
+    ggplot(aes(mean_Q, correlation, fill = CV_Q)) +
+    geom_violin(draw_quantiles = 0.5, scale = "width") +
+    facet_wrap(~ type) + 
+    stripped_theme + 
+    scale_fill_discrete(name = "Quartile of CV")+
+    xlab("Quartile of mean expression") + 
+    ggtitle("Gene-wise spearman correlation by expression level and variance")
+  ggsave(paste(outpath, "Correlation M+S by exp+variance.pdf", sep = "/"), width=9, height=4, useDingbats = F)
+  
+  
+  HMS_plot_data %>%
+    mutate(CV_Q = cut(H_CV, 
+                      breaks = quantile(H_CV, 
+                                        probs = seq(0, 1, 0.25),
+                                        na.rm = T), 
+                      labels = 1:4, 
+                      include.lowest = T),
+           mean_Q = cut(H_mean, 
+                        breaks = quantile(H_mean, 
+                                          probs = seq(0, 1, 0.25),
+                                          na.rm = T), 
+                        labels = 1:4, 
+                        include.lowest = T)) %>%
+    rename(Monaco = 2, 
+           Schmiedel = 3) %>%
+    filter(!is.na(CV_Q)) %>%
+    gather(key = "type", value = "correlation", 2:3) %>%
+    group_by(CV_Q, mean_Q, type) %>% 
+    summarise(median_cor = median(correlation, na.rm = T)) %>% View
+  # ----- Correlation of blood atlas data to Mann protein data -----
+  
+  blood_protein_data_ <- 
+    protein_data_mann2017 %>%
+    gather(key = "sample", value = "intensity", -c(1:5, 706:713))
+  
+  Mann_sample_info <- 
+    tibble(sample = unique(blood_protein_data$sample)) %>%
+    mutate(intensity_type = sapply(str_split(sample, "_"), 
+                                   FUN = function(x) x[1]),
+           cell_type_1 = sapply(str_split(sample, "_"), 
+                                FUN = function(x) x[2]),
+           replicate = sapply(str_split(sample, "_"), 
+                              FUN = function(x) x[3]),
+           
+           state = sapply(str_split(sample, "_"), 
+                          FUN = function(x) x[4])) %>%
+    mutate(cell_type = case_when(cell_type_1 == 'B.memory' ~ 'memory B-cell',
+                                 cell_type_1 == 'B.naive' ~ 'naive B-cell',
+                                 cell_type_1 == 'mTregs' ~ "",
+                                 cell_type_1 == 'T4.naive' ~ 'naive CD4 T-cell',
+                                 cell_type_1 == 'nTregs' ~ "",
+                                 cell_type_1 == 'T4.CM' ~ "",
+                                 cell_type_1 == 'T4.EM' ~ "",
+                                 cell_type_1 == 'T4.EMRA' ~ "",
+                                 cell_type_1 == 'T8.naive' ~ 'naive CD8 T-cell',
+                                 cell_type_1 == 'T8.CM' ~ "",
+                                 cell_type_1 == 'T8.EM' ~ "",
+                                 cell_type_1 == 'T8.EMRA' ~ "",
+                                 cell_type_1 == 'mDC' ~ 'myeloid DC',
+                                 cell_type_1 == 'pDC' ~ 'plasmacytoid DC',
+                                 cell_type_1 == 'MO.classical' ~ 'classical monocyte',
+                                 cell_type_1 == 'NK.bright' ~ "",
+                                 cell_type_1 == 'NK.dim' ~ "",
+                                 cell_type_1 == 'B.plasma' ~ "",
+                                 cell_type_1 == 'Th1' ~ "",
+                                 cell_type_1 == 'Th17' ~ "",
+                                 cell_type_1 == 'Th2' ~ "",
+                                 cell_type_1 == 'Erythrocyte' ~ "",
+                                 cell_type_1 == 'Basophil' ~ 'basophil',
+                                 cell_type_1 == 'Eosinophil' ~ 'eosinophil',
+                                 cell_type_1 == 'Neutrophil' ~ 'neutrophil',
+                                 cell_type_1 == 'MO.intermediate' ~ 'intermediate monocyte',
+                                 cell_type_1 == 'MO.nonclassical' ~ 'non-classical monocyte',
+                                 cell_type_1 == 'Thrombocyte' ~ ""))
+  
+  # ,,,'gdTCR',,'MAIT T-cell',,'memory CD4 T-cell','memory CD8 T-cell',,,,,,,,,'T-reg', 'NK-cell'
+  
+  mart <- biomaRt::useDataset("hsapiens_gene_ensembl", biomaRt::useMart("ensembl"))
+  G_list <- biomaRt::getBM(filters = "uniprotswissprot", 
+                           attributes = c("ensembl_gene_id", "external_gene_name", "uniprotswissprot", "description"),
+                           values = unique(unlist(unique(blood_protein_data_$`Majority protein IDs`) %>% str_split(";"))), 
+                           mart = mart)
+  
+  
+  Mann_gene_info <-
+    tibble(majority_protein = unique(blood_protein_data_$`Majority protein IDs`)) %>%
+    # mutate(A = paste(str_split(majority_protein, pattern = ";")[[1]], collapse = ";"))
+    group_by(majority_protein) %>% 
+    mutate(ensg_id = {unique(sapply(str_split(majority_protein, pattern = ";")[[1]], 
+                                    FUN = function(x) {
+                                      G_list$ensembl_gene_id[match(x, G_list$uniprotswissprot)]
+                                    })) %>%
+                                    {.[!is.na(.)]} %>%
+        paste(collapse = ";")}) 
+  
+    
+  
+  blood_protein_data <- 
+    blood_protein_data_ %>%
+    left_join(Mann_sample_info,
+              by = "sample") %>%
+    select(-(6:10)) %>%
+    rename(majority_protein = 1, 
+           gene_name = 3) %>%
+    left_join(Mann_gene_info, 
+              by = "majority_protein") %>% 
+    filter(cell_type != "") %>%
+    mutate(intensity = as.numeric(intensity)) %>% 
+    group_by(ensg_id, cell_type, state, intensity_type) %>% 
+    summarise(intensity = mean(intensity, na.rm = T)) %>%
+    left_join(blood.atlas %>%
+                select(1, 2, 5, 6),
+              by = c("ensg_id", "cell_type" = "content_name"))
+  
+  blood_protein_data_correlations <- 
+    blood_protein_data %>% 
+    filter(ensg_id != "") %>%
+    group_by(ensg_id, state, intensity_type) %>%
+    summarise(spearman = cor(nx, intensity, method = "spearman"),
+              pearson = cor(nx, intensity, method = "pearson"))
+  
+  
+  blood_protein_data_correlations %>%
+    gather(key = "cor_type", value = "correlation", spearman, pearson) %>%
+    ggplot(aes(state, correlation))+
+    geom_violin(draw_quantiles = 0.5, fill = "slategray1") + 
+    facet_grid(intensity_type~cor_type) + 
+    stripped_theme
+  
+  
+  blood_protein_data_correlations_stats <- 
+    blood.atlas %>% 
+    group_by(ensg_id) %>%
+    summarise(mean_nx = mean(nx, na.rm = T), 
+              CV = 100 * sd(nx, na.rm = T) / mean_nx)
+  
+  
+  blood_protein_data_correlations %>%
+    ungroup() %>%
+    gather(key = "cor_type", value = "correlation", spearman, pearson) %>%
+    
+    ggplot(aes(state, correlation))+
+    geom_violin(draw_quantiles = 0.5, fill = "gray") + 
+    facet_grid(intensity_type~cor_type) + 
+    stripped_theme
+  ggsave(paste(outpath, "Correlation to Mann protein.pdf", sep = "/"), width=4, height=9, useDingbats = F)
+  
+  blood_protein_data_correlations %>%
+    ungroup() %>%
+    gather(key = "cor_type", value = "correlation", spearman, pearson) %>%
+    left_join(blood_protein_data_correlations_stats,
+              by = "ensg_id") %>% 
+    mutate(CV_Q = cut(CV, 
+                      breaks = quantile(CV, 
+                                        probs = seq(0, 1, 0.25),
+                                        na.rm = T), 
+                      labels = 1:4, 
+                      include.lowest = T),
+           nx_Q = cut(mean_nx, 
+                      breaks = quantile(mean_nx, 
+                                        probs = seq(0, 1, 0.25),
+                                        na.rm = T), 
+                      labels = 1:4, 
+                      include.lowest = T)) %>%
+    ggplot(aes(state, correlation, fill = CV_Q))+
+    geom_violin(draw_quantiles = 0.5) + 
+    facet_grid(intensity_type~cor_type) + 
+    stripped_theme
+  
+  
+  blood_protein_data_correlations %>%
+    ungroup() %>%
+    filter(intensity_type == "LFQ.intensity") %>%
+    left_join(blood_protein_data_correlations_stats,
+              by = "ensg_id") %>% 
+    # mutate(CV_Q = cut(CV, 
+    #                   breaks = quantile(CV, 
+    #                                     probs = seq(0, 1, 0.25),
+    #                                     na.rm = T), 
+    #                   labels = 1:4, 
+    #                   include.lowest = T),
+    #        nx_Q = cut(mean_nx, 
+    #                   breaks = quantile(mean_nx, 
+    #                                     probs = seq(0, 1, 0.25),
+    #                                     na.rm = T), 
+    #                   labels = 1:4, 
+    #                   include.lowest = T)) %>%
+    ggplot(aes(state, spearman))+
+    geom_violin(draw_quantiles = 0.5, fill = "slategray3") + 
+    ylab("correlation") +
+    ggtitle("Gene-wise spearman correlation to Mann 2017 proteomics data") +
+    stripped_theme
+  ggsave(paste(outpath, "Correlation to Mann protein LFQ.pdf", sep = "/"), width=7, height=5, useDingbats = F)
+  
+  
+  blood_protein_data_correlations %>%
+    ungroup() %>%
+    filter(intensity_type == "LFQ.intensity") %>%
+    left_join(blood_protein_data_correlations_stats,
+              by = "ensg_id") %>% 
+    mutate(CV_Q = cut(CV,
+                      breaks = quantile(CV,
+                                        probs = seq(0, 1, 0.25),
+                                        na.rm = T),
+                      labels = 1:4,
+                      include.lowest = T),
+           nx_Q = cut(mean_nx,
+                      breaks = quantile(mean_nx,
+                                        probs = seq(0, 1, 0.25),
+                                        na.rm = T),
+                      labels = 1:4,
+                      include.lowest = T)) %>%
+    ggplot(aes(state, spearman, fill = nx_Q))+
+    geom_violin(draw_quantiles = 0.5) + 
+    ylab("correlation") +
+    scale_fill_discrete(name = "Quartile of mean expression") +
+    ggtitle("Gene-wise spearman correlation to Mann 2017 proteomics data") +
+    stripped_theme
+  ggsave(paste(outpath, "Correlation to Mann protein LFQ mean exp.pdf", sep = "/"), width=7, height=5, useDingbats = F)
   }
 
 #####

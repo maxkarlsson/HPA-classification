@@ -49,6 +49,9 @@ blood_atlas_FACS_markers <- readr::read_delim("ref/20190123FACS cell CD markers 
 hart2015 <- "data/Hart2015_essential_genes.xlsx"
 wang2015 <- "data/Wang2015_essential_genes.txt"
 
+## Blood protein expression data
+mann2017 <- "data/Mann2017_ni.3693-S2.xlsx"
+
 ## datasets
 hpa_path <- './data/lims/rna_hpa.tsv'
 gtex_path <- './data/lims/rna_gtex.tsv'
@@ -297,7 +300,10 @@ essential_genes_wang2015 <-
   wang2015 %>%
   read_delim(delim = "\t")
 
-
+## Blood atlas protein data
+protein_data_mann2017 <- 
+  mann2017 %>%
+  readxl::read_excel(sheet = 1) 
 
 
 ## GZMB sorting validation
@@ -364,7 +370,7 @@ joined_blood_atlas <-
             schmiedel %>% 
               select(1:4) %>%
               mutate(type = "Schmiedel"),
-            blood.atlas %>% 
+            blood.atlas.total.PBMC %>% 
               select(1:4) %>%
               mutate(type = "HPA")) %>%
   mutate(tissue.method = paste(content_name, type, sep = "."))
